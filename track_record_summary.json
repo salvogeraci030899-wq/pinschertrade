@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-11-16T17:16:52+00:00",
+ "generated_at": "2026-11-16T17:23:56+00:00",
  "since": "2026-11-10T15:36:54+00:00",
  "counts": {
-  "total": 519,
-  "open": 60,
+  "total": 522,
+  "open": 63,
   "resolved": 459,
   "expired": 0
  },
@@ -62,7 +62,7 @@
      "range": "90-100",
      "n": 262,
      "predicted_up_pct": 95.5,
-     "realized_up_pct": 38.7
+     "realized_up_pct": 38.9
     }
    ]
   },
