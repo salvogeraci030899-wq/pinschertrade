@@ -1,7 +1,7 @@
 {
- "checked_at": "2026-11-17T02:08:16+00:00",
- "titles": 15,
- "status": "pausa",
+ "checked_at": "2026-11-17T03:07:52+00:00",
+ "titles": 11,
+ "status": "normale",
  "history": [
   {
    "at": "2026-11-16T14:32:57+00:00",
@@ -24,9 +24,5 @@
    "headline": "North Korea's Binance hack faces U.S. crackdown as DOJ targets $1.2 billion in stolen crypto",
    "source": "CoinDesk"
   }
- ],
- "pause_until": "2026-11-17T03:06:50+00:00",
- "reason": "sospensione prelievi per exploit, rischio di ulteriori perdite",
- "headline": "Lighter suspends all withdrawals after $10.4 million crypto exploit",
- "source": "CoinDesk"
+ ]
 }
