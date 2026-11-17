@@ -1,7 +1,7 @@
 {
- "checked_at": "2026-11-17T20:33:06+00:00",
- "titles": 17,
- "status": "pausa",
+ "checked_at": "2026-11-17T21:33:00+00:00",
+ "titles": 16,
+ "status": "normale",
  "history": [
   {
    "at": "2026-11-17T13:18:03+00:00",
@@ -31,9 +31,5 @@
    "headline": "North Korea's Binance hack faces U.S. crackdown as DOJ targets $1.2 billion in stolen crypto",
    "source": "CoinDesk"
   }
- ],
- "pause_until": "2026-11-17T21:18:07+00:00",
- "reason": "Hack in corso, rischio furto fondi su exchange e wallet",
- "headline": "Optimizely Hack Hijacked Ledger, BBC and 176 Other Sites to Swap Crypto Wallet Addresses",
- "source": "Decrypt"
+ ]
 }
