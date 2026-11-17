@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-17T04:10:56+00:00",
+ "generated_at": "2026-11-17T05:08:13+00:00",
  "since": "2026-11-10T15:36:54+00:00",
  "counts": {
-  "total": 564,
+  "total": 567,
   "open": 63,
-  "resolved": 501,
+  "resolved": 504,
   "expired": 0
  },
  "costs": {
@@ -16,17 +16,17 @@
  "horizon_candles": 7,
  "overall": {
   "predictions": {
-   "n": 501,
+   "n": 504,
    "direction_hit_rate": 34.3,
-   "base_rate_up_pct": 32.9,
-   "brier": 0.5,
-   "brier_baseline": 0.2209,
+   "base_rate_up_pct": 33.1,
+   "brier": 0.4992,
+   "brier_baseline": 0.2216,
    "calibration": [
     {
      "range": "30-40",
-     "n": 2,
-     "predicted_up_pct": 33.0,
-     "realized_up_pct": 0.0
+     "n": 3,
+     "predicted_up_pct": 34.7,
+     "realized_up_pct": 33.3
     },
     {
      "range": "40-50",
@@ -54,9 +54,9 @@
     },
     {
      "range": "80-90",
-     "n": 113,
+     "n": 115,
      "predicted_up_pct": 84.6,
-     "realized_up_pct": 29.2
+     "realized_up_pct": 29.6
     },
     {
      "range": "90-100",
@@ -67,11 +67,11 @@
    ]
   },
   "directional_signals": {
-   "n": 392,
-   "win_rate": 36.7,
-   "avg_net_pct": -0.679,
-   "total_net_pct": -265.98,
-   "total_after_tax_pct": -265.98,
+   "n": 394,
+   "win_rate": 36.8,
+   "avg_net_pct": -0.678,
+   "total_net_pct": -267.24,
+   "total_after_tax_pct": -267.24,
    "profit_factor": 0.38,
    "max_drawdown_pct": -306.75
   },
@@ -100,11 +100,11 @@
   },
   "BTCUSDT_1h": {
    "predictions": {
-    "n": 135,
-    "direction_hit_rate": 32.1,
-    "base_rate_up_pct": 31.1,
-    "brier": 0.5357,
-    "brier_baseline": 0.2143,
+    "n": 136,
+    "direction_hit_rate": 31.9,
+    "base_rate_up_pct": 30.9,
+    "brier": 0.537,
+    "brier_baseline": 0.2135,
     "calibration": [
      {
       "range": "30-40",
@@ -132,9 +132,9 @@
      },
      {
       "range": "80-90",
-      "n": 26,
+      "n": 27,
       "predicted_up_pct": 85.0,
-      "realized_up_pct": 23.1
+      "realized_up_pct": 22.2
      },
      {
       "range": "90-100",
@@ -145,12 +145,12 @@
     ]
    },
    "directional_signals": {
-    "n": 114,
-    "win_rate": 33.3,
-    "avg_net_pct": -0.532,
-    "total_net_pct": -60.68,
-    "total_after_tax_pct": -60.68,
-    "profit_factor": 0.36,
+    "n": 115,
+    "win_rate": 33.0,
+    "avg_net_pct": -0.542,
+    "total_net_pct": -62.3,
+    "total_after_tax_pct": -62.3,
+    "profit_factor": 0.35,
     "max_drawdown_pct": -75.7
    },
    "tradeable_signals": {
@@ -232,17 +232,17 @@
   },
   "ETHUSDT_1h": {
    "predictions": {
-    "n": 135,
-    "direction_hit_rate": 40.7,
-    "base_rate_up_pct": 37.8,
-    "brier": 0.4202,
-    "brier_baseline": 0.2351,
+    "n": 136,
+    "direction_hit_rate": 40.4,
+    "base_rate_up_pct": 38.2,
+    "brier": 0.42,
+    "brier_baseline": 0.2362,
     "calibration": [
      {
       "range": "30-40",
-      "n": 1,
-      "predicted_up_pct": 36.0,
-      "realized_up_pct": 0.0
+      "n": 2,
+      "predicted_up_pct": 37.0,
+      "realized_up_pct": 50.0
      },
      {
       "range": "40-50",
@@ -376,11 +376,11 @@
   },
   "SOLUSDT_1h": {
    "predictions": {
-    "n": 135,
-    "direction_hit_rate": 37.3,
-    "base_rate_up_pct": 37.0,
-    "brier": 0.4558,
-    "brier_baseline": 0.2332,
+    "n": 136,
+    "direction_hit_rate": 37.8,
+    "base_rate_up_pct": 37.5,
+    "brier": 0.4526,
+    "brier_baseline": 0.2344,
     "calibration": [
      {
       "range": "50-60",
@@ -402,9 +402,9 @@
      },
      {
       "range": "80-90",
-      "n": 43,
+      "n": 44,
       "predicted_up_pct": 84.8,
-      "realized_up_pct": 30.2
+      "realized_up_pct": 31.8
      },
      {
       "range": "90-100",
@@ -415,11 +415,11 @@
     ]
    },
    "directional_signals": {
-    "n": 105,
-    "win_rate": 41.0,
-    "avg_net_pct": -0.421,
-    "total_net_pct": -44.15,
-    "total_after_tax_pct": -44.15,
+    "n": 106,
+    "win_rate": 41.5,
+    "avg_net_pct": -0.413,
+    "total_net_pct": -43.79,
+    "total_after_tax_pct": -43.79,
     "profit_factor": 0.54,
     "max_drawdown_pct": -78.19
    },
