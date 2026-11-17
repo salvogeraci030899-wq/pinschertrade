@@ -1,8 +1,15 @@
 {
- "checked_at": "2026-11-17T12:15:01+00:00",
- "titles": 22,
- "status": "normale",
+ "checked_at": "2026-11-17T13:18:03+00:00",
+ "titles": 27,
+ "status": "pausa",
  "history": [
+  {
+   "at": "2026-11-17T13:18:03+00:00",
+   "hours": 4,
+   "reason": "massivo attacco hacker, rischio furto fondi",
+   "headline": "Hackers plant crypto-stealing code on 178 major websites, including HSBC and Ledger",
+   "source": "CoinDesk"
+  },
   {
    "at": "2026-11-16T14:32:57+00:00",
    "hours": 4,
@@ -24,5 +31,9 @@
    "headline": "North Korea's Binance hack faces U.S. crackdown as DOJ targets $1.2 billion in stolen crypto",
    "source": "CoinDesk"
   }
- ]
+ ],
+ "pause_until": "2026-11-17T17:18:03+00:00",
+ "reason": "massivo attacco hacker, rischio furto fondi",
+ "headline": "Hackers plant crypto-stealing code on 178 major websites, including HSBC and Ledger",
+ "source": "CoinDesk"
 }
