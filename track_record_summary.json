@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-17T07:07:46+00:00",
+ "generated_at": "2026-11-17T08:13:27+00:00",
  "since": "2026-11-10T15:36:54+00:00",
  "counts": {
-  "total": 573,
+  "total": 579,
   "open": 63,
-  "resolved": 510,
+  "resolved": 516,
   "expired": 0
  },
  "costs": {
@@ -16,11 +16,11 @@
  "horizon_candles": 7,
  "overall": {
   "predictions": {
-   "n": 510,
-   "direction_hit_rate": 34.6,
-   "base_rate_up_pct": 33.5,
-   "brier": 0.4971,
-   "brier_baseline": 0.2229,
+   "n": 516,
+   "direction_hit_rate": 35.2,
+   "base_rate_up_pct": 34.1,
+   "brier": 0.4932,
+   "brier_baseline": 0.2247,
    "calibration": [
     {
      "range": "30-40",
@@ -54,24 +54,24 @@
     },
     {
      "range": "80-90",
-     "n": 117,
+     "n": 120,
      "predicted_up_pct": 84.6,
-     "realized_up_pct": 30.8
+     "realized_up_pct": 32.5
     },
     {
      "range": "90-100",
-     "n": 281,
+     "n": 284,
      "predicted_up_pct": 95.4,
-     "realized_up_pct": 40.6
+     "realized_up_pct": 40.8
     }
    ]
   },
   "directional_signals": {
-   "n": 398,
-   "win_rate": 36.9,
-   "avg_net_pct": -0.673,
-   "total_net_pct": -267.81,
-   "total_after_tax_pct": -267.81,
+   "n": 404,
+   "win_rate": 37.4,
+   "avg_net_pct": -0.657,
+   "total_net_pct": -265.5,
+   "total_after_tax_pct": -265.5,
    "profit_factor": 0.39,
    "max_drawdown_pct": -306.75
   },
@@ -100,11 +100,11 @@
   },
   "BTCUSDT_1h": {
    "predictions": {
-    "n": 138,
-    "direction_hit_rate": 31.4,
-    "base_rate_up_pct": 30.4,
-    "brier": 0.5412,
-    "brier_baseline": 0.2117,
+    "n": 139,
+    "direction_hit_rate": 31.9,
+    "base_rate_up_pct": 30.9,
+    "brier": 0.5375,
+    "brier_baseline": 0.2137,
     "calibration": [
      {
       "range": "30-40",
@@ -132,9 +132,9 @@
      },
      {
       "range": "80-90",
-      "n": 27,
+      "n": 28,
       "predicted_up_pct": 85.0,
-      "realized_up_pct": 22.2
+      "realized_up_pct": 25.0
      },
      {
       "range": "90-100",
@@ -145,11 +145,11 @@
     ]
    },
    "directional_signals": {
-    "n": 117,
-    "win_rate": 32.5,
-    "avg_net_pct": -0.551,
-    "total_net_pct": -64.48,
-    "total_after_tax_pct": -64.48,
+    "n": 118,
+    "win_rate": 32.2,
+    "avg_net_pct": -0.548,
+    "total_net_pct": -64.68,
+    "total_after_tax_pct": -64.68,
     "profit_factor": 0.34,
     "max_drawdown_pct": -75.7
    },
@@ -166,11 +166,11 @@
   },
   "BTCUSDT_4h": {
    "predictions": {
-    "n": 32,
-    "direction_hit_rate": 18.8,
-    "base_rate_up_pct": 18.8,
-    "brier": 0.6556,
-    "brier_baseline": 0.1523,
+    "n": 33,
+    "direction_hit_rate": 18.2,
+    "base_rate_up_pct": 18.2,
+    "brier": 0.6613,
+    "brier_baseline": 0.1488,
     "calibration": [
      {
       "range": "60-70",
@@ -192,20 +192,20 @@
      },
      {
       "range": "90-100",
-      "n": 22,
-      "predicted_up_pct": 96.1,
-      "realized_up_pct": 22.7
+      "n": 23,
+      "predicted_up_pct": 95.9,
+      "realized_up_pct": 21.7
      }
     ]
    },
    "directional_signals": {
-    "n": 27,
-    "win_rate": 25.9,
-    "avg_net_pct": -1.736,
-    "total_net_pct": -46.88,
-    "total_after_tax_pct": -46.88,
+    "n": 28,
+    "win_rate": 25.0,
+    "avg_net_pct": -1.699,
+    "total_net_pct": -47.56,
+    "total_after_tax_pct": -47.56,
     "profit_factor": 0.06,
-    "max_drawdown_pct": -47.69
+    "max_drawdown_pct": -48.38
    },
    "tradeable_signals": {
     "n": 3,
@@ -232,11 +232,11 @@
   },
   "ETHUSDT_1h": {
    "predictions": {
-    "n": 138,
-    "direction_hit_rate": 41.3,
-    "base_rate_up_pct": 39.1,
-    "brier": 0.4156,
-    "brier_baseline": 0.2382,
+    "n": 139,
+    "direction_hit_rate": 41.7,
+    "base_rate_up_pct": 39.6,
+    "brier": 0.4128,
+    "brier_baseline": 0.2391,
     "calibration": [
      {
       "range": "30-40",
@@ -270,9 +270,9 @@
      },
      {
       "range": "80-90",
-      "n": 30,
+      "n": 31,
       "predicted_up_pct": 84.1,
-      "realized_up_pct": 36.7
+      "realized_up_pct": 38.7
      },
      {
       "range": "90-100",
@@ -283,12 +283,12 @@
     ]
    },
    "directional_signals": {
-    "n": 89,
-    "win_rate": 42.7,
-    "avg_net_pct": -0.294,
-    "total_net_pct": -26.19,
-    "total_after_tax_pct": -26.19,
-    "profit_factor": 0.65,
+    "n": 90,
+    "win_rate": 43.3,
+    "avg_net_pct": -0.286,
+    "total_net_pct": -25.76,
+    "total_after_tax_pct": -25.76,
+    "profit_factor": 0.66,
     "max_drawdown_pct": -53.4
    },
    "tradeable_signals": {
@@ -304,11 +304,11 @@
   },
   "ETHUSDT_4h": {
    "predictions": {
-    "n": 32,
-    "direction_hit_rate": 25.0,
-    "base_rate_up_pct": 21.9,
-    "brier": 0.6129,
-    "brier_baseline": 0.1709,
+    "n": 33,
+    "direction_hit_rate": 27.3,
+    "base_rate_up_pct": 24.2,
+    "brier": 0.5951,
+    "brier_baseline": 0.1837,
     "calibration": [
      {
       "range": "40-50",
@@ -330,9 +330,9 @@
      },
      {
       "range": "80-90",
-      "n": 6,
-      "predicted_up_pct": 82.3,
-      "realized_up_pct": 33.3
+      "n": 7,
+      "predicted_up_pct": 82.6,
+      "realized_up_pct": 42.9
      },
      {
       "range": "90-100",
@@ -343,12 +343,12 @@
     ]
    },
    "directional_signals": {
-    "n": 27,
-    "win_rate": 33.3,
-    "avg_net_pct": -1.426,
-    "total_net_pct": -38.5,
-    "total_after_tax_pct": -38.5,
-    "profit_factor": 0.24,
+    "n": 28,
+    "win_rate": 35.7,
+    "avg_net_pct": -1.362,
+    "total_net_pct": -38.13,
+    "total_after_tax_pct": -38.13,
+    "profit_factor": 0.25,
     "max_drawdown_pct": -50.02
    },
    "tradeable_signals": {
@@ -376,11 +376,11 @@
   },
   "SOLUSDT_1h": {
    "predictions": {
-    "n": 138,
-    "direction_hit_rate": 38.7,
-    "base_rate_up_pct": 38.4,
-    "brier": 0.4463,
-    "brier_baseline": 0.2366,
+    "n": 139,
+    "direction_hit_rate": 39.1,
+    "base_rate_up_pct": 38.8,
+    "brier": 0.4431,
+    "brier_baseline": 0.2376,
     "calibration": [
      {
       "range": "50-60",
@@ -408,19 +408,19 @@
      },
      {
       "range": "90-100",
-      "n": 62,
-      "predicted_up_pct": 95.3,
-      "realized_up_pct": 53.2
+      "n": 63,
+      "predicted_up_pct": 95.2,
+      "realized_up_pct": 54.0
      }
     ]
    },
    "directional_signals": {
-    "n": 108,
-    "win_rate": 42.6,
-    "avg_net_pct": -0.391,
-    "total_net_pct": -42.18,
-    "total_after_tax_pct": -42.18,
-    "profit_factor": 0.56,
+    "n": 109,
+    "win_rate": 43.1,
+    "avg_net_pct": -0.378,
+    "total_net_pct": -41.19,
+    "total_after_tax_pct": -41.19,
+    "profit_factor": 0.57,
     "max_drawdown_pct": -78.19
    },
    "tradeable_signals": {
@@ -436,11 +436,11 @@
   },
   "SOLUSDT_4h": {
    "predictions": {
-    "n": 32,
-    "direction_hit_rate": 28.1,
-    "base_rate_up_pct": 28.1,
-    "brier": 0.6041,
-    "brier_baseline": 0.2021,
+    "n": 33,
+    "direction_hit_rate": 30.3,
+    "base_rate_up_pct": 30.3,
+    "brier": 0.5858,
+    "brier_baseline": 0.2112,
     "calibration": [
      {
       "range": "60-70",
@@ -462,19 +462,19 @@
      },
      {
       "range": "90-100",
-      "n": 27,
+      "n": 28,
       "predicted_up_pct": 95.9,
-      "realized_up_pct": 33.3
+      "realized_up_pct": 35.7
      }
     ]
    },
    "directional_signals": {
-    "n": 30,
-    "win_rate": 30.0,
-    "avg_net_pct": -1.653,
-    "total_net_pct": -49.58,
-    "total_after_tax_pct": -49.58,
-    "profit_factor": 0.26,
+    "n": 31,
+    "win_rate": 32.3,
+    "avg_net_pct": -1.554,
+    "total_net_pct": -48.18,
+    "total_after_tax_pct": -48.18,
+    "profit_factor": 0.28,
     "max_drawdown_pct": -57.64
    },
    "tradeable_signals": {
