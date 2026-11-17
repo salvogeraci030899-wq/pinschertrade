@@ -1,6 +1,6 @@
 {
- "checked_at": "2026-11-17T14:18:06+00:00",
- "titles": 27,
+ "checked_at": "2026-11-17T15:18:07+00:00",
+ "titles": 28,
  "status": "pausa",
  "history": [
   {
@@ -32,8 +32,8 @@
    "source": "CoinDesk"
   }
  ],
- "pause_until": "2026-11-17T17:18:03+00:00",
- "reason": "massivo attacco hacker, rischio furto fondi",
- "headline": "Hackers plant crypto-stealing code on 178 major websites, including HSBC and Ledger",
- "source": "CoinDesk"
+ "pause_until": "2026-11-17T21:18:07+00:00",
+ "reason": "Hack in corso, rischio furto fondi su exchange e wallet",
+ "headline": "Optimizely Hack Hijacked Ledger, BBC and 176 Other Sites to Swap Crypto Wallet Addresses",
+ "source": "Decrypt"
 }
