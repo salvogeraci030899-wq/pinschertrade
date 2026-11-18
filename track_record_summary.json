@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-18T13:09:31+00:00",
+ "generated_at": "2026-11-18T14:07:52+00:00",
  "since": "2026-11-10T15:36:54+00:00",
  "counts": {
-  "total": 690,
+  "total": 693,
   "open": 63,
-  "resolved": 627,
+  "resolved": 630,
   "expired": 0
  },
  "costs": {
@@ -16,11 +16,11 @@
  "horizon_candles": 7,
  "overall": {
   "predictions": {
-   "n": 627,
+   "n": 630,
    "direction_hit_rate": 37.7,
-   "base_rate_up_pct": 36.4,
-   "brier": 0.467,
-   "brier_baseline": 0.2314,
+   "base_rate_up_pct": 36.2,
+   "brier": 0.4663,
+   "brier_baseline": 0.2309,
    "calibration": [
     {
      "range": "0-10",
@@ -36,9 +36,9 @@
     },
     {
      "range": "20-30",
-     "n": 7,
-     "predicted_up_pct": 24.9,
-     "realized_up_pct": 57.1
+     "n": 8,
+     "predicted_up_pct": 25.2,
+     "realized_up_pct": 50.0
     },
     {
      "range": "30-40",
@@ -54,9 +54,9 @@
     },
     {
      "range": "50-60",
-     "n": 25,
+     "n": 26,
      "predicted_up_pct": 54.6,
-     "realized_up_pct": 28.0
+     "realized_up_pct": 26.9
     },
     {
      "range": "60-70",
@@ -66,9 +66,9 @@
     },
     {
      "range": "70-80",
-     "n": 70,
-     "predicted_up_pct": 74.3,
-     "realized_up_pct": 24.3
+     "n": 71,
+     "predicted_up_pct": 74.4,
+     "realized_up_pct": 23.9
     },
     {
      "range": "80-90",
@@ -130,11 +130,11 @@
   },
   "BTCUSDT_1h": {
    "predictions": {
-    "n": 168,
-    "direction_hit_rate": 34.7,
-    "base_rate_up_pct": 33.3,
-    "brier": 0.5054,
-    "brier_baseline": 0.2222,
+    "n": 169,
+    "direction_hit_rate": 34.5,
+    "base_rate_up_pct": 33.1,
+    "brier": 0.5043,
+    "brier_baseline": 0.2216,
     "calibration": [
      {
       "range": "30-40",
@@ -150,9 +150,9 @@
      },
      {
       "range": "50-60",
-      "n": 4,
-      "predicted_up_pct": 53.5,
-      "realized_up_pct": 50.0
+      "n": 5,
+      "predicted_up_pct": 54.0,
+      "realized_up_pct": 40.0
      },
      {
       "range": "60-70",
@@ -280,11 +280,11 @@
   },
   "ETHUSDT_1h": {
    "predictions": {
-    "n": 168,
-    "direction_hit_rate": 41.6,
-    "base_rate_up_pct": 38.7,
-    "brier": 0.4051,
-    "brier_baseline": 0.2372,
+    "n": 169,
+    "direction_hit_rate": 41.3,
+    "base_rate_up_pct": 38.5,
+    "brier": 0.4063,
+    "brier_baseline": 0.2367,
     "calibration": [
      {
       "range": "30-40",
@@ -312,9 +312,9 @@
      },
      {
       "range": "70-80",
-      "n": 23,
-      "predicted_up_pct": 74.7,
-      "realized_up_pct": 34.8
+      "n": 24,
+      "predicted_up_pct": 74.8,
+      "realized_up_pct": 33.3
      },
      {
       "range": "80-90",
@@ -436,11 +436,11 @@
   },
   "SOLUSDT_1h": {
    "predictions": {
-    "n": 168,
-    "direction_hit_rate": 43.1,
-    "base_rate_up_pct": 43.5,
-    "brier": 0.4073,
-    "brier_baseline": 0.2457,
+    "n": 169,
+    "direction_hit_rate": 43.5,
+    "base_rate_up_pct": 43.2,
+    "brier": 0.4054,
+    "brier_baseline": 0.2454,
     "calibration": [
      {
       "range": "0-10",
@@ -456,9 +456,9 @@
      },
      {
       "range": "20-30",
-      "n": 6,
-      "predicted_up_pct": 24.3,
-      "realized_up_pct": 66.7
+      "n": 7,
+      "predicted_up_pct": 24.9,
+      "realized_up_pct": 57.1
      },
      {
       "range": "30-40",
