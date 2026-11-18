@@ -1,8 +1,15 @@
 {
- "checked_at": "2026-11-18T21:33:08+00:00",
- "titles": 18,
- "status": "normale",
+ "checked_at": "2026-11-18T22:33:02+00:00",
+ "titles": 21,
+ "status": "pausa",
  "history": [
+  {
+   "at": "2026-11-18T22:33:02+00:00",
+   "hours": 6,
+   "reason": "hack e ordine di congelamento, rischio di ulteriori attacchi",
+   "headline": "Binance says it obtained $6.5B worldwide freezing order after hack",
+   "source": "Cointelegraph"
+  },
   {
    "at": "2026-11-17T23:33:07+00:00",
    "hours": 6,
@@ -38,5 +45,9 @@
    "headline": "North Korea's Binance hack faces U.S. crackdown as DOJ targets $1.2 billion in stolen crypto",
    "source": "CoinDesk"
   }
- ]
+ ],
+ "pause_until": "2026-11-19T04:33:02+00:00",
+ "reason": "hack e ordine di congelamento, rischio di ulteriori attacchi",
+ "headline": "Binance says it obtained $6.5B worldwide freezing order after hack",
+ "source": "Cointelegraph"
 }
