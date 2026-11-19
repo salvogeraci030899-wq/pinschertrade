@@ -46,6 +46,10 @@ PROMO_MIN_TRADES = 20          # trade chiusi su carta prima della prova finale 
 LOG_MAX = 60
 OBSERVE_UP_TO = 4              # strategie accese in tutto, oltre le quali non se ne aggiungono in osservazione
 OBSERVE_MIN_TRADES = 50        # storico minimo per l'osservazione
+# Strategie "gemelle": stesso segnale di ingresso con filtri o uscite diverse (big_candle_trail usa i segnali di
+# big_candle; le donchian20_* sono tutte la rottura delle 20 candele). Accese insieme sullo stesso timeframe aprono
+# gli stessi trade: su carta contano due volte la stessa idea. L'agente ne tiene una sola per gruppo.
+TWIN_PREFIXES = ("big_candle", "donchian20", "tsmom", "relstrength")
 
 
 def _load(path, default):
@@ -201,6 +205,11 @@ def capital_facts(cap):
     return [f"Capitale sufficiente per tutte le coin.{extra}"] if feas[1] and feas[0] < feas[1] else []
 
 
+def twin_group(key):
+    name, tf = key.split(":")
+    return next((f"{p}:{tf}" for p in TWIN_PREFIXES if name.startswith(p)), key)
+
+
 def observable(key, r, tfs):
     """In osservazione: non candidata ma promettente sullo storico (abbastanza trade, sopra il mercato, stabile
     nelle due metà del periodo). Solo carta, per raccogliere dati dal vivo: niente prova finale né reale."""
@@ -250,8 +259,23 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
         elif active[key] == "paper" and key in added and key not in candidates:
             out["off"].append((key, "non è più candidata (laboratorio aggiornato o stile cambiato)"))
 
+    # 1b) gemelle accese insieme: restano le tue, e tra le sue l'agente tiene la più forte sullo storico
+    leaving = {k for k, _ in out["off"]}
+    groups = {}
+    for key in sorted(k for k in active if k not in leaving):
+        groups.setdefault(twin_group(key), []).append(key)
+    for keys in groups.values():
+        mine = [k for k in keys if k in added and active[k] == "paper"]
+        if len(keys) < 2 or not mine:
+            continue
+        keep = set(keys) - set(mine) or {max(mine, key=lambda k: (results.get(k) or {}).get("excess_avg_pct") or 0)}
+        for key in mine:
+            if key not in keep:
+                out["off"].append((key, f"gemella di {_label(sorted(keep)[0])} (stesso segnale di ingresso): su carta conterebbe due volte la stessa idea"))
+
     # 2) nuove candidate su carta, nei limiti
     leaving = {k for k, _ in out["off"]}
+    taken = {twin_group(k) for k in active if k not in leaving}
     free = automation.MAX_ACTIVE - (len(active) - len(leaving))
     if cfg.get("emergency"):
         free = 0
@@ -264,6 +288,10 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
         if free <= 0:
             out["notes"].append(f"{_label(key)} è candidata, ma ci sono già {automation.MAX_ACTIVE} strategie accese.")
             continue
+        if twin_group(key) in taken:
+            out["notes"].append(f"{_label(key)} è candidata, ma una sua gemella (stesso segnale di ingresso) è già accesa.")
+            continue
+        taken.add(twin_group(key))
         r = results.get(key) or {}
         out["on"].append((key, f"candidata del laboratorio ({r.get('n')} trade, oltre il mercato {r.get('excess_avg_pct')}% a trade)"))
         free -= 1
@@ -274,6 +302,7 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
     room = min(free, OBSERVE_UP_TO - (len(active) - len(leaving) + len(out["on"])))
     pool = sorted(((k, r) for k, r in results.items() if k not in active and observable(k, r, tfs)),
                   key=lambda kv: (kv[1].get("excess_p") if kv[1].get("excess_p") is not None else 1, -(kv[1].get("excess_avg_pct") or 0)))
+    pool = [(k, r) for k, r in pool if twin_group(k) not in taken and not taken.add(twin_group(k))]
     for key, r in pool[:max(0, room)]:
         out["observe"].append((key, f"in osservazione: non candidata ma promettente sullo storico ({r.get('n')} trade, oltre il mercato {r.get('excess_avg_pct')}% a trade). Solo carta, non andrà al reale"))
 

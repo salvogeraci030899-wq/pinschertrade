@@ -10,6 +10,7 @@ import automation  # noqa: E402
 import lab_strategies  # noqa: E402
 
 PLAIN = [k for k, s in lab_strategies.STRATEGIES.items() if s.get("family") not in ("forza relativa", "funding") and (s.get("tfs") is None or "1d" in s["tfs"])]
+PLAIN = [k for i, k in enumerate(PLAIN) if agent.twin_group(k + ":1d") not in {agent.twin_group(x + ":1d") for x in PLAIN[:i]}]   # niente gemelle
 A, B, C = f"{PLAIN[0]}:1d", f"{PLAIN[1]}:1d", f"{PLAIN[2]}:1d"
 H4 = next(f"{k}:4h" for k, s in lab_strategies.STRATEGIES.items() if s.get("family") not in ("forza relativa", "funding") and (s.get("tfs") is None or "4h" in s["tfs"]))
 REL = next((f"{k}:1d" for k, s in lab_strategies.STRATEGIES.items() if s.get("family") == "forza relativa"), None)
@@ -289,6 +290,34 @@ def test_osservata_diventa_candidata():
     p = _obs_setup(strategies={B: "paper"}, candidates=[B], state={"added": [B], "observing": [B]})
     st, cfg, _ = _run(p)
     assert cfg["strategies"][B] == "paper" and B not in st["observing"]
+
+
+def test_gemelle_una_sola():
+    # big_candle e big_candle_trail usano lo stesso segnale: l'agente ne accende una sola
+    twin_a, twin_b = "big_candle:1d", "big_candle_trail:1d"
+    assert agent.twin_group(twin_a) == agent.twin_group(twin_b) != agent.twin_group("big_candle:4h")
+    assert agent.twin_group("donchian20_turtle:1d") == agent.twin_group("donchian20:1d") != agent.twin_group("donchian55:1d")
+    p = _obs_setup(strategies={A: "paper"}, candidates=[A])
+    sm = json.load(open(p("lab_summary.json")))
+    sm["results"][B] = {"n": 120, "excess_avg_pct": 1.5, "excess_p": 0.05, "stable": True}
+    sm["results"][twin_a] = {"n": 120, "excess_avg_pct": 1.4, "excess_p": 0.06, "stable": True}
+    sm["results"][twin_b] = {"n": 120, "excess_avg_pct": 1.3, "excess_p": 0.07, "stable": True}
+    sm["results"].pop(C, None)
+    json.dump(sm, open(p("lab_summary.json"), "w"))
+    _, cfg, _ = _run(p)
+    assert (twin_a in cfg["strategies"]) != (twin_b in cfg["strategies"])
+
+
+def test_gemelle_gia_accese_resta_la_piu_forte():
+    twin_a, twin_b = "big_candle:1d", "big_candle_trail:1d"
+    p = _setup(strategies={twin_a: "paper", twin_b: "paper"}, candidates=[twin_a, twin_b], state={"added": [twin_a, twin_b]})
+    sm = json.load(open(p("lab_summary.json"))); sm["results"][twin_a]["excess_avg_pct"] = 0.5; json.dump(sm, open(p("lab_summary.json"), "w"))
+    _, cfg, sent = _run(p)
+    assert twin_b in cfg["strategies"] and twin_a not in cfg["strategies"] and "gemella" in sent[0]
+    # se una delle due l'hai accesa tu, resta la tua
+    p = _setup(strategies={twin_a: "paper", twin_b: "paper"}, candidates=[twin_a, twin_b], state={"added": [twin_b]})
+    _, cfg, _ = _run(p)
+    assert twin_a in cfg["strategies"] and twin_b not in cfg["strategies"]
 
 
 if __name__ == "__main__":
