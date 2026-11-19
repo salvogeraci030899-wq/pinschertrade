@@ -1,7 +1,7 @@
 {
- "checked_at": "2026-11-19T14:33:07+00:00",
+ "checked_at": "2026-11-19T15:33:08+00:00",
  "titles": 23,
- "status": "pausa",
+ "status": "normale",
  "history": [
   {
    "at": "2026-11-18T22:33:02+00:00",
@@ -45,9 +45,5 @@
    "headline": "North Korea's Binance hack faces U.S. crackdown as DOJ targets $1.2 billion in stolen crypto",
    "source": "CoinDesk"
   }
- ],
- "pause_until": "2026-11-19T15:32:54+00:00",
- "reason": "possibile compromissione wallet Bitcoin, rischio hacking",
- "headline": "Ledger Confirms Tampered Bitcoin Wallets in Berlin as Spy Implant Probe Spreads Beyond Asia",
- "source": "Decrypt"
+ ]
 }
