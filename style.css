@@ -1318,4 +1318,10 @@ html.glass .page { animation-name: pt-page-in; }
 /* Posizioni → Bot su carta: righe impilate in pagine larghe quanto lo schermo, da scorrere di lato */
 .ord-list .ord-page { flex: 0 0 100%; display: flex; flex-direction: column; gap: 8px; scroll-snap-align: start; min-width: 0; }
 .ord-list .ord-page .ord-row { flex: none; }
+/* Posizioni → Bot su carta: conto su carta in cima */
+.bot-acc { flex-shrink: 0; gap: 2px; }
+.bot-acc-main { display: flex; align-items: baseline; gap: 10px; }
+.bot-acc-main b { font: 800 22px var(--mono); color: var(--text); }
+.bot-acc-main span { font: 700 14px var(--mono); }
+.bot-acc small { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
 
