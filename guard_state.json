@@ -1,5 +1,5 @@
 {
- "checked_at": "2026-11-19T00:33:12+00:00",
+ "checked_at": "2026-11-19T01:33:14+00:00",
  "titles": 13,
  "status": "pausa",
  "history": [
@@ -46,8 +46,8 @@
    "source": "CoinDesk"
   }
  ],
- "pause_until": "2026-11-19T04:33:02+00:00",
- "reason": "hack e ordine di congelamento, rischio di ulteriori attacchi",
+ "pause_until": "2026-11-19T05:33:14+00:00",
+ "reason": "Hack in corso, rischio di ulteriori perdite",
  "headline": "Binance says it obtained $6.5B worldwide freezing order after hack",
  "source": "Cointelegraph"
 }
