@@ -1,10 +1,10 @@
 {
- "generated_at": "2026-11-19T01:07:39+00:00",
+ "generated_at": "2026-11-19T02:06:54+00:00",
  "since": "2026-11-10T15:36:54+00:00",
  "counts": {
-  "total": 738,
+  "total": 741,
   "open": 63,
-  "resolved": 675,
+  "resolved": 678,
   "expired": 0
  },
  "costs": {
@@ -16,10 +16,10 @@
  "horizon_candles": 7,
  "overall": {
   "predictions": {
-   "n": 675,
-   "direction_hit_rate": 37.3,
+   "n": 678,
+   "direction_hit_rate": 37.4,
    "base_rate_up_pct": 35.0,
-   "brier": 0.4668,
+   "brier": 0.4663,
    "brier_baseline": 0.2274,
    "calibration": [
     {
@@ -42,9 +42,9 @@
     },
     {
      "range": "30-40",
-     "n": 11,
-     "predicted_up_pct": 34.4,
-     "realized_up_pct": 36.4
+     "n": 12,
+     "predicted_up_pct": 34.7,
+     "realized_up_pct": 33.3
     },
     {
      "range": "40-50",
@@ -66,15 +66,15 @@
     },
     {
      "range": "70-80",
-     "n": 74,
+     "n": 75,
      "predicted_up_pct": 74.4,
-     "realized_up_pct": 24.3
+     "realized_up_pct": 25.3
     },
     {
      "range": "80-90",
-     "n": 147,
+     "n": 148,
      "predicted_up_pct": 84.6,
-     "realized_up_pct": 32.7
+     "realized_up_pct": 32.4
     },
     {
      "range": "90-100",
@@ -85,13 +85,13 @@
    ]
   },
   "directional_signals": {
-   "n": 479,
-   "win_rate": 37.8,
-   "avg_net_pct": -0.61,
-   "total_net_pct": -292.23,
-   "total_after_tax_pct": -292.23,
-   "profit_factor": 0.43,
-   "max_drawdown_pct": -306.75
+   "n": 480,
+   "win_rate": 37.7,
+   "avg_net_pct": -0.612,
+   "total_net_pct": -293.74,
+   "total_after_tax_pct": -293.74,
+   "profit_factor": 0.42,
+   "max_drawdown_pct": -308.23
   },
   "tradeable_signals": {
    "n": 56,
@@ -142,11 +142,11 @@
   },
   "BTCUSDT_1h": {
    "predictions": {
-    "n": 180,
-    "direction_hit_rate": 33.5,
-    "base_rate_up_pct": 32.2,
-    "brier": 0.5043,
-    "brier_baseline": 0.2184,
+    "n": 181,
+    "direction_hit_rate": 33.3,
+    "base_rate_up_pct": 32.0,
+    "brier": 0.5058,
+    "brier_baseline": 0.2178,
     "calibration": [
      {
       "range": "30-40",
@@ -180,9 +180,9 @@
      },
      {
       "range": "80-90",
-      "n": 39,
-      "predicted_up_pct": 84.7,
-      "realized_up_pct": 28.2
+      "n": 40,
+      "predicted_up_pct": 84.8,
+      "realized_up_pct": 27.5
      },
      {
       "range": "90-100",
@@ -193,13 +193,13 @@
     ]
    },
    "directional_signals": {
-    "n": 140,
-    "win_rate": 34.3,
-    "avg_net_pct": -0.52,
-    "total_net_pct": -72.75,
-    "total_after_tax_pct": -72.75,
+    "n": 141,
+    "win_rate": 34.0,
+    "avg_net_pct": -0.527,
+    "total_net_pct": -74.26,
+    "total_after_tax_pct": -74.26,
     "profit_factor": 0.36,
-    "max_drawdown_pct": -75.7
+    "max_drawdown_pct": -75.79
    },
    "tradeable_signals": {
     "n": 19,
@@ -298,11 +298,11 @@
   },
   "ETHUSDT_1h": {
    "predictions": {
-    "n": 180,
-    "direction_hit_rate": 39.9,
-    "base_rate_up_pct": 37.2,
-    "brier": 0.4188,
-    "brier_baseline": 0.2337,
+    "n": 181,
+    "direction_hit_rate": 40.2,
+    "base_rate_up_pct": 37.6,
+    "brier": 0.417,
+    "brier_baseline": 0.2345,
     "calibration": [
      {
       "range": "30-40",
@@ -330,9 +330,9 @@
      },
      {
       "range": "70-80",
-      "n": 26,
-      "predicted_up_pct": 74.8,
-      "realized_up_pct": 34.6
+      "n": 27,
+      "predicted_up_pct": 74.7,
+      "realized_up_pct": 37.0
      },
      {
       "range": "80-90",
@@ -460,11 +460,11 @@
   },
   "SOLUSDT_1h": {
    "predictions": {
-    "n": 180,
-    "direction_hit_rate": 43.8,
-    "base_rate_up_pct": 41.7,
-    "brier": 0.3967,
-    "brier_baseline": 0.2431,
+    "n": 181,
+    "direction_hit_rate": 44.1,
+    "base_rate_up_pct": 41.4,
+    "brier": 0.3953,
+    "brier_baseline": 0.2427,
     "calibration": [
      {
       "range": "0-10",
@@ -486,9 +486,9 @@
      },
      {
       "range": "30-40",
-      "n": 7,
-      "predicted_up_pct": 34.6,
-      "realized_up_pct": 28.6
+      "n": 8,
+      "predicted_up_pct": 35.0,
+      "realized_up_pct": 25.0
      },
      {
       "range": "40-50",
