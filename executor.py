@@ -39,6 +39,7 @@ from datetime import datetime, timezone
 
 import requests
 
+import epoch
 from bitget_client import BitgetClient, DryRunClient, round_down
 from kronos_core import TF_DELTA, TRADE_ASSETS
 
@@ -55,6 +56,7 @@ DEFAULT_RISK = {
     "daily_target_pct": 0.0,        # obiettivo del giorno: raggiunto, niente nuovi ingressi fino a domani (0 = nessuno)
     "max_strategy_dd_pct": 5.0,     # perdita massima di una strategia reale dal suo massimo: oltre, l'agente la riporta su carta
     "dry_run_equity": 1000.0,
+    "shadow_paper": True,           # con gli ordini simulati l'esecutore segue anche le strategie su carta, con gli STESSI limiti del reale
 }
 # Valori ammessi per ogni limite (anche dall'app): fuori da qui il comando viene rifiutato
 RISK_BOUNDS = {
@@ -84,6 +86,18 @@ def contract_specs(symbol):
         return {"volume_place": int(c["volumePlace"]), "price_place": int(c["pricePlace"]), "min_size": float(c["minTradeNum"])}
     except Exception:
         return None
+
+
+def public_prices(symbols):
+    """Ultimi prezzi (API pubblica Bitget) per segnare il conto simulato. Errore: {} (il guadagno non realizzato resta a zero)."""
+    out = {}
+    for s in sorted(set(symbols)):
+        try:
+            r = requests.get("https://api.bitget.com/api/v2/mix/market/ticker", params={"symbol": s, "productType": "USDT-FUTURES"}, timeout=10)
+            out[s] = float(r.json()["data"][0]["lastPr"])
+        except Exception:
+            continue
+    return out
 
 
 def size_position(equity, entry, stop, risk, open_notional, specs):
@@ -136,18 +150,24 @@ def make_client(cfg):
 
 
 def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=None, notify=None, specs_fn=contract_specs,
-        guard_path=None):
+        guard_path=None, prices_fn=public_prices, epoch_path=None):
     """Un giro dell'esecutore. Ritorna True se lo stato è cambiato."""
     now = now or datetime.now(timezone.utc)
     now_ts, today = int(now.timestamp()), now.strftime("%Y-%m-%d")
     risk = risk_config(cfg)
     state = _load(state_path)
     before = json.dumps(state, sort_keys=True)
+    # Ripartenza da zero (reset_epoch.json): solo il conto SIMULATO ricomincia. Con un client vero le posizioni non si toccano mai.
+    ep = epoch.current(epoch_path)
+    if state.get("epoch", "") != ep:
+        if client is None and mode == "simulata":
+            state = {"positions": {}, "day": {}, "halted": False, "events": [], "epoch": ep}
+        state["epoch"] = ep
     state["mode"] = mode
     if client is None:
-        sim = state.setdefault("simulated", {"equity": risk["dry_run_equity"], "positions": {}})
-        client = DryRunClient(sim["equity"])
-        client._positions = {s: dict(p) for s, p in sim["positions"].items()}
+        sim = state.setdefault("simulated", {"cash": risk["dry_run_equity"], "equity": risk["dry_run_equity"], "positions": {}})
+        client = DryRunClient(sim.get("cash", sim.get("equity", risk["dry_run_equity"])), sim.get("positions"))
+        sim.setdefault("start", risk["dry_run_equity"])
     import events
 
     def say(text):
@@ -184,6 +204,13 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
         if reason == "emergency":
             state["halted"], state["halt_reason"] = False, None
             log("unhalt", reason="emergenza tolta")
+
+    # --- il conto simulato si segna ai prezzi di adesso (il reale lo fa da solo) ---
+    if isinstance(client, DryRunClient) and client._positions:
+        try:
+            client.set_marks(prices_fn([s for s in client._positions]))
+        except Exception:       # noqa: BLE001 — senza prezzi il guadagno non realizzato resta a zero
+            pass
 
     # --- riconciliazione: Bitget deve avere esattamente le posizioni aperte dall'esecutore ---
     try:
@@ -245,23 +272,35 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
         log("daily_target", pnl_pct=round(day_pnl, 2))
 
     # --- trade che le strategie live vogliono aperti adesso ---
-    wanted = {}
+    # Con gli ordini veri (demo o reale) si seguono solo le strategie live. Con gli ordini simulati si seguono anche quelle su carta
+    # (shadow_paper): stessi limiti, stessa dimensione, stessa gestione del giorno: il passaggio al reale cambia solo il client.
+    follow = {"live"} | ({"paper"} if mode == "simulata" and risk.get("shadow_paper", True) else set())
+    wanted, exits = {}, {}
     for key, entry in (ledger.get("strategies") or {}).items():
-        if entry.get("mode") != "live" or (cfg.get("strategies") or {}).get(key) != "live":
+        if entry.get("mode") not in follow or (cfg.get("strategies") or {}).get(key) not in follow:
             continue
         for t in entry.get("trades", []):
             if t.get("open"):
                 wanted[t["id"]] = dict(t, key=key)
+            else:
+                exits[t["id"]] = t.get("exit")
 
     # uscite: il trade su carta si è chiuso (o la strategia non è più live)
     for tid, p in ours.items():
         if tid in wanted:
             continue
         try:
-            client.close_position(p["symbol"], p["side"])
+            exit_px = exits.get(tid)
+            if isinstance(client, DryRunClient):
+                before_cash = client._equity
+                client.close_position(p["symbol"], p["side"], price=exit_px)
+                p["net"] = round(client._equity - before_cash - (p.get("size") or 0) * (p.get("entry") or 0) * client.fee_pct / 100, 4)      # netto del trade intero: anche la commissione d'ingresso
+                p["exit"] = exit_px
+            else:
+                client.close_position(p["symbol"], p["side"])
             p.update(status="closed", closed_at=now.isoformat(timespec="seconds"), close_reason="SEGUE LA CARTA")
             log("close", id=tid, symbol=p["symbol"])
-            say(f"Chiusa {p['symbol']} {p['side'].upper()} ({p['key']}).")
+            say(f"Chiusa {p['symbol']} {p['side'].upper()} ({p['key']})" + (f": netto {p['net']:+.2f} USDT." if "net" in p else "."))
         except Exception as e:
             log("error", id=tid, error=str(e))
             say(f"Chiusura di {p['symbol']} FALLITA ({e}). Controlla su Bitget.")
@@ -309,7 +348,8 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
         stop = round(t["stop"], specs["price_place"])
         try:
             client.setup_symbol(t["symbol"], risk["max_leverage"])
-            client.open_position(t["symbol"], side, size, stop, client_oid="pt" + hashlib.sha1(tid.encode()).hexdigest()[:24])
+            extra = {"price": t["entry"]} if isinstance(client, DryRunClient) else {}
+            client.open_position(t["symbol"], side, size, stop, client_oid="pt" + hashlib.sha1(tid.encode()).hexdigest()[:24], **extra)
         except Exception as e:
             state["positions"][tid] = {"key": t["key"], "symbol": t["symbol"], "side": side, "status": "error", "reason": str(e)}
             log("error", id=tid, error=str(e))
@@ -329,8 +369,12 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
 
 def _finish(state, before, path, client, mode):
     if isinstance(client, DryRunClient):
-        state.setdefault("simulated", {})["positions"] = client.positions()
-        state["simulated"]["equity"] = client.equity()
+        sim = state.setdefault("simulated", {})
+        sim["positions"] = client.positions()
+        sim["cash"] = round(client._equity, 6)                      # cassa (senza il non realizzato): da qui riparte il giro dopo
+        sim["equity"] = round(client.equity(), 6)                   # patrimonio ai prezzi di adesso
+        sim["unrealized"] = round(client.unrealized(), 6)
+        sim["marks"] = {s: v for s, v in client._marks.items() if s in sim["positions"]}
     changed = json.dumps(state, sort_keys=True) != before
     if changed:
         _save(state, path)

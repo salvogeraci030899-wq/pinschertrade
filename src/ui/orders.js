@@ -30,9 +30,9 @@ export function setPosView(v, manual = true) {
 // altrimenti i trade del bot su carta se ce ne sono aperti.
 export async function autoPosView() {
     if (isRealMode() || State.simState.activeTrades.length) { setPosView('open', false); return; }
-    setPosView(paperOpen().length ? 'bot' : 'open', false);
+    setPosView(paperOpen().length || simOpen().length ? 'bot' : 'open', false);
     await loadPaper();
-    if (!isRealMode() && !State.simState.activeTrades.length && paperOpen().length && view === 'open') setPosView('bot', false);
+    if (!isRealMode() && !State.simState.activeTrades.length && (paperOpen().length || simOpen().length) && view === 'open') setPosView('bot', false);
 }
 
 function applyView() {
@@ -111,7 +111,7 @@ function simOrders() {
 // Importi in $: ogni trade dimensionato come farebbe l'esecutore con i soldi veri, cioè sul conto Bitget di oggi
 // (o sul capitale di prova se il conto non è collegato) con il rischio per trade attuale: se tocca lo stop iniziale
 // perde quella percentuale del conto. Su carta si prendono però tutti i segnali, senza i limiti di posizioni.
-let paper = null, paperAt = 0, pricesAt = 0, base = { capital: 1000, risk: 0.5, real: false };
+let paper = null, live = null, riskCfg = {}, paperAt = 0, pricesAt = 0, base = { capital: 1000, risk: 0.5, real: false };
 const prices = {};
 const paperAll = () => {
     const out = [];
@@ -120,6 +120,11 @@ const paperAll = () => {
     }
     return out;
 };
+// Con gli ordini simulati l'esecutore segue la carta con gli STESSI limiti del reale (posizioni massime, stesso verso, perdita del giorno,
+// dimensione, leva): quel conto è la "carta" che precede il reale. Le posizioni e il conto stanno in live_trades.json.
+export const simActive = () => !!(live && live.mode === 'simulata' && live.simulated && riskCfg.shadow_paper !== false);
+const simPositions = () => Object.entries((live && live.positions) || {}).map(([id, p]) => ({ id, ...p }));
+const simOpen = () => (simActive() ? simPositions().filter(p => p.status === 'open').sort((a, b) => String(b.opened_at).localeCompare(String(a.opened_at))) : []);
 const paperOpen = () => paperAll().filter(t => t.open).sort((a, b) => (b.t_entry || b.t || 0) - (a.t_entry || a.t || 0));
 // Un solo caricamento alla volta: chi arriva mentre è in corso aspetta lo stesso (e trova anche i prezzi)
 let inflight = null;
@@ -131,15 +136,17 @@ async function fetchPaper(force) {
     if (force || !paper || Date.now() - paperAt > 60000) {
         paperAt = Date.now();
         const get = async n => { try { const r = await fetchData(n); return r.ok ? await r.json() : null; } catch (e) { return null; } };
-        const [p, cfg, live] = await Promise.all([get('paper_trades.json'), get('automation.json'), get('live_trades.json')]);
+        const [p, cfg, lv] = await Promise.all([get('paper_trades.json'), get('automation.json'), get('live_trades.json')]);
         if (p) paper = p;
-        const eq = Number(live && live.account && live.account.connected && live.account.equity);
+        if (lv) live = lv;
+        riskCfg = (cfg && cfg.risk) || riskCfg;
+        const eq = Number(lv && lv.account && lv.account.connected && lv.account.equity);
         const risk = Number(cfg && cfg.risk && cfg.risk.risk_per_trade_pct);
         base = { capital: eq > 0 ? eq : Number(cfg && cfg.risk && cfg.risk.dry_run_equity) || 1000, risk: risk > 0 ? risk : 0.5, real: eq > 0 };
     }
     if (Date.now() - pricesAt < 8000) return;
     pricesAt = Date.now();
-    const syms = [...new Set(paperOpen().map(t => t.symbol))];
+    const syms = [...new Set([...paperOpen().map(t => t.symbol), ...simOpen().map(p => p.symbol)])];
     await Promise.all(syms.map(async s => {
         try {
             const r = await fetchT(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${s}`);
@@ -175,7 +182,41 @@ const notional = t => {
 };
 const usdOf = (size, pct) => (size == null ? '' : ` · ${usd(size * pct / 100)}`);
 const livePct = t => { const now = prices[t.symbol]; return now && t.entry ? (t.dir > 0 ? 1 : -1) * (now - t.entry) / t.entry * 100 : null; };
+const simPct = p => { const now = prices[p.symbol]; return now && p.entry ? (p.side === 'long' ? 1 : -1) * (now - p.entry) / p.entry * 100 : null; };
+const simUsd = (p, pct) => (p.size && p.entry && pct != null ? p.size * p.entry * pct / 100 : null);
+function simRows() {
+    return simOpen().map(p => {
+        const pct = simPct(p), usdv = simUsd(p, pct), side = String(p.side).toUpperCase();
+        const res = pct == null ? '' : ` · <span class="${tone(pct)}">${pctTxt(pct)}${usdv == null ? '' : ` · ${usd(usdv)}`}</span>`;
+        const risk = p.size && p.entry && p.stop ? p.size * Math.abs(p.entry - p.stop) : null;
+        const lock = p.entry && p.stop ? (p.side === 'long' ? 1 : -1) * (p.stop - p.entry) / p.entry * 100 : null;
+        const lockTxt = lock == null ? `stop ${fmtPrice(p.stop)}`
+            : `stop ${fmtPrice(p.stop)} <span class="${tone(lock)}">${lock >= 0 ? 'al sicuro' : 'rischio'} ${pctTxt(lock)}${risk != null && lock < 0 ? ` · ${usd(-risk)}` : ''}</span>`;
+        return row(`${escapeHtml(SYM(p.symbol))} ${side}${res}`,
+            `${escapeHtml(stratName(p.key))} · dal ${p.opened_at ? new Date(p.opened_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }) : '—'} · ingresso ${fmtPrice(p.entry)} · ${fmtIt(p.size, 4)} coin<br>${lockTxt}`);
+    });
+}
+// Conto della carta con i limiti del reale: cassa + guadagno non realizzato ai prezzi di adesso
+function simAccount() {
+    const sim = live.simulated, pos = simPositions(), start = Number(sim.start) || Number(riskCfg.dry_run_equity) || 1000;
+    let unreal = 0, nOpen = 0;
+    for (const p of pos.filter(x => x.status === 'open')) { const pct = simPct(p), u = simUsd(p, pct); if (u != null) { unreal += u; nOpen++; } else nOpen++; }
+    if (!nOpen) unreal = 0; else if (!Object.keys(prices).length) unreal = Number(sim.unrealized) || 0;
+    const cash = Number(sim.cash ?? sim.equity) || start, total = cash + unreal;
+    const closed = pos.filter(p => p.status === 'closed' && p.net != null), netClosed = closed.reduce((a, p) => a + Number(p.net), 0);
+    const skipped = pos.filter(p => p.status === 'skipped'), reasons = {};
+    for (const p of skipped) { const k = String(p.reason || 'altro').replace(/^già \d+ posizioni (long|short) aperte.*/, 'già troppe posizioni nello stesso verso'); reasons[k] = (reasons[k] || 0) + 1; }
+    const why = Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${escapeHtml(k)} (${n})`).join(' · ');
+    const r = riskCfg, lim = [`rischio ${fmtIt(r.risk_per_trade_pct ?? 0.5, 2)}% a trade`, `leva ${r.max_leverage ?? 3}x`, `max ${r.max_open_positions ?? 3} posizioni`, `${r.max_same_direction ?? 2} nello stesso verso`, `stop del giorno −${fmtIt(r.max_daily_loss_pct ?? 3, 1)}%`].join(' · ');
+    const day = live.day || {}, dayTxt = day.blocked ? '<br><span class="text-danger">limite di perdita del giorno raggiunto: nessun nuovo ingresso fino a domani</span>' : day.target_hit ? '<br><span class="text-accent">obiettivo del giorno raggiunto: nessun nuovo ingresso fino a domani</span>' : '';
+    return `<div class="ord-sec bot-acc"><div class="ord-title">Conto su carta del bot</div>`
+        + `<div class="bot-acc-main"><b>${fmtIt(total, 2)} $</b><span class="${tone(total - start)}">${usd(total - start)}</span></div>`
+        + `<small>chiusi ${closed.length}: <span class="${tone(netClosed)}">${usd(netClosed)}</span> · aperti ${nOpen}: <span class="${tone(unreal)}">${usd(unreal)}</span>`
+        + `<br>base ${fmtIt(start, 2)} $ (capitale di prova) · commissioni comprese · stesse regole del reale: ${lim}`
+        + (skipped.length ? `<br>${skipped.length} segnali non aperti per i limiti: ${why}` : '') + dayTxt + '</small></div>';
+}
 function botRows() {
+    if (simActive()) return simRows();
     return paperOpen().map(t => {
         const side = t.dir > 0 ? 'LONG' : 'SHORT', pnl = livePct(t), size = notional(t);
         const res = pnl == null ? '' : ` · <span class="${tone(pnl)}">${pctTxt(pnl)}${usdOf(size, pnl)}</span>`;
@@ -189,6 +230,7 @@ function botRows() {
 }
 // Conto su carta: base + trade chiusi (netti di costi) + aperti ai prezzi di adesso
 function botAccount() {
+    if (simActive()) return simAccount();
     if (!paper) return '';
     let closed = 0, nClosed = 0, open = 0, nOpen = 0, noSize = 0;
     for (const t of paperAll()) {
@@ -211,7 +253,7 @@ let perPage = 5;
 const botHtml = () => {
     const rows = botRows(), pages = [];
     for (let i = 0; i < rows.length; i += perPage) pages.push(`<div class="ord-page">${rows.slice(i, i + perPage).join('')}</div>`);
-    return botAccount() + section('Bot su carta · nessun ordine reale', pages, paper ? 'Nessun trade su carta aperto: le strategie aprono solo quando arriva un segnale.' : 'Caricamento…', rows.length);
+    return botAccount() + section('Bot su carta · nessun ordine reale', pages, paper || simActive() ? 'Nessun trade su carta aperto: le strategie aprono solo quando arriva un segnale e i limiti lo permettono.' : 'Caricamento…', rows.length);
 };
 // righe che stanno in una pagina, misurate sullo schermo (una volta disegnata la prima)
 function fitPerPage(box) {

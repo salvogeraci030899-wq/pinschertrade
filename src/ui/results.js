@@ -12,7 +12,7 @@ import { $, SYM, escapeHtml, fmtIt, fetchData, markChosen, chosenRecently } from
 import { isRealMode, realHistory, realAccount } from './history.js';
 import { getAutoState, loadAutomation } from './automation.js';
 
-const SRC = { real: 'Bitget · reale', sim: 'Trade simulati dell\'app', paper: 'Strategie su carta' };
+const SRC = { real: 'Bitget · reale', sim: 'Trade simulati dell\'app', paper: 'Strategie su carta (stesse regole del reale)' };
 const PERIODS = { day: 'Oggi', week: 'Settimana', month: 'Mese', year: 'Anno', all: 'Tutto' };
 const WHO = { all: 'Tutti', manual: 'A mano', agent: 'Agente' };
 let src = null, period = 'month', who = 'all', equity = null, equityAt = 0;
@@ -52,9 +52,19 @@ function trades(source) {
     if (source === 'real') return realHistory().map(h => { const k = agentKey(h); return { t: h.closedAt, symbol: h.symbol, side: h.type, pnl: h.pnl, fees: h.fees || 0, entry: h.entry, exit: h.exit, market: h.market, by: k ? 'agent' : 'manual', key: k || undefined }; })
         .filter(x => who === 'all' || x.by === who);
     if (source === 'sim') return (State.simState.history || []).map(h => ({ t: h.closedAt || h.exitTime, symbol: h.symbol, side: h.type, pnl: Number(h.pnl) || 0, fees: (h.fees || 0) + (h.tax || 0), entry: h.entryPrice || h.entry, exit: h.exitPrice || h.exit, market: h.market, reason: h.reason }));
-    const { ledger, cfg } = getAutoState();
+    const { ledger, cfg, live } = getAutoState();
     const risk = Number(cfg && cfg.risk && cfg.risk.risk_per_trade_pct) || 0.5;
     const out = [];
+    // Con gli ordini simulati la Carta è l'esecutore simulato: gli stessi limiti del reale (posizioni massime, stesso verso, perdita del giorno),
+    // la stessa dimensione e le commissioni. Ogni trade in % del patrimonio al momento dell'apertura.
+    if (live && live.mode === 'simulata' && live.simulated && !(cfg && cfg.risk && cfg.risk.shadow_paper === false)) {
+        const start = Number(live.simulated.start) || Number(cfg && cfg.risk && cfg.risk.dry_run_equity) || 1000;
+        for (const p of Object.values(live.positions || {})) {
+            if (!p || p.status !== 'closed' || p.net == null) continue;
+            out.push({ t: Date.parse(p.closed_at) || 0, symbol: p.symbol, side: String(p.side).toUpperCase(), pnl: Number(p.net) / (Number(p.equity_at_open) || start) * 100, fees: 0, entry: p.entry, exit: p.exit, key: p.key });
+        }
+        return out;
+    }
     for (const [key, e] of Object.entries((ledger && ledger.strategies) || {})) {
         for (const t of e.trades || []) {
             if (t.open || t.net == null || !t.entry || !t.stop) continue;

@@ -151,3 +151,29 @@ if __name__ == "__main__":
         t()
         print("ok", t.__name__)
     print(f"{len(tests)} test superati")
+
+
+def test_ripartenza_da_zero_con_l_epoca():
+    import epoch
+    with tempfile.TemporaryDirectory() as d:
+        cfg, led = setup(d)
+        ep = os.path.join(d, "reset_epoch.json")
+        old_path = epoch.PATH
+        epoch.PATH = ep
+        try:
+            json.dump({"epoch": "uno"}, open(ep, "w"))
+            calls, notes = [], []
+            assert run(cfg, led, 3, calls, notes) is True
+            ledger = json.load(open(led))
+            assert ledger["epoch"] == "uno" and len(ledger["strategies"][KEY]["trades"]) == 1
+            # stessa epoca: il registro resta
+            run(cfg, led, 3, calls, notes)
+            assert len(json.load(open(led))["strategies"][KEY]["trades"]) == 1
+            # nuova epoca: registro azzerato, la strategia riparte dall'ultima candela chiusa (nessun trade del passato)
+            json.dump({"epoch": "due"}, open(ep, "w"))
+            run(cfg, led, 3, calls, notes)
+            fresh = json.load(open(led))
+            assert fresh["epoch"] == "due" and fresh["strategies"][KEY]["trades"] == []
+            assert fresh["strategies"][KEY]["since"] >= T_START + 2 * D
+        finally:
+            epoch.PATH = old_path

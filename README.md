@@ -16,6 +16,18 @@ Moduli principali del bot: `run_bot.py` (giro completo), `quick.py` (controllo r
 `executor.py` (ordini reali e storico del conto), `agent.py` (agente giornaliero), `automation.py` / `position_cmd.py`
 (comandi dall'app), `strategy_lab.py` + `lab_strategies.py` (laboratorio), `events.py` (registro), `watchdog.py` (salute).
 
+## La carta si comporta come il reale
+
+Con gli ordini simulati (stato di partenza) l'esecutore segue **anche le strategie su carta** (`risk.shadow_paper`, acceso di
+default): applica gli stessi limiti del reale (rischio per trade, leva, esposizione totale, posizioni massime, massimo nello stesso verso,
+una posizione per coin, perdita e obiettivo del giorno, pausa dell'agente eventi), la stessa dimensione e le stesse commissioni
+(0,11% per lato). Il conto simulato è vero: cassa, commissioni, guadagno realizzato e non realizzato ai prezzi Bitget. «Bot su carta» in
+Posizioni e «Carta» in Risultati mostrano quel conto; i segnali che il reale non aprirebbe compaiono come «non aperti» con il motivo.
+Il passaggio al reale cambia solo il client (chiavi Bitget, interruttore acceso, strategia confermata): decisioni e dimensioni sono le stesse.
+
+**Ripartire da zero:** cambia il testo in `reset_epoch.json` (file in chiaro). Al giro successivo il registro della prova su carta e il conto
+simulato ricominciano da capo, senza toccare mai posizioni vere. I file cifrati non si riscrivono a mano.
+
 ## Dati cifrati
 
 Il repository è pubblico. I file personali (elencati in `.gitattributes`) sono cifrati con AES-256-GCM da un filtro git

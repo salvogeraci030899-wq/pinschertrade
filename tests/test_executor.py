@@ -61,7 +61,7 @@ def test_ciclo_apertura_e_chiusura_simulato():
         st = json.load(open(path))
         p = st["positions"][trade()["id"]]
         assert p["status"] == "open" and p["size"] == 0.025 and p["stop"] == 98_000.0 and p["side"] == "long" and st["mode"] == "simulata"
-        assert st["simulated"]["positions"] == {"BTCUSDT": {"side": "long", "size": 0.025}}
+        assert st["simulated"]["positions"] == {"BTCUSDT": {"side": "long", "size": 0.025, "entry": 100_000.0}}
         assert len(notes) == 1 and "SIMULATA" in notes[0] and "Aperta BTCUSDT LONG" in notes[0]
         # stesso giro: nessun doppione
         assert go(cfg, ledger, path, notes=notes) is False and len(notes) == 1
@@ -75,14 +75,110 @@ def test_ciclo_apertura_e_chiusura_simulato():
 def test_solo_strategie_live():
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "live.json")
+        # con un client vero (demo o reale) una strategia su carta non apre mai ordini
         cfg, ledger = setup([trade()], mode="paper")
-        go(cfg, ledger, path)
+        go(cfg, ledger, path, bg.DryRunClient(10_000))
         assert json.load(open(path))["positions"] == {}
+        # shadow spento: neanche il conto simulato segue la carta
+        cfg, ledger = setup([trade()], mode="paper", cfg_extra={"risk": {"shadow_paper": False}})
+        go(cfg, ledger, os.path.join(d, "b.json"))
+        assert json.load(open(os.path.join(d, "b.json")))["positions"] == {}
         # live nel registro ma non più live in automation.json: nessun ingresso
         cfg, ledger = setup([trade()])
         cfg["strategies"] = {}
         go(cfg, ledger, path)
         assert json.load(open(path))["positions"] == {}
+
+
+def test_la_carta_segue_il_reale_con_gli_stessi_limiti():
+    # con gli ordini simulati le strategie su carta sono seguite come se fossero live: stessi limiti, stessa dimensione
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "live.json")
+        shorts = [trade("BTCUSDT", -1, 100_000, 102_000), trade("ETHUSDT", -1, 3000, 3060), trade("SOLUSDT", -1, 150, 153), trade("XRPUSDT", -1, 1.0, 1.02)]
+        cfg, ledger = setup(shorts, mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "max_open_positions": 4, "risk_per_trade_pct": 1.0}})
+        go(cfg, ledger, path)
+        st = json.load(open(path))
+        opened = [p for p in st["positions"].values() if p["status"] == "open"]
+        assert len(opened) == 2 and all(p["side"] == "short" for p in opened)             # max_same_direction = 2, come nel reale
+        assert sum("stesso verso" in (p.get("reason") or "") for p in st["positions"].values()) == 2
+        btc = st["positions"][shorts[0]["id"]]
+        assert btc["size"] == 0.05 and btc["status"] == "open"                              # 1% di 10.000 = 100 USDT, stop al 2%: nominale 5.000
+        assert st["simulated"]["start"] == 10_000
+
+
+def test_conto_simulato_vero_cassa_commissioni_e_non_realizzato():
+    c = bg.DryRunClient(10_000)
+    c.set_marks({"BTCUSDT": 100_000})
+    c.open_position("BTCUSDT", "short", 0.1, 102_000, price=100_000)
+    assert round(c._equity, 2) == 10_000 - 0.1 * 100_000 * 0.0011                          # commissione d'ingresso (11 USDT)
+    c.set_marks({"BTCUSDT": 98_000})
+    assert round(c.equity(), 2) == round(10_000 - 11 + 200, 2)                              # short in guadagno di 200 (non realizzato)
+    c.close_position("BTCUSDT", "short", price=98_000)
+    assert c.positions() == {} and round(c._equity, 2) == round(10_000 - 11 + 200 - 0.1 * 98_000 * 0.0011, 2)
+    assert abs(c.realized - (c._equity - 10_000)) < 1e-9
+    # senza prezzo d'ingresso (stato vecchio) niente guadagno non realizzato e nessun errore
+    old = bg.DryRunClient(5_000, {"ETHUSDT": {"side": "long", "size": 1}})
+    assert old.equity() == 5_000 and old.close_position("ETHUSDT", "long") == {} and old._equity == 5_000
+
+
+def test_la_carta_chiude_al_prezzo_della_carta_e_conta_il_netto():
+    with tempfile.TemporaryDirectory() as d:
+        path, notes = os.path.join(d, "live.json"), []
+        t0 = trade("BTCUSDT", -1, 100_000.0, 102_000.0)
+        cfg, ledger = setup([t0], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0}})
+        go(cfg, ledger, path, notes=notes)
+        closed = dict(t0, open=False, exit=98_000.0)
+        cfg, ledger = setup([closed], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0}})
+        go(cfg, ledger, path, notes=notes)
+        st = json.load(open(path))
+        p = st["positions"][t0["id"]]
+        # nominale 5.000 (0,05 BTC): short da 100.000 a 98.000 = +100 USDT lordi, meno 2 x 0,11% di commissione
+        assert p["status"] == "closed" and p["exit"] == 98_000.0
+        assert abs(p["net"] - (100 - 0.05 * 100_000 * 0.0011 - 0.05 * 98_000 * 0.0011)) < 0.01
+        assert abs(st["simulated"]["cash"] - (10_000 + 100 - 5.5 - 5.39)) < 0.02 and st["simulated"]["positions"] == {}
+        assert "netto" in notes[-1]
+
+
+def test_perdita_del_giorno_con_il_non_realizzato_nel_conto_simulato():
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "live.json")
+        longs = [trade("BTCUSDT", 1, 100_000, 98_000)]
+        cfg, ledger = setup(longs, mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0, "max_daily_loss_pct": 3}})
+        go(cfg, ledger, path)                                                              # apre a 100.000
+        # il prezzo scende del 4% con 0,5 BTC a mercato... esposizione 5.000: -4% di 5.000 = -200 = -2% del conto
+        big = [trade("BTCUSDT", 1, 100_000, 98_000), trade("ETHUSDT", 1, 3000, 2940, t=T_SIGNAL + 1)]
+        cfg, ledger = setup(big, mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0, "max_daily_loss_pct": 1.5}})
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda syms: {"BTCUSDT": 96_000.0})
+        st = json.load(open(path))
+        assert st["day"]["blocked"] is True and st["positions"][big[1]["id"]]["reason"] == "limite di perdita giornaliera"
+        assert st["simulated"]["unrealized"] < 0
+
+
+def test_ripartenza_da_zero_solo_il_conto_simulato():
+    with tempfile.TemporaryDirectory() as d:
+        path, ep = os.path.join(d, "live.json"), os.path.join(d, "reset_epoch.json")
+        cfg, ledger = setup([trade()], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000}})
+        json.dump({"epoch": "A"}, open(ep, "w"))
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        st = json.load(open(path))
+        assert st["epoch"] == "A" and st["positions"][trade()["id"]]["status"] == "open"
+        # stessa epoca: non si azzera
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        assert json.load(open(path))["positions"][trade()["id"]]["status"] == "open"
+        # nuova epoca con ordini simulati: riparte da capo (qui l'ingresso e' nuovo e il conto torna al capitale)
+        json.dump({"epoch": "B"}, open(ep, "w"))
+        cfg2, ledger2 = setup([], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000}})
+        ex.run(cfg2, ledger2, None, "simulata", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        st = json.load(open(path))
+        assert st["epoch"] == "B" and st["positions"] == {} and st["simulated"]["cash"] == 10_000
+        # con un client vero l'epoca cambia ma le posizioni non si toccano
+        cfg3, ledger3 = setup([trade()], mode="live", cfg_extra={"risk": {"dry_run_equity": 10_000}})
+        client = bg.DryRunClient(10_000)
+        ex.run(cfg3, ledger3, client, "demo", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        json.dump({"epoch": "C"}, open(ep, "w"))
+        ex.run(cfg3, ledger3, client, "demo", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        st = json.load(open(path))
+        assert st["epoch"] == "C" and st["positions"][trade()["id"]]["status"] == "open"
 
 
 def test_ingressi_rifiutati():

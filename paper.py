@@ -17,6 +17,8 @@ from datetime import datetime, timezone
 
 import numpy as np
 
+import epoch
+
 import events as event_log
 
 import lab_strategies
@@ -187,6 +189,12 @@ def update(last_candles, config_path=CONFIG_PATH, ledger_path=LEDGER_PATH, downl
     download = download or va.download_history
     now_iso = (now or datetime.now(timezone.utc)).isoformat(timespec="seconds")
     funding, changed = None, False
+    ep = epoch.current()
+    if os.path.exists(ledger_path) and ledger.get("epoch", "") != ep:
+        # ripartenza da zero richiesta (reset_epoch.json): il registro ricomincia e ogni strategia parte dall'ultima candela chiusa
+        ledger = {"started": config["paper_start"], "epoch": ep, "strategies": {}}
+        changed = True
+    ledger.setdefault("epoch", ep)
 
     # strategie spente dall'app (o dall'emergenza): restano nel registro con i loro trade, ma "off"
     active = config.get("strategies", {})
