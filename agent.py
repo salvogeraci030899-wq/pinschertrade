@@ -133,7 +133,7 @@ def paper_performance(cfg, paper):
     for e in (paper.get("strategies") or {}).values():
         for t in e.get("trades") or []:
             if not t.get("open") and t.get("net") is not None and t.get("entry") and t.get("stop"):
-                stop_pct = abs(t["entry"] - t["stop"]) / t["entry"] * 100
+                stop_pct = abs(t["entry"] - (t.get("stop0") or t["stop"])) / t["entry"] * 100      # stop iniziale: misura il rischio preso
                 if stop_pct > 0:
                     rs.append((t.get("t_exit") or t.get("t") or 0, t["net"] / stop_pct))
     eq = peak = dd = 0.0

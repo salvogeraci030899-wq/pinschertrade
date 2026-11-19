@@ -109,7 +109,7 @@ def merge(old_trades, new_trades, key, now_iso):
     for t in sorted(new_trades, key=lambda t: (t["t"], t["symbol"])):
         tid = trade_id(key, t)
         row = {"id": tid, "symbol": t["symbol"], "t": t["t"], "t_entry": t["t_entry"], "t_exit": t["t_exit"], "dir": t["dir"], "entry": t["entry"], "exit": t["exit"],
-               "stop": t["stop"], "bars": t["bars"], "reason": t["reason"], "open": t["open"], "gross": round(t["gross"], 4)}
+               "stop": t["stop"], "stop0": t.get("stop0", t["stop"]), "bars": t["bars"], "reason": t["reason"], "open": t["open"], "gross": round(t["gross"], 4)}
         prev = old.pop(tid, None)
         if prev is None:
             row["first_seen"] = now_iso
