@@ -290,17 +290,43 @@ class BitgetClient:
         return done
 
 
+SIM_FEE_PCT = 0.11          # commissione per lato (ordini a mercato su Bitget): la stessa dei costi del laboratorio
+
+
 class DryRunClient:
     """Stesse funzioni del client vero, ma non manda nulla a Bitget: registra cosa avrebbe fatto.
-    È la modalità di partenza: l'esecutore gira davvero, gli ordini restano simulati."""
+    È la modalità di partenza: l'esecutore gira davvero, gli ordini restano simulati.
 
-    def __init__(self, equity=1000.0):
-        self._equity = float(equity)
-        self._positions = {}
+    Il conto è vero: `_equity` è la cassa (parte dal capitale di prova); aprire e chiudere costa le commissioni;
+    chiudere realizza il guadagno o la perdita; `equity()` aggiunge il guadagno non realizzato ai prezzi
+    segnati (`set_marks`). Così la carta dell'esecutore si comporta come il conto reale: patrimonio, perdita
+    del giorno e obiettivo del giorno si calcolano allo stesso modo."""
+
+    def __init__(self, equity=1000.0, positions=None, fee_pct=SIM_FEE_PCT):
+        self._equity = float(equity)            # cassa
+        self._positions = {s: dict(p) for s, p in (positions or {}).items()}
+        self._marks = {}
+        self.fee_pct = float(fee_pct)
+        self.realized = 0.0                     # guadagno realizzato di questa sessione (commissioni comprese)
         self.calls = []
 
+    def set_marks(self, marks):
+        self._marks = {s: float(v) for s, v in (marks or {}).items() if v}
+
+    @staticmethod
+    def _dir(side):
+        return 1 if side == "long" else -1
+
+    def unrealized(self):
+        total = 0.0
+        for s, p in self._positions.items():
+            entry, mark = p.get("entry"), self._marks.get(s) or p.get("entry")
+            if entry and mark:
+                total += p["size"] * (mark - entry) * self._dir(p["side"])
+        return total
+
     def equity(self):
-        return self._equity
+        return self._equity + self.unrealized()
 
     def setup_symbol(self, symbol, leverage, side=None):
         self.calls.append(("setup", symbol, leverage))
@@ -308,12 +334,24 @@ class DryRunClient:
     def positions(self):
         return {s: dict(p) for s, p in self._positions.items()}
 
-    def open_position(self, symbol, side, size, stop_price, client_oid=None, take_price=None, one_way=False):
+    def open_position(self, symbol, side, size, stop_price, client_oid=None, take_price=None, one_way=False, price=None):
         self.calls.append(("open", symbol, side, size, stop_price))
-        self._positions[symbol] = {"side": side, "size": size}
+        pos = {"side": side, "size": size}
+        entry = price or self._marks.get(symbol)
+        if entry:
+            pos["entry"] = float(entry)
+            fee = size * float(entry) * self.fee_pct / 100
+            self._equity -= fee
+            self.realized -= fee
+        self._positions[symbol] = pos
         return {"orderId": f"dry-{len(self.calls)}"}
 
-    def close_position(self, symbol, side):
+    def close_position(self, symbol, side, price=None):
         self.calls.append(("close", symbol, side))
-        self._positions.pop(symbol, None)
+        pos = self._positions.pop(symbol, None)
+        if pos and pos.get("entry"):
+            exit_px = float(price or self._marks.get(symbol) or pos["entry"])
+            pnl = pos["size"] * (exit_px - pos["entry"]) * self._dir(pos["side"]) - pos["size"] * exit_px * self.fee_pct / 100
+            self._equity += pnl
+            self.realized += pnl
         return {}
