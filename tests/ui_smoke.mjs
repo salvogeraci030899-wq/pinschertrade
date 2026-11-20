@@ -80,6 +80,26 @@ try {
             return { l: Math.round(n.left), r: Math.round(innerWidth - n.right), b: Math.round(innerHeight - n.bottom), fuori: Math.round(n.top - d.bottom), sopra: Math.round(it.top - n.top), sotto: Math.round(n.bottom - it.bottom) }; });
         if (glass && !(await page.evaluate(() => document.documentElement.classList.contains('glass')))) problems.push(`${dev.n}, ${tag}: il vetro non si accende`);
         if (nav.l !== nav.r || nav.l < 4 || nav.b < 4 || nav.b > 60 || nav.fuori < 0 || nav.sopra !== nav.sotto) problems.push(`${dev.n}, ${tag}: barra in basso fuori posto ${JSON.stringify(nav)}`);
+        // Fluidità: tempo di cambio pagina con CPU rallentata 4x (come un telefono), 3 giri su tutte le pagine.
+        // Mediana e massimo in console; fallisce solo oltre soglie larghe, per accorgersi dei peggioramenti grossi.
+        if (!glass) {
+            const cdp = await page.context().newCDPSession(page);
+            await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+            const times = await page.evaluate(async list => {
+                const out = [];
+                for (let k = 0; k < 3; k++) for (const p of list) {
+                    const t0 = performance.now(); window.switchTab(p);
+                    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+                    out.push(performance.now() - t0);
+                }
+                return out;
+            }, pages);
+            await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+            times.sort((a, b) => a - b);
+            const med = Math.round(times[Math.floor(times.length / 2)]), max = Math.round(times[times.length - 1]);
+            console.log(`  fluidità ${dev.n}, ${tag}: cambio pagina (CPU 4x) mediana ${med} ms, massimo ${max} ms`);
+            if (med > 400 || max > 1200) problems.push(`${dev.n}, ${tag}: cambio pagina lento (mediana ${med} ms, massimo ${max} ms)`);
+        }
         // Home: schede una sotto l'altra, tutte sopra la barra in basso e senza righe tagliate; l'ultima riempie lo spazio rimasto
         await page.evaluate(() => window.switchTab('home'));
         await page.waitForTimeout(700);
