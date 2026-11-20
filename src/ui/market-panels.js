@@ -15,19 +15,19 @@ export function renderLevels(t, asset, tf) {
     const grid = $('levGrid'), foot = $('levFoot'), badge = $('lev-badge');
     if (!grid || !foot || !badge) return;
     if (!t || !t.price) { badge.textContent = '—'; grid.innerHTML = ''; foot.textContent = 'Calcolo in corso…'; return; }
-    const dist = v => (v > 0 && t.price > 0 ? `${pct((v / t.price - 1) * 100)} dal prezzo` : '');
+    const dist = v => (v > 0 && t.price > 0 ? pct((v / t.price - 1) * 100) : '');
     const rsi = t.trend && t.trend.rsi != null ? t.trend.rsi : null;
     badge.textContent = `${SYM(asset)} · ${tf.toUpperCase()}`;
     grid.innerHTML =
         tile('Prezzo', fmtPrice(t.price), '') +
-        tile('RSI 14', rsi == null ? '—' : fmtIt(rsi, 1), rsi == null ? '' : rsi >= 70 ? 'ipercomprato' : rsi <= 30 ? 'ipervenduto' : 'zona neutra') +
+        tile('RSI 14', rsi == null ? '—' : fmtIt(rsi, 1), rsi == null ? '' : rsi >= 70 ? 'alto' : rsi <= 30 ? 'basso' : 'neutro') +
         tile('EMA 20', fmtPrice(t.ema20), dist(t.ema20)) +
         tile('EMA 50', fmtPrice(t.ema50), dist(t.ema50)) +
         tile('EMA 200', fmtPrice(t.ema200), dist(t.ema200)) +
-        tile('ATR', t.riskData ? `${fmtIt(t.riskData.atrPct, 2)}%` : '—', 'escursione media per candela') +
+        tile('ATR', t.riskData ? `${fmtIt(t.riskData.atrPct, 2)}%` : '—', 'a candela') +
         tile('Massimo 20', fmtPrice(t.hh20), dist(t.hh20)) +
         tile('Minimo 20', fmtPrice(t.ll20), dist(t.ll20));
-    foot.textContent = `Calcolati sulle candele chiuse ${tf.toUpperCase()} di Bitget. Informativi: non sono un consiglio operativo.`;
+    foot.textContent = `Candele chiuse ${tf.toUpperCase()} di Bitget; la percentuale è la distanza dal prezzo. Solo informativi.`;
 }
 
 // ---------- Carta su questa coin ----------

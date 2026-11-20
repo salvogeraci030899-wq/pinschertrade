@@ -297,6 +297,10 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .mkt-foot { flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding-top: 6px; }
 .mkt-foot .dashboard-dots { padding: 0; }
 .mkt-live { flex: none; width: 100%; gap: 8px; }
+@media (max-height: 780px) {
+    /* schermi bassi: il testo secondario va sulla stessa riga del valore, la tessera si accorcia */
+    .mkt-panel .filter-item .f-val small { display: inline; margin: 0 0 0 6px; }
+}
 @media (max-height: 720px) {
     .mkt-panel { padding: 10px 12px; gap: 8px; }
     .mkt-panel .filter-grid { gap: 6px; }
