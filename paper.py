@@ -163,6 +163,28 @@ def _save(path, data):
         raise
 
 
+def why_paper(key, summary_path=lab.SUMMARY_PATH):
+    """Perché la strategia è in prova: la regola che ha fatto scattare l'ingresso e cosa dice lo storico del laboratorio."""
+    name = key.split(":")[0]
+    try:
+        with open(summary_path) as f:
+            summ = json.load(f)
+    except Exception:
+        summ = {}
+    rule = (summ.get("descriptions") or {}).get(name) or (lab_strategies.STRATEGIES.get(name) or {}).get("description") or ""
+    res = (summ.get("results") or {}).get(key)
+    lines = [f"Perché: {rule}"] if rule else []
+    if res and res.get("n"):
+        ci = res.get("avg_net_ci") or [None, None]
+        lines.append(f"Storico: {res['n']} operazioni, netto medio {res['avg_net_pct']:+.2f}% (intervallo {ci[0]:+.1f} / {ci[1]:+.1f}), "
+                     f"p {res.get('p_value', 0):.2f}.")
+    if key in set(summ.get("confirmed") or []):
+        lines.append("Stato: confermata dalla prova finale, può andare in reale.")
+    else:
+        lines.append("Stato: NON ancora confermata. È una prova per raccogliere dati, non un invito a entrare a mano.")
+    return "\n".join(lines).replace("_", " ")
+
+
 def describe_event(kind, key, row):
     """Testo dell'avviso Telegram (senza caratteri che rompono il Markdown)."""
     name, tf = key.split(":")
@@ -170,7 +192,7 @@ def describe_event(kind, key, row):
     coin = row["symbol"].replace("USDT", "")
     head = f"📝 PROVA SU CARTA (nessun ordine reale)\n{name.replace('_', ' ')} {tf.upper()} · {coin} {side}"
     if kind == "open":
-        return f"{head}\nIngresso {row['entry']:,.2f} · stop {row['stop']:,.2f}"
+        return f"{head}\nIngresso {row['entry']:,.2f} · stop {row['stop']:,.2f}\n{why_paper(key)}"
     return f"{head}\nChiuso a {row['exit']:,.2f} ({row['reason']}): {row['gross']:+.2f}% lordo in {row['bars']} candele"
 
 
