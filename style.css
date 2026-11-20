@@ -186,7 +186,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .tech-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-3); }
 .tech-title { font-size: var(--fs-sm); font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.5px; }
 .tech-trend-label { font-size: var(--fs-sm); font-weight: 600; color: var(--text-secondary); }
-/* Scheda Futures, per coppia: stesso stile di Verifica Strategia */
+/* Scheda Futures, per coppia: stesso stile di Verifica strategia */
 .tr-foot { font-size: var(--fs-xs); color: var(--text-secondary); line-height: 1.4; text-align: center; }
 .tr-foot.text-warning { color: var(--warning); }
 .filter-item.neutral { border-color: var(--border); }

@@ -82,7 +82,7 @@ async function refreshMarket() {
     renderMarket();
 }
 
-const fmtPx = v => '$' + Number(v).toLocaleString('en-US', v >= 1000 ? { maximumFractionDigits: 0 } : v >= 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+const fmtPx = v => Number(v).toLocaleString('it-IT', v >= 1000 ? { maximumFractionDigits: 0 } : v >= 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + ' $';
 
 // Scrive nel DOM solo se il valore cambia: la Home si aggiorna ogni 5 secondi
 const put = (el, text) => { if (el && el.textContent !== text) el.textContent = text; };
@@ -174,7 +174,7 @@ function renderAccount() {
         put(lbl, n && hasLiveMarks() ? 'PnL live' : 'PnL aperto');
         return;
     }
-    label('homeAccTitle', 'Conto simulato · carta · USDT');
+    label('homeAccTitle', 'Conto Simulato · carta');
     label('homeOpenPnlLabel', 'PnL aperto');
     label('homePnlLabel', 'PnL oggi');
     const live = bot && bot.live, sim = live && live.simulated;
@@ -274,7 +274,7 @@ function renderAutomationCard() {
     const al = ((cfg && cfg.price_alerts) || []).filter(a => a && !bot.fired.includes(a.id) && !isRemovingAlert(a.id));
     const fmtA = a => `${a.symbol.replace('USDT', '')} ${a.side === 'above' ? '≥' : '≤'} ${fmtPrice(a.price >= 1000 ? Math.round(a.price) : a.price)}`;
     setLine('homeAlerts', al.length ? (al.length <= 2 ? al.map(fmtA).join(' · ') : `${al.length} attivi · ${fmtA(al[0])}…`) : 'nessuno', al.length ? 'text-ui' : '');
-    // Agente: autonomia, rendimento della carta (in % del patrimonio, come in Agente → Panoramica), proposte
+    // Agente: autonomia, rendimento della carta (in % del patrimonio, come in Agente → Stato), proposte
     const ag = { autonomy: 'paper', ...((cfg && cfg.agent) || {}) };
     const perf = paperPerformance(ledger, Number(cfg && cfg.risk && cfg.risk.risk_per_trade_pct) || 0.5);
     const props = ((bot.agent && bot.agent.proposals) || []).length;

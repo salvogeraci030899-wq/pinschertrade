@@ -321,7 +321,7 @@ window.switchTab = (tabId) => {
     } else if (tabId === 'settings') {
         AccountUI.renderSettings();
     } else if (tabId === 'signals') {
-        // pagina Agente: Rischio se c'è un blocco o una pausa, altrimenti Panoramica (o la scheda scelta da poco)
+        // pagina Agente: Rischio se c'è un blocco o una pausa, altrimenti Stato (o la scheda scelta da poco)
         AutoUI.setSignalsView(AutoUI.autoSignalsView(), false);
     }
     if (tabId === 'terminal') {

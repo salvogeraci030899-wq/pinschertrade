@@ -152,7 +152,7 @@ export async function scanAllSignals(manual = false) {
     State.saveSignalState();
     fired.forEach(s => fireSignalNotifications(s));
 
-    if (btn) { btn.disabled = false; btn.textContent = 'Scansiona Ora'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Scansiona ora'; }
     if (status) {
         if (errors === CONFIG.SIGNAL_ASSETS.length * CONFIG.SIGNAL_TFS.length) { status.textContent = 'Errore'; status.className = 'be-badge bad'; }
         else { status.textContent = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }); status.className = 'be-badge good'; }
@@ -384,7 +384,7 @@ export function updateNotifButton() {
     const granted = 'Notification' in window && Notification.permission === 'granted';
     if (State.signalSettings.notificationsEnabled && granted) { btn.textContent = 'Disabilita'; btn.style.background = 'rgba(255,69,58,0.15)'; btn.style.color = 'var(--danger)'; }
     else if (granted) { btn.textContent = 'Abilita'; btn.style.background = 'var(--surface-hover)'; btn.style.color = 'var(--text)'; }
-    else { btn.textContent = 'Richiedi Permesso'; btn.style.background = 'var(--blue)'; btn.style.color = '#fff'; }
+    else { btn.textContent = 'Richiedi permesso'; btn.style.background = 'var(--blue)'; btn.style.color = 'var(--on-ui)'; }
 }
 
 export function openSignalSettings() {
@@ -424,7 +424,7 @@ function sendTelegramMessage(text) {
 export function testTelegramNotification() {
     const token = ($('signalTelegramToken').value || '').trim();
     const chatId = ($('signalTelegramChat').value || '').trim();
-    if (!token || !chatId) { window.showAlert('Telegram', 'Inserisci Bot Token e Chat ID prima del test.'); return; }
+    if (!token || !chatId) { window.showAlert('Telegram', 'Inserisci Token del bot e Chat ID prima del test.'); return; }
     const savedToken = State.signalSettings.telegramBotToken;
     const savedChat = State.signalSettings.telegramChatId;
     State.signalSettings.telegramBotToken = token;
