@@ -131,6 +131,34 @@ try {
             if (r.over < 0) problems.push(`${where}: pagina non trovata`);
             if (r.wide > 1) problems.push(`${where}: più larga dello schermo di ${r.wide}px`);
             if (r.emoji) problems.push(`${where}: emoji nella pagina (${r.emoji}); nell'app non ce ne devono essere`);
+            // Testi troppo lunghi: tagliati (con o senza puntini), fuori dallo schermo, o su più righe dentro un tasto
+            const clipped = await page.evaluate(W => {
+                const out = [], seen = new Set();
+                const roots = [document.querySelector('section.page.active'), document.querySelector('.nav-wrap')].filter(Boolean);
+                const scrollable = el => { for (let e = el.parentElement; e; e = e.parentElement) { const o = getComputedStyle(e).overflowX; if ((o === 'auto' || o === 'scroll') && e.scrollWidth > e.clientWidth + 1) return true; } return false; };
+                for (const root of roots) for (const el of root.querySelectorAll('*')) {
+                    if (!el.getClientRects().length || getComputedStyle(el).visibility === 'hidden') continue;
+                    const txt = [...el.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join(' ').replace(/\s+/g, ' ').trim();
+                    if (!txt) continue;
+                    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+                    if (!r.width || !r.height) continue;
+                    let why = null;
+                    if (el.scrollWidth > el.clientWidth + 1 && (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') && !scrollable(el)) why = 'tagliato';
+                    else if ((r.right > W + 1 || r.left < -1) && !scrollable(el)) why = 'fuori schermo';
+                    else if (el.matches('button, .pill-btn, .nav-item, .set-label, label, .home-card-header span, .tech-title')) {
+                        const range = document.createRange(); range.selectNodeContents(el);
+                        const tops = new Set([...range.getClientRects()].filter(x => x.width > 0).map(x => Math.round(x.top / 4)));
+                        if (tops.size > 1) why = 'va a capo';
+                    }
+                    if (!why) continue;
+                    const key = why + txt;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    out.push(`"${txt.slice(0, 46)}" ${why} <${el.tagName.toLowerCase()}${el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/)[0] : ''}>`);
+                }
+                return out;
+            }, dev.w);
+            for (const c of clipped) problems.push(`${where}: testo troppo lungo: ${c}`);
         }
         // Regole fisse: ogni finestra a schermo intero, intestazione nello stesso punto della Home, niente scroll verticale
         await page.evaluate(() => window.switchTab('home'));
