@@ -162,6 +162,7 @@ window.setSignalsView = AutoUI.setSignalsView;
 window.setAutoMode = AutoUI.setAutoMode;
 window.askAutoMode = AutoUI.askAutoMode;
 window.askRunLab = AutoUI.askRunLab;
+window.openPortfolioHelp = AutoUI.openPortfolioHelp;
 window.askRemovePriceAlert = AutoUI.askRemovePriceAlert;
 window.toggleEmergency = AutoUI.toggleEmergency;
 window.runAutoJob = AutoUI.runAutoJob;

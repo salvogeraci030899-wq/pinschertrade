@@ -210,6 +210,21 @@ let pendingTrading = null;   // 'on' / 'off' inviato ma non ancora visibile in a
 const pending = {};   // comandi inviati ma non ancora visibili nei file pubblicati
 
 const pct = (v, d = 2) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${fmtIt(v, d)}%`);
+
+// Chiusura di portafoglio: totale di tutte le posizioni aperte insieme (vincenti e perdenti); a +X% o −Y% del conto l'esecutore chiude tutto
+const PORTFOLIO_HELP = 'L\'esecutore somma il risultato di tutte le posizioni aperte insieme, vincenti e perdenti (comprese quelle già chiuse da quando il conto era senza posizioni).\n\nQuando il totale arriva all\'obiettivo (+X% del conto) chiude tutto e aspetta nuovi segnali. Lo stesso, in perdita, con lo stop di portafoglio (−Y%).\n\nSi aggiunge a stop e target di ogni singolo trade: non li sostituisce. Con 0 è spenta. Si imposta in Limiti di rischio.';
+export function openPortfolioHelp() { window.showAlert('Chiusura di portafoglio', PORTFOLIO_HELP); }
+function portfolioLine() {
+    const r = riskCfg(), t = Number(r.portfolio_target_pct) || 0, s = Number(r.portfolio_stop_pct) || 0;
+    if (!t && !s) return { text: 'spenta', cls: '' };
+    const sim = !live || !live.mode || live.mode === 'simulata';
+    const eq = sim ? Number(live && live.simulated && live.simulated.equity) : Number(live && live.account && live.account.equity);
+    const start = Number(live && live.basket && live.basket.start);
+    const open = Object.values((live && live.positions) || {}).filter(p => p && p.status === 'open').length;
+    const now = open && eq > 0 && start > 0 ? ` · ora ${pct((eq / start - 1) * 100, 2)}` : (open ? '' : ' · nessuna posizione aperta');
+    const cls = now.includes('· ora') ? ((eq / start - 1) * 100 >= 0 ? 'text-accent' : 'text-danger') : '';
+    return { text: `${t ? '+' + fmtIt(t, 1).replace(/,0$/, '') + '%' : '—'} / ${s ? '−' + fmtIt(s, 1).replace(/,0$/, '') + '%' : '—'}${now}`, cls };
+}
 const day = iso => (iso ? new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—');
 const label = key => key.replace(':', ' ').replace(/_/g, ' ');
 
@@ -308,7 +323,8 @@ export function renderAutomation() {
         <div class="auto-row clickable" onclick="openAccount()"><span>Ordini veri</span><b class="${risk.trading_enabled ? 'text-warning' : ''}">${realText} ›</b></div>
         <div class="auto-row clickable" onclick="setSignalsView('agent')"><span>Agente</span><b class="${agentProposals().length ? 'text-warning' : 'text-ui'}">${escapeHtml(agentLine())} ›</b></div>
         <div class="auto-row"><span>Agente eventi</span><b class="${guardLine().cls}" title="${escapeHtml(guardLine().title)}">${escapeHtml(guardLine().text)}</b></div>
-        <div class="auto-row auto-row-risk"><span>Rischio</span><b>${risk.risk_per_trade_pct}% a trade · leva ${risk.max_leverage}x · max ${risk.max_open_positions} · −${risk.max_daily_loss_pct}%/giorno</b></div>`;
+        <div class="auto-row auto-row-risk"><span>Rischio</span><b>${risk.risk_per_trade_pct}% a trade · leva ${risk.max_leverage}x · max ${risk.max_open_positions} · −${risk.max_daily_loss_pct}%/giorno</b></div>
+        <div class="auto-row clickable" onclick="openPortfolioHelp()"><span>Chiusura totale</span><b class="${portfolioLine().cls}">${escapeHtml(portfolioLine().text)} ›</b></div>`;
 
     const keys = shownKeys();
     const card = key => {
