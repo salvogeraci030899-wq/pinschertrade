@@ -24,7 +24,6 @@ for (const m of css.matchAll(/border-radius:\s*([^;{}]+)/g)) {
     if (/(^|[\s(])\d+px\b/.test(v) && !/calc\(|var\(/.test(v)) problems.push(`style.css:${lineOf(css, m.index)} raggio sciolto (${v.trim()}): usa --r-*`);
 }
 // spaziature: ammessi 0, 1px (bordi), valori negativi, calc/env, 40+ (misure di layout)
-const SP_OK = new Set([0, 1, 5, 6, 7, 9, 10, 11, 13, 15, 56, 82]);       // vedi baseline sotto
 for (const m of css.matchAll(/(?:^|[;{\s])((?:padding|margin|gap|row-gap|column-gap)(?:-[a-z]+)?):\s*([^;{}]+)/g)) {
     const v = m[2];
     if (/calc\(|env\(/.test(v)) continue;
