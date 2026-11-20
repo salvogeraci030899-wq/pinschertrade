@@ -121,13 +121,21 @@ try {
                 const r = await page.evaluate(([fn, arg]) => new Promise(resolve => {
                     const t0 = performance.now(); let last = 0, what = '';
                     const desc = n => { const e = n.nodeType === 1 ? n : n.parentElement; return e ? (e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/)[0] : '')) : '?'; };
+                    // Conta solo ciò che cambia davvero: il testo visibile della pagina o lo zoom di adattamento. Le riscritture
+                    // periodiche dello stesso contenuto (aggiornamenti ogni 5 s) non sono "contenuto che arriva dopo".
+                    const textNow = () => ((document.querySelector('.page.active') || {}).innerText || '');
+                    let lastText = textNow();
                     const mo = new MutationObserver(ms => {
+                        let styleChange = false, changed = null;
                         for (const m of ms) {
+                            if (m.target === document.documentElement) { styleChange = true; continue; }
                             if (m.target.closest && m.target.closest('.nav-wrap')) continue;     // la barra in basso non è contenuto
                             const el = m.target.nodeType === 1 ? m.target : m.target.parentElement;
-                            if (el && el !== document.documentElement && el.getClientRects().length === 0) continue;   // elemento nascosto: non si vede
-                            last = performance.now() - t0; what = desc(m.target);
+                            if (el && el.getClientRects().length === 0) continue;               // elemento nascosto: non si vede
+                            changed = el;
                         }
+                        if (changed) { const t = textNow(); if (t !== lastText) { lastText = t; last = performance.now() - t0; what = desc(changed); } }
+                        if (styleChange) { last = performance.now() - t0; what = 'zoom di adattamento'; }
                     });
                     mo.observe(document.querySelector('main'), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style', 'class', 'width', 'height'] });
                     mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });   // zoom di adattamento
