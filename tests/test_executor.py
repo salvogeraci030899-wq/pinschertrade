@@ -259,6 +259,42 @@ def test_perdita_giornaliera():
         assert json.load(open(path))["positions"][trade(t=T_SIGNAL + D)["id"]]["status"] == "open"
 
 
+def test_obiettivo_di_portafoglio_somma_vincenti_e_perdenti():
+    """In aggiunta a stop e target dei singoli trade: se il totale delle posizioni aperte arriva a +X% si chiude tutto,
+    anche se una posizione è in perdita. Le posizioni chiuse così non si riaprono."""
+    with tempfile.TemporaryDirectory() as d:
+        path, notes = os.path.join(d, "live.json"), []
+        two = [trade("BTCUSDT", 1, 100_000, 98_000), trade("ETHUSDT", 1, 3000, 2940, t=T_SIGNAL + 1)]
+        risk = {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0, "portfolio_target_pct": 0.5}
+        cfg, ledger = setup(two, mode="paper", cfg_extra={"risk": risk})
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {"BTCUSDT": 100_000.0, "ETHUSDT": 3000.0})
+        st = json.load(open(path))
+        assert sum(p["status"] == "open" for p in st["positions"].values()) == 2
+        # BTC sale del 3% (guadagno), ETH scende dell'1% (perdita): il totale (circa +0,8% dopo i costi) supera +0,5% del conto
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, notify=notes.append, specs_fn=SPECS,
+               prices_fn=lambda s: {"BTCUSDT": 103_000.0, "ETHUSDT": 2970.0})
+        st = json.load(open(path))
+        assert all(p["status"] == "closed" and p["close_reason"] == "OBIETTIVO DI PORTAFOGLIO" for p in st["positions"].values())
+        assert any("OBIETTIVO DI PORTAFOGLIO" in n for n in notes) and st["simulated"]["positions"] == {}
+        # al giro dopo i trade su carta ancora aperti non si riaprono
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {})
+        assert all(p["status"] == "closed" for p in json.load(open(path))["positions"].values())
+    # spento (0): resta tutto aperto
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "live.json")
+        cfg, ledger = setup(two, mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0}})
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {"BTCUSDT": 100_000.0, "ETHUSDT": 3000.0})
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {"BTCUSDT": 103_000.0, "ETHUSDT": 2970.0})
+        assert sum(p["status"] == "open" for p in json.load(open(path))["positions"].values()) == 2
+    # stop di portafoglio: -1% totale chiude tutto
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "live.json")
+        cfg, ledger = setup(two, mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0, "portfolio_stop_pct": 0.5}})
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {"BTCUSDT": 100_000.0, "ETHUSDT": 3000.0})
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {"BTCUSDT": 98_500.0, "ETHUSDT": 2950.0})
+        assert all(p["close_reason"] == "STOP DI PORTAFOGLIO" for p in json.load(open(path))["positions"].values())
+
+
 def test_obiettivo_giornaliero():
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "live.json")
