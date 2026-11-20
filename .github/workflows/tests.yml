@@ -56,10 +56,11 @@ jobs:
           node-version: '22'
       - name: Installa Playwright e Chromium
         run: |
-          npm install --no-save --no-package-lock playwright@1.49.1
+          npm install --no-save --no-package-lock playwright@1.49.1 lightweight-charts@4.1.3
           npx playwright install --with-deps chromium
       - name: Prova dell'interfaccia (parte ${{ matrix.shard }} di 4)
-        run: SHARD=${{ matrix.shard }}/4 node tests/ui_smoke.mjs
+        # La libreria dei grafici si legge dal pacchetto installato, non da unpkg: un CDN lento bloccava la pagina per minuti
+        run: SHARD=${{ matrix.shard }}/4 LWC_PATH=node_modules/lightweight-charts/dist/lightweight-charts.standalone.production.js node tests/ui_smoke.mjs
 
   ui:
     needs: ui-shard
