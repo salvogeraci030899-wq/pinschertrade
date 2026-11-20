@@ -35,7 +35,10 @@ try {
     }
     const browser = await chromium.launch();
     // ogni dispositivo in Simulato e Reale; l'app installata anche in Reale con il vetro e il tema chiaro
-    const RUNS = DEVICES.flatMap(dev => [{ dev, mode: 'sim' }, { dev, mode: 'real' }, ...(dev.pwa ? [{ dev, mode: 'real', glass: true }] : [])]);
+    const ALL_RUNS = DEVICES.flatMap(dev => [{ dev, mode: 'sim' }, { dev, mode: 'real' }, ...(dev.pwa ? [{ dev, mode: 'real', glass: true }] : [])]);
+    // SHARD=i/n: esegue solo le prove con indice = i (mod n), per dividere il lavoro tra più job in CI
+    const [shardI, shardN] = (process.env.SHARD || '0/1').split('/').map(Number);
+    const RUNS = ALL_RUNS.filter((_, i) => i % shardN === shardI);
     for (const { dev, mode, glass } of RUNS) {
         const tag = (mode === 'real' ? 'Reale' : 'Simulato') + (glass ? ', vetro dinamico chiaro' : '');
         const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, isMobile: true, hasTouch: true, colorScheme: glass ? 'light' : 'dark' });
