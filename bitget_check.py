@@ -9,7 +9,7 @@ import sys
 
 from bitget_client import BitgetClient, BitgetError
 from executor import contract_specs
-from kronos_core import ALL_ASSETS
+from market_data import ALL_ASSETS
 
 
 def main():

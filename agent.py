@@ -38,7 +38,7 @@ import requests
 
 import automation
 import lab_strategies
-from kronos_core import TRADE_ASSETS
+from market_data import TRADE_ASSETS
 
 STATE_PATH = "agent_state.json"
 PAPER_PATH = "paper_trades.json"

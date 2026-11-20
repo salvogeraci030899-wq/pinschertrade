@@ -16,7 +16,7 @@ import daily_report
 import event_guard
 import executor
 import paper
-from kronos_core import ALL_ASSETS, TRADE_ASSETS, ALL_TIMEFRAMES, ATR_PERIOD, get_historical_data, klines_to_df
+from market_data import ALL_ASSETS, TRADE_ASSETS, ALL_TIMEFRAMES, ATR_PERIOD, get_historical_data, klines_to_df
 
 SYMBOL_ENV = os.environ.get("SYMBOL", "ALL")
 TIMEFRAME_ENV = os.environ.get("TIMEFRAME", "ALL")

@@ -1,7 +1,7 @@
 name: Controllo rapido
 
 # Ogni 5 minuti, avviato dal server Cloudflare (worker/index.js): avvisi di prezzo e avvisi delle
-# posizioni reali chiuse su Bitget (sola lettura, nessun ordine). Leggero: niente modello Kronos.
+# posizioni reali chiuse su Bitget (sola lettura, nessun ordine). Leggero: nessun modello.
 # Salva quick_state.json solo quando cambia (un avviso partito, una chiusura avvisata).
 on:
   workflow_dispatch:

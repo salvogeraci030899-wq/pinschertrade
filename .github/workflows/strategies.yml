@@ -1,7 +1,7 @@
 name: Validazione strategie tecniche
 
 # Misura Breakout, Mean Reversion, MA Crossover e il loro consenso sullo storico Bitget, con lo
-# stesso metro usato per Kronos (costi, tasse, intervalli di confidenza). Nessun modello: pochi minuti.
+# costi, tasse e intervalli di confidenza come nel laboratorio. Nessun modello: pochi minuti.
 # - Avvio manuale: tutto lo storico disponibile, poi commit di strategies_summary.json e validation/STRATEGIE.md.
 # - Sulle PR che toccano questi file: prova veloce su un periodo breve con Bitget vero, senza commit.
 on:
@@ -14,10 +14,8 @@ on:
   pull_request:
     paths:
       - 'strategies_validation.py'
-      - 'validation.py'
-      - 'validation_stats.py'
-      - 'kronos_core.py'
-      - 'track_record.py'
+      - 'market_data.py'
+      - 'stats_util.py'
       - '.github/workflows/strategies.yml'
 
 concurrency:

@@ -41,7 +41,7 @@ import requests
 
 import epoch
 from bitget_client import BitgetClient, DryRunClient, round_down
-from kronos_core import TF_DELTA, TRADE_ASSETS
+from market_data import TF_DELTA, TRADE_ASSETS
 
 STATE_PATH = "live_trades.json"
 EQUITY_PATH = "equity_history.json"     # un record al giorno: apertura, chiusura, versamenti/prelievi, guadagno

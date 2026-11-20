@@ -1,7 +1,6 @@
 """Validazione storica delle strategie tecniche della pagina Segnali (nessun modello).
 
-Misura Breakout, Mean Reversion, MA Crossover e il loro consenso (almeno 2 su 3) con lo stesso
-metro usato per Kronos: stesso orizzonte (7 candele), stessi costi, stesso piano
+Misura Breakout, Mean Reversion, MA Crossover e il loro consenso (almeno 2 su 3) con lo stesso metro del laboratorio: stesso orizzonte (7 candele), stessi costi, stesso piano
 (stop 1,5 x ATR), intervalli di confidenza con bootstrap a blocchi di tempo, confronto con
 momentum e "sempre long". Le regole sono quelle dell'app (src/ui/signals.js): alla chiusura di
 una candela gli indicatori usano le 299 candele chiuse precedenti e il prezzo è la chiusura.
@@ -23,15 +22,15 @@ from datetime import datetime, timezone
 
 import numpy as np
 
-import track_record as tr
-import validation as va
-import validation_stats as vs
-from kronos_core import (
-    ALL_ASSETS, ALL_TIMEFRAMES, PRED_LEN, ATR_PERIOD, ATR_MULT, MIN_RR, FEE_PCT, SLIPPAGE_PCT, TAX_RATE, TF_DELTA,
-)
+import stats_util as st
+from market_data import ALL_ASSETS, ALL_TIMEFRAMES, ATR_PERIOD, FEE_PCT, SLIPPAGE_PCT, TAX_RATE, TF_DELTA, OUT_DIR, download_history
+
+PRED_LEN = 7            # orizzonte del confronto "momentum" e della durata massima di un'operazione, in candele
+ATR_MULT = 1.5          # stop = ATR_MULT x ATR del timeframe
+MIN_RR = 1.5            # target = MIN_RR x rischio
 
 SUMMARY_PATH = "strategies_summary.json"
-REPORT_PATH = os.path.join(va.OUT_DIR, "STRATEGIE.md")
+REPORT_PATH = os.path.join(OUT_DIR, "STRATEGIE.md")
 WINDOW = 299            # candele chiuse viste dall'app (300 richieste a Bitget, l'ultima è in corso)
 DEFAULT_START = "2018-01-01"
 
@@ -152,7 +151,7 @@ def simulate(df, tf, symbol):
             horizon = [{"open": o[j], "high": h[j], "low": l[j], "close": c[j]} for j in range(i + 1, i + 1 + PRED_LEN)]
             hold = (c[i + PRED_LEN] - entry) / entry * 100 * (1 if long else -1)
             trades[name].append({"symbol": symbol, "tf": tf, "t": int(times[i]),
-                                 "gross": {"plan": tr.simulate_plan(plan, horizon)["gross_pct"], "hold": float(hold)}})
+                                 "gross": {"plan": st.simulate_plan(plan, horizon)["gross_pct"], "hold": float(hold)}})
             next_free = i + PRED_LEN
     span = {"from": int(times[idx[0]]), "to": int(times[-1]), "candles": int(len(idx)),
             "buy_hold_gross_pct": round(float((c[-1] / c[idx[0]] - 1) * 100), 1)} if len(idx) else None
@@ -165,12 +164,12 @@ def stats(trades, cluster_seconds):
         return {"plan": {"n": 0, "verdict": "campione_insufficiente"}, "hold": {"n": 0, "verdict": "campione_insufficiente"}}
     trades = sorted(trades, key=lambda x: (x["t"], x["symbol"]))
     clusters = np.array([x["t"] // cluster_seconds for x in trades])
-    out = {kind: vs._strategy_stats(trades, clusters, kind) for kind in ("plan", "hold")}
+    out = {kind: st._strategy_stats(trades, clusters, kind) for kind in ("plan", "hold")}
     mid = (trades[0]["t"] + trades[-1]["t"]) / 2
     halves = []
     for part in ([x for x in trades if x["t"] <= mid], [x for x in trades if x["t"] > mid]):
         if part:
-            s = vs._strategy_stats(part, np.array([x["t"] // cluster_seconds for x in part]), "plan")
+            s = st._strategy_stats(part, np.array([x["t"] // cluster_seconds for x in part]), "plan")
             halves.append({"n": s["n"], "avg_net_pct": s["avg_net_pct"], "avg_net_ci": s["avg_net_ci"], "verdict": s["verdict"]})
     out["plan"]["halves"] = halves
     return out
@@ -193,7 +192,7 @@ def build_summary(per_pair, spans):
         "horizon_candles": PRED_LEN,
         "plan": {"atr_mult": ATR_MULT, "target_rr": MIN_RR},
         "costs": {"fee_pct_per_side": FEE_PCT, "slippage_pct_per_side": SLIPPAGE_PCT, "tax_rate": TAX_RATE, "tax_basis": "totale"},
-        "confidence": {"level": 95, "method": "bootstrap a blocchi di tempo", "n_boot": vs.N_BOOT, "min_n": vs.MIN_N},
+        "confidence": {"level": 95, "method": "bootstrap a blocchi di tempo", "n_boot": st.N_BOOT, "min_n": st.MIN_N},
         "by_tf": by_tf,
         "by_pair": by_pair,
     }
@@ -208,11 +207,11 @@ def _rows_md(strategies):
     for name in STRATEGIES:
         p, hd = strategies[name]["plan"], strategies[name]["hold"]
         if not p["n"]:
-            out.append(f"| {NAMES[name]} | 0 | — | — | — | {vs.VERDICT_TEXT[p['verdict']]} | — | — | — |")
+            out.append(f"| {NAMES[name]} | 0 | — | — | — | {st.VERDICT_TEXT[p['verdict']]} | — | — | — |")
             continue
         halves = [f"{x['avg_net_pct']:+.3f}% ({x['n']})" for x in p.get("halves", [])] + ["—", "—"]
-        out.append(f"| {NAMES[name]} | {p['n']} | {p['win_rate']}% | {p['avg_net_pct']:+.3f}% | {vs._ci(p['avg_net_ci'])} | "
-                   f"{vs.VERDICT_TEXT[p['verdict']]} | {halves[0]} | {halves[1]} | {hd['avg_net_pct']:+.3f}% {vs._ci(hd['avg_net_ci'])} |")
+        out.append(f"| {NAMES[name]} | {p['n']} | {p['win_rate']}% | {p['avg_net_pct']:+.3f}% | {st._ci(p['avg_net_ci'])} | "
+                   f"{st.VERDICT_TEXT[p['verdict']]} | {halves[0]} | {halves[1]} | {hd['avg_net_pct']:+.3f}% {st._ci(hd['avg_net_ci'])} |")
     return out
 
 
@@ -231,7 +230,7 @@ def to_markdown(s):
     for key, b in s["by_pair"].items():
         p = b["period"]
         out += [f"### {key.replace('_', ' ')}", "",
-                f"Dal {vs._day(p['from'])} al {vs._day(p['to'])}, {p['candles']} candele. Buy & hold nel periodo: {p['buy_hold_gross_pct']:+.1f}% lordo.", ""]
+                f"Dal {st._day(p['from'])} al {st._day(p['to'])}, {p['candles']} candele. Buy & hold nel periodo: {p['buy_hold_gross_pct']:+.1f}% lordo.", ""]
         out += _rows_md(b["strategies"]) + [""]
     return "\n".join(out) + "\n"
 
@@ -241,7 +240,7 @@ def main(start, symbols, tfs, summary_path=SUMMARY_PATH, report_path=REPORT_PATH
     per_pair, spans = {}, {}
     for symbol in symbols:
         for tf in tfs:
-            df = va.download_history(symbol, tf, start_ms)
+            df = download_history(symbol, tf, start_ms)
             if df is None or len(df) < WINDOW + 100:
                 print(f"{symbol} {tf}: storico insufficiente, salto.")
                 continue

@@ -23,8 +23,7 @@ import events as event_log
 
 import lab_strategies
 import strategy_lab as lab
-import validation as va
-from kronos_core import TRADE_ASSETS, TF_DELTA
+from market_data import TRADE_ASSETS, TF_DELTA, download_history
 
 CONFIG_PATH = "automation.json"
 LEDGER_PATH = "paper_trades.json"
@@ -208,7 +207,7 @@ def update(last_candles, config_path=CONFIG_PATH, ledger_path=LEDGER_PATH, downl
     if os.path.exists(ledger_path):
         with open(ledger_path) as f:
             ledger = json.load(f)
-    download = download or va.download_history
+    download = download or download_history
     now_iso = (now or datetime.now(timezone.utc)).isoformat(timespec="seconds")
     funding, changed = None, False
     ep = epoch.current()
