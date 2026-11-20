@@ -102,6 +102,30 @@ try {
             const med = Math.round(times[Math.floor(times.length / 2)]), max = Math.round(times[times.length - 1]);
             console.log(`  fluidità ${dev.n}, ${tag}: cambio pagina (CPU 4x) mediana ${med} ms, massimo ${max} ms`);
             if (med > 400 || max > 1200) problems.push(`${dev.n}, ${tag}: cambio pagina lento (mediana ${med} ms, massimo ${max} ms)`);
+            // Contenuto pronto: dopo l'apertura di una pagina o di una scheda, quando avviene l'ultima modifica visibile
+            // (testo, nodi, classi, zoom di adattamento)? Se avviene dopo qualche centinaio di ms, il contenuto "arriva dopo".
+            const steps = [...pages.map(p => ['pagina ' + p, 'switchTab', p]),
+                ...['agent', 'auto', 'lab', 'risk'].map(v => ['Agente ' + v, 'setSignalsView', v]),
+                ...['chart', 'sig', 'alerts'].map(v => ['Mercato ' + v, 'setMarketView', v])];
+            const cdp2 = await page.context().newCDPSession(page);
+            await cdp2.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+            const ready = [];
+            for (const [label, fn, arg] of steps) {
+                if (fn === 'setSignalsView') await page.evaluate(() => window.switchTab('signals'));
+                if (fn === 'setMarketView') await page.evaluate(() => window.switchTab('terminal'));
+                await page.waitForTimeout(700);
+                const last = await page.evaluate(([fn, arg]) => new Promise(resolve => {
+                    const t0 = performance.now(); let last = 0;
+                    const mo = new MutationObserver(() => { last = performance.now() - t0; });
+                    mo.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style', 'class', 'width', 'height'] });
+                    window[fn](arg);
+                    setTimeout(() => { mo.disconnect(); resolve(Math.round(last)); }, 1300);
+                }), [fn, arg]);
+                ready.push([label, last]);
+            }
+            await cdp2.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+            const worst = [...ready].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([l, t]) => `${l} ${t} ms`).join(', ');
+            console.log(`  contenuto pronto ${dev.n}, ${tag} (CPU 4x), ultima modifica dopo l'apertura: ${worst}`);
         }
         // Home: schede una sotto l'altra, tutte sopra la barra in basso e senza righe tagliate; l'ultima riempie lo spazio rimasto
         await page.evaluate(() => window.switchTab('home'));
