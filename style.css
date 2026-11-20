@@ -437,7 +437,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .signal-info-bar .badge-notif-on { color: var(--accent); font-weight: 700; }
 .signal-info-bar .badge-notif-off { color: var(--text-secondary); font-weight: 700; }
 
-.btn-link-secondary { background: transparent; border: none; color: var(--text-secondary); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; padding: var(--sp-3); }
+.btn-link-secondary { background: transparent; border: none; color: var(--text-secondary); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; padding: var(--sp-2) var(--sp-2); white-space: nowrap; }
 .btn-link-danger { color: var(--danger); }
 .section-actions { display: flex; align-items: center; gap: var(--sp-1); }
 
@@ -598,8 +598,8 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 
 /* Schermi bassi (iPhone SE, Safari con la barra): schede più compatte */
 @media (max-height: 720px) {
-    .home-container { gap: var(--sp-3); }
-    .home-tile { padding: var(--sp-3) var(--sp-3); }
+    .home-container { gap: var(--sp-2); }
+    .home-tile { padding: var(--sp-2) var(--sp-3); }
     .home-tile-px { font-size: var(--fs-md); }
     .home-card { padding: var(--sp-3) var(--sp-4); gap: var(--sp-2); border-radius: var(--r-card-sm); }
     .home-kpi-value { font-size: var(--fs-base); }
