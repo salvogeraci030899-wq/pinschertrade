@@ -260,6 +260,7 @@ export function bitgetAccountText(acc) {
     return { text: 'lettura non riuscita: controlla la chiave', cls: 'text-danger', detail: '' };
 }
 
+let loadedAt = 0;
 export async function loadAutomation() {
     if (loading) return;
     loading = true;
@@ -267,6 +268,7 @@ export async function loadAutomation() {
     [cfg, ledger, lab, live, alertsState, quickState, agentState, guardState] = await Promise.all([getJson('automation.json'), getJson('paper_trades.json'), getJson('lab_summary.json'), getJson('live_trades.json'), getJson('alerts_state.json'), getJson('quick_state.json'), getJson('agent_state.json'), getJson('guard_state.json')]);
     firedAlerts = [...((alertsState && alertsState._price_alerts_fired) || []), ...((quickState && quickState._price_alerts_fired) || [])];
     loaded = true;
+    loadedAt = Date.now();
     loading = false;
     for (const [key, mode] of Object.entries(pending)) if (currentMode(key, true) === mode) delete pending[key];
     for (const [f, v] of Object.entries(agentPending)) if (cfg && cfg.agent && cfg.agent[f] === v) delete agentPending[f];
@@ -671,8 +673,11 @@ export function setSignalsView(view, manual = true) {
         $(id).style.display = view === v ? '' : 'none';
     }
     $('signalsSubtitle').textContent = AGENT_PAGES[view][1];
-    if (view === 'auto' || view === 'risk') { loaded = false; renderAutomation(); renderAgentView(); }
-    if (view === 'agent') { loaded = false; renderAgentView(); }
+    // Si disegna subito dai dati già in memoria (nessun "Caricamento…" né attesa di rete); se hanno più di 20 secondi
+    // si aggiornano dietro le quinte e la vista si ridisegna solo quando arrivano.
+    if (view === 'auto' || view === 'risk') { renderAutomation(); renderAgentView(); }
+    if (view === 'agent') renderAgentView();
+    if ((view === 'auto' || view === 'risk' || view === 'agent') && loaded && Date.now() - loadedAt > 20e3) loadAutomation();
     if (view === 'lab' && window.setTestView) window.setTestView($('testView').value || 'lab');
 }
 

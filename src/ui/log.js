@@ -61,7 +61,15 @@ export async function renderLog(force = false) {
     if (!box || !$('page-log').classList.contains('active')) return;
     $('logFilters').innerHTML = Object.entries(FILTERS).map(([k, l]) => `<button type="button" class="${k === filter ? 'on' : ''}" onclick="setLogFilter('${k}')">${l}</button>`).join('');
     if (!events) box.innerHTML = '<div class="empty-hint">Caricamento…</div>';
+    else paintLog();                                        // subito dalla memoria, senza attendere la rete
+    const before = events;
     await load(force);
+    if (!before || events !== before) paintLog();           // ridisegna solo se sono arrivati dati nuovi
+}
+
+function paintLog() {
+    const box = $('logBody');
+    if (!box || !$('page-log').classList.contains('active') || !events) return;
     const list = events.filter(e => filter === 'all' || (GROUP[e.kind] || e.kind) === filter);
     const days = [...new Set(list.map(e => localDay(e.at)))];
     if (!days.length) {
