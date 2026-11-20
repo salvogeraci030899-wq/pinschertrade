@@ -39,13 +39,15 @@ try {
     for (const { dev, mode, glass } of RUNS) {
         const tag = (mode === 'real' ? 'Reale' : 'Simulato') + (glass ? ', vetro dinamico chiaro' : '');
         const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, isMobile: true, hasTouch: true, colorScheme: glass ? 'light' : 'dark' });
-        await ctx.addInitScript(([pwa, glass]) => {
+        await ctx.addInitScript(([pwa, glass, wide]) => {
             try {
                 localStorage.setItem('pt_gh_token', 'github_pat_' + 'x'.repeat(30));
             } catch (e) {}
+            // telefono più stretto: lettere un po' più larghe, per simulare i caratteri dell'iPhone e lasciare margine ai testi
+            if (wide) document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = '* { letter-spacing: 0.02em !important; }'; document.head.appendChild(st); });
             if (pwa) Object.defineProperty(navigator, 'standalone', { get: () => true });
             if (glass) try { localStorage.setItem('pt_glass', 'anim'); localStorage.setItem('pt_theme', 'light'); } catch (e) {}
-        }, [!!dev.pwa, !!glass]);
+        }, [!!dev.pwa, !!glass, dev.n === 'iPhone SE']);
         const page = await ctx.newPage();
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
@@ -150,8 +152,7 @@ try {
                     let tw = 0;
                     for (const n of nodes) { const range = document.createRange(); range.selectNodeContents(n); for (const x of range.getClientRects()) tw = Math.max(tw, x.width); }
                     const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-                    // margine del 7%: i caratteri dell'iPhone possono essere un po' più larghi di quelli del browser di prova
-                    if (el.clientWidth > 0 && tw > room * 0.93 + 1 && cs.display !== 'inline' && !scrollable(el)) why = tw > room + 1 ? 'sborda' : 'quasi al limite';
+                    if (el.clientWidth > 0 && tw > room + 1 && cs.display !== 'inline' && !scrollable(el)) why = 'sborda';
                     else if (el.scrollWidth > el.clientWidth + 1 && (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') && !scrollable(el)) why = 'tagliato';
                     else if ((r.right > W + 1 || r.left < -1) && !scrollable(el)) why = 'fuori schermo';
                     else if (el.matches('button, .pill-btn, .nav-item, .set-label, label, .home-card-header span, .tech-title, .tech-trend-label')) {
