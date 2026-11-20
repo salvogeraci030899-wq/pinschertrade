@@ -57,7 +57,12 @@ jobs:
       - name: Installa Playwright e Chromium
         run: |
           npm install --no-save --no-package-lock playwright@1.49.1 lightweight-charts@4.1.3
-          npx playwright install --with-deps chromium
+          # Il download dal runner a volte si pianta per minuti: limite di tempo e fino a 3 tentativi
+          for i in 1 2 3; do
+            timeout 180 npx playwright install --with-deps chromium && exit 0
+            echo "Installazione di Chromium non riuscita (tentativo $i), riprovo"
+          done
+          exit 1
       - name: Prova dell'interfaccia (parte ${{ matrix.shard }} di 4)
         # La libreria dei grafici si legge dal pacchetto installato, non da unpkg: un CDN lento bloccava la pagina per minuti
         run: SHARD=${{ matrix.shard }}/4 LWC_PATH=node_modules/lightweight-charts/dist/lightweight-charts.standalone.production.js node tests/ui_smoke.mjs
