@@ -39,11 +39,16 @@ jobs:
       - name: Dati futures veri
         run: python futures_data.py --check
 
-  # Interfaccia in un browser vero: ogni pagina su iPhone 15 e 17 Pro, Simulato e Reale,
-  # senza errori JavaScript e senza scroll verticale (tests/ui_smoke.mjs)
-  ui:
+  # Interfaccia in un browser vero: ogni pagina su iPhone SE, 15 e 17 Pro, Simulato e Reale,
+  # senza errori JavaScript e senza scroll verticale (tests/ui_smoke.mjs). Le 7 prove sono divise in 4 job
+  # in parallelo; il job "ui" sotto resta l'unico controllo da richiedere (stesso nome di prima).
+  ui-shard:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -53,5 +58,15 @@ jobs:
         run: |
           npm install --no-save --no-package-lock playwright@1.49.1
           npx playwright install --with-deps chromium
-      - name: Prova dell'interfaccia
-        run: node tests/ui_smoke.mjs
+      - name: Prova dell'interfaccia (parte ${{ matrix.shard }} di 4)
+        run: SHARD=${{ matrix.shard }}/4 node tests/ui_smoke.mjs
+
+  ui:
+    needs: ui-shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Esito delle prove dell'interfaccia
+        run: |
+          if [ "${{ needs.ui-shard.result }}" != "success" ]; then echo "Prove dell'interfaccia: ${{ needs.ui-shard.result }}"; exit 1; fi
+          echo "Interfaccia: tutto in ordine."
