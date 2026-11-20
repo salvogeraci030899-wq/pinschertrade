@@ -82,7 +82,7 @@ main {
     width: 100%; min-height: 100%;
 }
 .page.active { display: flex; flex-direction: column; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 #page-home.active,
 #page-terminal.active,
@@ -215,7 +215,7 @@ main {
 #chart { width: 100%; height: 100%; min-width: 0; overflow: hidden; }
 .chart-container:not(.fullscreen) .chart-fs-header { display: none; }
 
-.btn-fullscreen { position: absolute; top: 10px; left: 10px; background: var(--overlay); border: 1px solid var(--border); color: var(--text-secondary); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.btn-fullscreen { position: absolute; top: 10px; left: 10px; background: var(--overlay); border: 1px solid var(--border); color: var(--text-secondary); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; }
 .btn-fullscreen:active { background: var(--overlay-strong); color: var(--text); }
 
 /* Schermo intero (Grafici e Home, stessa grafica): barra in alto con chiudi, coin e timeframe,
@@ -233,7 +233,7 @@ body.chart-fullscreen .header-row, body.chart-fullscreen .page-tabs, body.chart-
 /* Avviso e Condividi: solo a schermo intero, in basso a sinistra (Segnali e Home) */
 .chart-fs-tools { display: none; }
 .chart-container.fullscreen .chart-fs-tools { display: flex; gap: 8px; position: absolute; z-index: 10; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); left: calc(env(safe-area-inset-left, 0px) + 10px); }
-.chart-tool { background: var(--overlay); border: 1px solid var(--border); color: var(--text-secondary); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 0; }
+.chart-tool { background: var(--overlay); border: 1px solid var(--border); color: var(--text-secondary); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .chart-tool:active { background: var(--overlay-strong); color: var(--text); }
 .chart-tool:disabled { opacity: 0.5; }
 body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.snapshot-mode .home-chart-fullscreen { visibility: hidden; }
@@ -674,7 +674,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .home-chart-tf-bar { display: flex; gap: 4px; flex-shrink: 0; }
 .home-tf-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); border-radius: 12px; padding: 6px 10px; min-height: 32px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
 .home-tf-btn.active { background: var(--ui); color: var(--on-ui); border-color: var(--ui); }
-.home-chart-fullscreen { position: static; background: var(--overlay); border: 1px solid var(--border); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; color: var(--text-secondary); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); flex-shrink: 0; }
+.home-chart-fullscreen { position: static; background: var(--overlay); border: 1px solid var(--border); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; color: var(--text-secondary); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .home-chart-fullscreen:active { background: var(--overlay-strong); color: var(--text); }
 
 
@@ -1215,8 +1215,7 @@ html.glass[data-theme="light"] { --glass-bg: linear-gradient(135deg, rgba(255, 2
     --glass-border: rgba(255, 255, 255, 0.9); --glass-light: inset 0 1px 0 rgba(255, 255, 255, 1), 0 1px 2px rgba(0, 0, 0, 0.06); }
 html.glass .nav-bar, html.glass .header-icon-btn, html.glass .page-tabs, html.glass .pos-views, html.glass .market-toggle,
 html.glass .chart-tool, html.glass .btn-fullscreen, html.glass .home-chart-fullscreen {
-    background: var(--glass-bg); border-color: var(--glass-border);
-    -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); }
+    background: var(--glass-bg); border-color: var(--glass-border); }
 html.glass .nav-bar { box-shadow: var(--glass-light), 0 10px 30px rgba(0, 0, 0, 0.4); }
 html.glass .header-icon-btn, html.glass .chart-tool, html.glass .btn-fullscreen, html.glass .home-chart-fullscreen { box-shadow: var(--glass-light); }
 html.glass .page-tabs, html.glass .pos-views, html.glass .market-toggle { box-shadow: var(--glass-light); }
@@ -1263,8 +1262,7 @@ html.glass-anim[data-theme="light"] .wall-anim i:nth-child(3) { --c: rgba(191, 9
 @media (prefers-reduced-motion: reduce) { .wall-anim i { animation: none; } }
 html.glass .card-box, html.glass .home-card, html.glass .home-tile, html.glass .chart-container,
 html.glass .set-group, html.glass .active-trade-card, html.glass .log-item, html.glass .calc-card,
-html.glass .signal-history-item, html.glass .mkt-panel {
-    -webkit-backdrop-filter: blur(18px) saturate(170%); backdrop-filter: blur(18px) saturate(170%); box-shadow: var(--glass-light); }
+html.glass .signal-history-item, html.glass .mkt-panel { box-shadow: var(--glass-light); }
 html.glass .signal-cell, html.glass .auto-item, html.glass .bt-tile, html.glass .mode-pill, html.glass .btn-generic,
 html.glass .signal-info-bar, html.glass .signal-legend, html.glass .assist-ctx div { box-shadow: var(--glass-light); }
 .btn-link-secondary.on { color: var(--ui); }
@@ -1325,8 +1323,7 @@ html.glass .page { animation-name: pt-page-in; }
 
 /* Schermata di blocco con il vetro acceso: tasti, pallini, icona e link diventano superfici di vetro sullo sfondo con le luci
    (lo sfondo e, con "Dinamico", le luci che si muovono ci sono già: .lock-screen e .wall-anim). */
-html.glass .lock-key:not(.lock-aux) { background: var(--glass-bg); border: 1px solid var(--glass-border); box-shadow: var(--glass-light);
-    -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); }
+html.glass .lock-key:not(.lock-aux) { background: var(--glass-bg); border: 1px solid var(--glass-border); box-shadow: var(--glass-light); }
 html.glass .lock-key:not(.lock-aux):active { background: rgba(255, 255, 255, 0.22); }
 html.glass[data-theme="light"] .lock-key:not(.lock-aux):active { background: rgba(255, 255, 255, 0.95); }
 html.glass .lock-dots span { border-color: var(--glass-border); background: rgba(255, 255, 255, 0.08); box-shadow: var(--glass-light); }
@@ -1334,6 +1331,11 @@ html.glass .lock-dots span.on { background: var(--text); border-color: var(--tex
 html.glass[data-theme="light"] .lock-dots span { border-color: rgba(60, 70, 110, 0.35); background: rgba(255, 255, 255, 0.6); }
 html.glass[data-theme="light"] .lock-dots span.on { background: var(--text); border-color: var(--text); }
 html.glass .lock-icon { border: 1px solid var(--glass-border); box-shadow: var(--glass-light), 0 10px 30px rgba(0, 0, 0, 0.35); }
-html.glass .lock-link { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--r-pill); padding: 8px 18px; box-shadow: var(--glass-light);
-    -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); }
+html.glass .lock-link { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--r-pill); padding: 8px 18px; box-shadow: var(--glass-light); }
 #autoConfirmMsg { white-space: pre-line; }
+
+/* Tocchi immediati: niente attesa del doppio tocco e niente evidenziazione grigia sui tasti */
+button, .nav-item, .pill-btn, .lock-key, .signal-cell, .home-card.clickable, .home-line.clickable, [onclick] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+/* Schermata di blocco: sfondo fermo (le luci in movimento sotto i tasti rallentano il tastierino) */
+.lock-screen .wall-anim i { animation: none !important; }
+.lock-key { transition: none; }

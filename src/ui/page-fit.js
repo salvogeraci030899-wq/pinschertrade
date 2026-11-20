@@ -54,6 +54,8 @@ function reserveListHeights(page) {
 function fit(page, id) {
     const zoomVar = `--fit-zoom-${id}`;
     setVar(`--fit-extra-bottom-${id}`, overshoot(page) + 'px');
+    // percorso veloce: zoom già a 1 e la pagina entra -> niente da rifare (evita il va e vieni 1 → zoom → 1 a ogni cambio di testo)
+    if ((root.style.getPropertyValue(zoomVar) || '1') === '1' && root.style.getPropertyValue(`--fit-overflow-${id}`) !== 'auto' && !overflowing(page)) { reserveListHeights(page); return; }
     setVar(zoomVar, '1');
     setVar(`--fit-overflow-${id}`, 'hidden');
     reserveListHeights(page);
@@ -80,23 +82,32 @@ function fitActive() {
     }
 }
 
-function schedule() {
+// Cambi di misura e apertura pagina: subito (un fotogramma). Cambi di contenuto (testi e liste che si aggiornano ogni pochi
+// secondi): al massimo una volta ogni 250 ms, e mai con l'app in background.
+let lastRun = 0, timer = null;
+function schedule(urgent = true) {
+    if (document.hidden) return;
+    if (!urgent) {
+        if (timer) return;
+        timer = setTimeout(() => { timer = null; schedule(true); }, Math.max(0, 250 - (Date.now() - lastRun)));
+        return;
+    }
     if (scheduled) return;
     scheduled = true;
-    requestAnimationFrame(() => { scheduled = false; fitActive(); });
+    requestAnimationFrame(() => { scheduled = false; lastRun = Date.now(); fitActive(); });
 }
 
 export function initPageFit() {
     for (const id of PAGES) {
         const page = document.getElementById(`page-${id}`);
         if (!page) continue;
-        if ('ResizeObserver' in window) new ResizeObserver(schedule).observe(page);
+        if ('ResizeObserver' in window) new ResizeObserver(() => schedule(true)).observe(page);
         // Contenuto che cambia (liste, griglie, testi, elementi mostrati/nascosti con una classe)
-        new MutationObserver(schedule).observe(page, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+        new MutationObserver(() => schedule(false)).observe(page, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
     }
-    window.addEventListener('resize', schedule);
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', schedule);
-    schedule();
+    window.addEventListener('resize', () => schedule(true));
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => schedule(true));
+    schedule(true);
 }
 
 export { schedule as refitPages };

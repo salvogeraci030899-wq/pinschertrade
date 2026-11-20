@@ -94,15 +94,19 @@ export async function scanAllSignals(manual = false) {
     const newMatrix = {};
     let errors = 0;
 
-    for (const asset of CONFIG.SIGNAL_ASSETS) {
-        for (const tf of CONFIG.SIGNAL_TFS) {
-            const candles = await fetchCandlesForSignal(asset, tf);
-            if (!candles || candles.length < 210) { errors++; continue; }
+    // le richieste partono a gruppi di 6 insieme (prima una dopo l'altra: 24 attese in fila)
+    const jobs = CONFIG.SIGNAL_ASSETS.flatMap(asset => CONFIG.SIGNAL_TFS.map(tf => ({ asset, tf })));
+    for (let i = 0; i < jobs.length; i += 6) {
+        const batch = jobs.slice(i, i + 6);
+        const got = await Promise.all(batch.map(j => fetchCandlesForSignal(j.asset, j.tf)));
+        batch.forEach(({ asset, tf }, k) => {
+            const candles = got[k];
+            if (!candles || candles.length < 210) { errors++; return; }
             const price = State.livePx[asset] || candles[candles.length - 1].close;
             const cellData = {};
             CONFIG.SIGNAL_STRATEGIES.forEach(strat => { cellData[strat] = computeStrategySignal(candles, strat, price); });
             newMatrix[`${asset}_${tf}`] = cellData;
-        }
+        });
     }
 
     const prevMatrix = State.signalPrevMatrix;
@@ -173,11 +177,23 @@ export function renderSignalGrid() {
     const pages = [];
     for (let i = 0; i < signalOrder.length; i += 3) pages.push(signalOrder.slice(i, i + 3));
     const prevPage = grid.clientWidth ? Math.round(grid.scrollLeft / grid.clientWidth) : 0;
-    grid.innerHTML = pages.map(assets => `<div class="signal-page">${assets.map(cells).join('')}</div>`).join('');
+    const html = pages.map(assets => `<div class="signal-page">${assets.map(cells).join('')}</div>`).join('');
+    // niente ridisegno se non è cambiato nulla, né mentre scorri col dito (la pagina saltava all'inizio)
+    if (grid.dataset.sig === html) return;
+    if (gridTouching() && grid.dataset.sig) { clearTimeout(renderSignalGrid.retry); renderSignalGrid.retry = setTimeout(renderSignalGrid, 400); return; }
+    grid.dataset.sig = html;
+    grid.innerHTML = html;
+    grid.style.scrollBehavior = 'auto';
     grid.scrollLeft = prevPage * grid.clientWidth;
+    grid.style.scrollBehavior = '';
     const dots = $('signalDots');
     if (dots) dots.innerHTML = pages.map((_, i) => `<div class="info-dot${i === prevPage ? ' active' : ''}" onclick="goToSignalPage(${i})"></div>`).join('');
 }
+// dito sulla griglia o scorrimento ancora in corso
+let touchUntil = 0;
+const gridTouching = () => Date.now() < touchUntil;
+document.addEventListener('touchstart', e => { if (e.target.closest && e.target.closest('#signalGrid')) touchUntil = Date.now() + 1500; }, { passive: true });
+document.addEventListener('touchend', e => { if (e.target.closest && e.target.closest('#signalGrid')) touchUntil = Date.now() + 700; }, { passive: true });
 
 // Ordine delle coin nelle pagine: prima quelle con il segnale più forte, poi posizione aperta o avviso vicino.
 // Si decide quando si apre la scheda Segnali (e dopo una scansione se la scheda non è in vista), mai mentre la guardi.
@@ -194,11 +210,17 @@ export function orderSignalAssets() {
 }
 
 export function goToSignalPage(i) { const g = $('signalGrid'); if (g) g.scrollTo({ left: i * g.clientWidth, behavior: 'smooth' }); }
+let dotsFrame = 0;
 export function updateSignalDots() {
-    const g = $('signalGrid');
-    if (!g || !g.clientWidth) return;
-    const i = Math.round(g.scrollLeft / g.clientWidth);
-    document.querySelectorAll('#signalDots .info-dot').forEach((d, k) => d.classList.toggle('active', k === i));
+    if (dotsFrame) return;
+    dotsFrame = requestAnimationFrame(() => {
+        dotsFrame = 0;
+        const g = $('signalGrid');
+        if (!g || !g.clientWidth) return;
+        touchUntil = Math.max(touchUntil, Date.now() + 300);      // finché scorre, la griglia non si ridisegna
+        const i = Math.round(g.scrollLeft / g.clientWidth);
+        document.querySelectorAll('#signalDots .info-dot').forEach((d, k) => d.classList.toggle('active', k === i));
+    });
 }
 
 function cells(asset) {
