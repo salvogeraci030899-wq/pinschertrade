@@ -1,20 +1,20 @@
 {
- "updated_at": "2026-11-20T10:02:37+00:00",
+ "updated_at": "2026-11-20T11:02:36+00:00",
  "product_type": "USDT-FUTURES",
  "symbols": {
   "BTCUSDT": {
    "symbol": "BTCUSDT",
-   "last": 61663.1,
-   "mark": 61668.2,
-   "index": 61700.257608695654,
-   "premium_pct": -0.052,
-   "funding_rate_pct": -0.0034,
+   "last": 61959.2,
+   "mark": 61960.8,
+   "index": 61994.788260869565,
+   "premium_pct": -0.0548,
+   "funding_rate_pct": -0.0031,
    "funding_interval_h": 8.0,
    "next_funding_ts": 1795190400,
-   "open_interest": 37028.7536,
-   "open_interest_usd": 2283496583.0,
-   "long_accounts_pct": 81.02,
-   "long_positions_pct": 49.81,
+   "open_interest": 37069.1772,
+   "open_interest_usd": 2296835875.0,
+   "long_accounts_pct": 81.19,
+   "long_positions_pct": 49.76,
    "maker_fee_pct": 0.02,
    "taker_fee_pct": 0.06,
    "max_leverage": 150.0,
@@ -80,21 +80,21 @@
      "mmr_pct": 60.0
     }
    ],
-   "t": 1795168957,
-   "open_interest_change_24h_pct": -0.1
+   "t": 1795172556,
+   "open_interest_change_24h_pct": 0.19
   },
   "ETHUSDT": {
    "symbol": "ETHUSDT",
-   "last": 1747.08,
-   "mark": 1747.49,
-   "index": 1748.1089130434782,
-   "premium_pct": -0.0354,
-   "funding_rate_pct": 0.001,
+   "last": 1753.94,
+   "mark": 1753.94,
+   "index": 1754.767391304348,
+   "premium_pct": -0.0472,
+   "funding_rate_pct": 0.0009,
    "funding_interval_h": 8.0,
    "next_funding_ts": 1795190400,
-   "open_interest": 766555.7699999996,
-   "open_interest_usd": 1339548543.0,
-   "long_accounts_pct": 84.21,
+   "open_interest": 767912.0699999998,
+   "open_interest_usd": 1346871696.0,
+   "long_accounts_pct": 84.06,
    "long_positions_pct": 50.76,
    "maker_fee_pct": 0.02,
    "taker_fee_pct": 0.06,
@@ -176,22 +176,22 @@
      "mmr_pct": 60.0
     }
    ],
-   "t": 1795168957,
-   "open_interest_change_24h_pct": 0.72
+   "t": 1795172556,
+   "open_interest_change_24h_pct": 1.06
   },
   "SOLUSDT": {
    "symbol": "SOLUSDT",
-   "last": 72.005,
-   "mark": 72.005,
-   "index": 72.04782608695652,
-   "premium_pct": -0.0594,
-   "funding_rate_pct": -0.0012,
+   "last": 72.308,
+   "mark": 72.32,
+   "index": 72.36043478260869,
+   "premium_pct": -0.0559,
+   "funding_rate_pct": -0.0021,
    "funding_interval_h": 8.0,
    "next_funding_ts": 1795190400,
-   "open_interest": 4677236.000000001,
-   "open_interest_usd": 336784378.0,
-   "long_accounts_pct": 88.2,
-   "long_positions_pct": 51.8,
+   "open_interest": 4705453.800000001,
+   "open_interest_usd": 340298419.0,
+   "long_accounts_pct": 88.37,
+   "long_positions_pct": 51.78,
    "maker_fee_pct": 0.02,
    "taker_fee_pct": 0.06,
    "max_leverage": 100.0,
@@ -247,8 +247,8 @@
      "mmr_pct": 60.0
     }
    ],
-   "t": 1795168957,
-   "open_interest_change_24h_pct": -0.72
+   "t": 1795172556,
+   "open_interest_change_24h_pct": -0.18
   }
  }
 }
