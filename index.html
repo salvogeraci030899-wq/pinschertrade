@@ -365,16 +365,10 @@
                     <div class="dashboard-slide">
                         <div id="ai-panel">
                             <div class="ai-header">
-                                <span class="ai-title">Piano IA</span>
+                                <span class="ai-title">Analisi AI</span>
                                 <button type="button" class="ai-live-btn" onclick="requestMarketAnalysis()">Analisi AI live</button>
-                                <span class="ai-bias" id="ai-bias">---</span>
                             </div>
-                            <div class="ai-grid">
-                                <div class="ai-item"><div class="label">Entry</div><div class="val" id="ai-entry">---</div></div>
-                                <div class="ai-item"><div class="label">Stop Loss</div><div class="val text-danger" id="ai-sl">---</div></div>
-                                <div class="ai-item"><div class="label">Target</div><div class="val text-accent" id="ai-tp">---</div></div>
-                            </div>
-                            <div class="ai-reason" id="ai-reason">---</div>
+                            <div class="ai-reason">Prezzo, candele, funding e livelli del momento per la coin selezionata, letti da un modello linguistico. È un'opinione, non una previsione verificata.</div>
                         </div>
                     </div>
                     <div class="dashboard-slide">
@@ -409,17 +403,11 @@
                     <div class="info-dot" onclick="goToDashboardSlide(2)"></div>
                 </div>
             </div>
-            <div class="controls-row">
-                <button class="btn-calc" id="btn-calc" onclick="sendToCalculator()" disabled>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-                    Analizza Setup
-                </button>
-            </div>
             </div>
             <div id="mktSig" class="mkt-view" style="display:none">
             <div id="sigView" class="signals-view">
             <div class="signal-info-bar" id="signalInfoBar">
-                Scansione ogni 10 min · Consensus su <b>4 sorgenti</b>: Kronos AI + 3 strategie. Stato: <span class="be-badge neutral" id="signalScanStatus">—</span><br>
+                Scansione ogni 10 min · Consensus su <b>3 strategie</b>. Stato: <span class="be-badge neutral" id="signalScanStatus">—</span><br>
                 Notifiche: <span id="signalNotifStatus" class="badge-notif-off">OFF</span>
             </div>
             <div class="signal-actions">
@@ -429,7 +417,6 @@
             <div class="signal-grid" id="signalGrid" onscroll="updateSignalDots()"></div>
             <div class="info-dots signal-dots" id="signalDots"></div>
             <div class="signal-legend">
-                <span><span class="legend-dot k"></span>Kronos</span>
                 <span><span class="legend-dot long"></span>LONG</span>
                 <span><span class="legend-dot short"></span>SHORT</span>
                 <span><span class="legend-dot"></span>Neutro</span>
@@ -712,7 +699,7 @@
                     </div>
                     <div class="rule-card">
                         <div class="rule-card-title default">Il Ciclo Operativo</div>
-                        <div class="rule-step"><div class="content"><b>1. Segnale</b> → Kronos AI o Signal Engine ti avvertono</div></div>
+                        <div class="rule-step"><div class="content"><b>1. Segnale</b> → il Signal Engine delle 3 strategie ti avvisa</div></div>
                         <div class="rule-step"><div class="content"><b>2. Analisi</b> → Controlli coerenza tra timeframe e consensus</div></div>
                         <div class="rule-step"><div class="content"><b>3. Trade</b> → Calcoli size, R:R, fee e tasse, poi apri il trade: simulato nell'app oppure, in modalità Reale, ordine vero su Bitget (con conferma)</div></div>
                         <div class="rule-step"><div class="content"><b>4. Apertura</b> → Trade simulato con prezzi reali</div></div>
@@ -727,7 +714,7 @@
                     <div class="rule-card">
                         <div class="rule-card-title blue">Architettura del Sistema</div>
                         <div class="rule-step"><div class="content"><b>Bot Python</b> su <em>GitHub Actions</em>. Scarica candele da Bitget, calcola indicatori tecnici, esegue simulazioni Monte Carlo, genera un piano operativo con entry/SL/TP, e scrive il tutto in <span class="mono">dashboard.json</span>.</div></div>
-                        <div class="rule-step"><div class="content"><b>dashboard.json</b> è il file statico che contiene, per ogni coppia asset/timeframe: storico candele, forecast, bande di confidenza, probabilità di rialzo e piano operativo AI. Viene pubblicato con il sito (GitHub Pages o Vercel).</div></div>
+                        <div class="rule-step"><div class="content"><b>dashboard.json</b> è il file statico che contiene, per ogni coppia asset/timeframe i dati di un vecchio modello di previsione (Kronos), tolto il 2026-11-20: oggi è vuoto e non viene più scritto.</div></div>
                         <div class="rule-step"><div class="content"><b>Comandi</b> (Aggiorna ora, Agente, Account): partono da GitHub con il token salvato sul telefono, oppure da un server comandi (Vercel o Cloudflare) protetto da <span class="mono">APP_SECRET</span>. Avviano solo workflow del repository, che ricontrollano ogni comando.</div></div>
                         <div class="rule-step"><div class="content"><b>Frontend PWA</b>: <span class="mono">index.html</span>, <span class="mono">style.css</span> e moduli JS in <span class="mono">src/</span>, Lightweight Charts 4.1.3, localStorage per persistenza, manifest e meta per comportamento nativo su iPhone.</div></div>
                         <div class="rule-step"><div class="content"><b>Bitget API</b>: prezzi, candele e dati futures pubblici. Le chiavi private servono solo all'esecutore per gli ordini veri, stanno nei segreti di GitHub e mai nell'app.</div></div>
@@ -736,7 +723,7 @@
                     <div class="rule-card">
                         <div class="rule-card-title default">Flusso Dati</div>
                         <div class="rule-step"><div class="content"><b>GitHub Actions</b> (ogni 15 min, avviato da Cloudflare) → scarica dati → calcola → scrive <span class="mono">dashboard.json</span>, track record, dati futures, prova su carta ed esecutore → il sito li pubblica → PinscherTrade li legge.</div></div>
-                        <div class="rule-step"><div class="content"><b>Signal Engine</b> (ogni 10 min) → chiama Bitget per candele fresche → calcola 3 strategie + Kronos AI → aggrega consensus → eventualmente notifica.</div></div>
+                        <div class="rule-step"><div class="content"><b>Signal Engine</b> (ogni 10 min) → chiama Bitget per candele fresche → calcola 3 strategie → aggrega consensus → eventualmente notifica.</div></div>
                         <div class="rule-step"><div class="content"><b>Price Polling</b> (ogni 5 sec) → aggiorna prezzo header, PnL trade attivi, verifica chiusure TP/SL automatiche.</div></div>
                     </div>
                 </div>
@@ -771,14 +758,14 @@
                 <div class="info-slide">
                     <div class="rule-card">
                         <div class="rule-card-title blue">Signal Engine — Consensus</div>
-                        <div class="rule-step"><div class="content"><b>4 sorgenti</b> valutate su 9 celle (3 asset × 3 timeframe): <span class="lbl-blue">Kronos AI</span> + <span class="lbl-green">Breakout</span> + <span class="lbl-yellow">Mean Reversion</span> + <span class="lbl-red">MA Crossover</span>.</div></div>
+                        <div class="rule-step"><div class="content"><b>3 strategie</b> valutate su ogni cella (coin × timeframe): <span class="lbl-green">Breakout</span> + <span class="lbl-yellow">Mean Reversion</span> + <span class="lbl-red">MA Crossover</span>.</div></div>
                         <div class="rule-step"><div class="content"><b>Consensus</b>: serve almeno <b>2 sorgenti</b> concordi (LONG o SHORT) perché la cella mostri un segnale. Se solo una dice LONG e le altre 3 sono neutre, resta NEUTRO.</div></div>
                         <div class="rule-step"><div class="content"><b>Forza del segnale</b> = media delle strength delle sorgenti concordi. Più sorgenti e più strength = segnale più affidabile.</div></div>
                     </div>
                     <div class="rule-card">
                         <div class="rule-card-title green">Come leggere la griglia</div>
                         <div class="rule-step"><div class="content">Ogni cella mostra: <b>asset + timeframe</b>, badge con consensus e <b>N/4</b> (quante sorgenti sono d'accordo), 4 pallini indicatori, e label <b>K:LONG</b> o <b>K:SHORT</b> o <b>K:—</b>.</div></div>
-                        <div class="rule-step"><div class="content">Il <b>primo pallino ha bordo blu</b> = Kronos AI. Gli altri 3 = Breakout, Mean Reversion, MA Crossover nell'ordine.</div></div>
+                        <div class="rule-step"><div class="content">I <b>3 pallini</b> = Breakout, Mean Reversion, MA Crossover nell'ordine.</div></div>
                         <div class="rule-step"><div class="content">Pallino verde pieno = segnale LONG. Pallino rosso pieno = SHORT. Pallino grigio vuoto = neutro.</div></div>
                         <div class="rule-step"><div class="content">Tap su una cella apre il <b>dettaglio completo</b>: motivazione di ogni sorgente + consensus finale + pulsante "Apri sui Grafici". La griglia è in Mercato → Segnali.</div></div>
                     </div>
@@ -793,19 +780,12 @@
                 <!-- SLIDE 4 -->
                 <div class="info-slide">
                     <div class="rule-card">
-                        <div class="rule-card-title blue">Kronos AI — Il Modello</div>
-                        <div class="rule-step"><div class="content">Il bot Python calcola <b>prob_up</b> = percentuale di simulazioni Monte Carlo che sono finite sopra il prezzo attuale dopo N passi.</div></div>
-                        <div class="rule-step"><div class="content"><b>NON è "l'80% di probabilità che salga".</b> È: "su 100 scenari simulati, 80 sono finiti sopra". Misura il <em>momentum</em>, non è una predizione.</div></div>
-                        <div class="rule-step"><div class="content">Il <b>Piano Operativo</b> include: bias (LONG/SHORT/NEUTRO), entry, stop loss, take profit, reasoning testuale, flag <b>tradeable</b>, min_rr.</div></div>
-                        <div class="rule-step"><div class="content"><b>tradeable = false</b> quando il R:R calcolato è sotto la soglia (default 1.5). In questo caso il pulsante "Analizza Setup" diventa arancione con dicitura "R/R Basso".</div></div>
+                        <div class="rule-card-title blue">Strategie, carta ed esecutore</div>
+                        <div class="rule-step"><div class="content">Le entrate automatiche vengono dalle <b>strategie del laboratorio</b>, provate sullo storico con le correzioni per le prove multiple. Il grafico mostra solo le candele vere di Bitget, senza previsioni.</div></div>
+                        <div class="rule-step"><div class="content">Ogni strategia gira prima <b>su carta</b>, con gli stessi limiti del reale. Solo una strategia <b>confermata</b> dalla prova finale può passare al reale.</div></div>
+                        <div class="rule-step"><div class="content">L'<b>esecutore</b> applica rischio per trade, numero di posizioni, stop giornaliero e, in aggiunta, l'obiettivo di portafoglio: chiude tutto quando il totale delle posizioni raggiunge la soglia.</div></div>
                     </div>
-                    <div class="rule-card">
-                        <div class="rule-card-title green">Forecast e Bande di Confidenza</div>
-                        <div class="rule-step"><div class="content">Il grafico mostra le <b>candele storiche</b> (verdi/rosse), poi il <b>forecast</b> (candele arancioni trasparenti) e le <b>bande di confidenza</b> (linee tratteggiate).</div></div>
-                        <div class="rule-step"><div class="content">Le bande indicano l'intervallo atteso al 90% di confidenza. Se il prezzo reale esce dalle bande, il modello si sta sbagliando: è un segnale di cautela.</div></div>
-                        <div class="rule-step"><div class="content">Il forecast è una <em>proiezione statistica</em>, non un target. Non usarlo come TP reale: per quello c'è il Piano Operativo con entry/SL/TP calcolati.</div></div>
-                    </div>
-                    <div class="warning-highlight"><b>Attenzione</b>: il modello è validato parzialmente. Fino a quando non hai 30+ trade chiusi in Risultati, la probabilità è un <b>filtro</b>, non una previsione affidabile.</div>
+                    <div class="warning-highlight"><b>Attenzione</b>: finché nessuna strategia è confermata, nessun segnale è una prova di vantaggio. Fino a 30+ trade chiusi in Risultati, i numeri sono soprattutto caso.</div>
                 </div>
 
                 <!-- SLIDE 5 -->
@@ -907,7 +887,7 @@
                     <div class="rule-card">
                         <div class="rule-card-title yellow">Cosa ti arriva</div>
                         <div class="rule-step"><div class="content">Quando il Signal Engine rileva un cambio di consensus (es. BTC 4H passa a LONG con 3/4 sorgenti), ti invia un messaggio con:</div></div>
-                        <div class="rule-step"><div class="content">Asset + timeframe + consensus · forza · stato di ogni sorgente (Kronos, Breakout, Mean Rev, MA Cross) · prezzo · timestamp.</div></div>
+                        <div class="rule-step"><div class="content">Asset + timeframe + consensus · forza · stato di ogni strategia (Breakout, Mean Rev, MA Cross) · prezzo · timestamp.</div></div>
                         <div class="rule-step"><div class="content"><b>Non spam</b>: la notifica parte solo se il consensus <em>cambia</em> rispetto all'ultima scansione. Lo stesso LONG su BTC 4H non ti arriva 10 volte di fila.</div></div>
                         <div class="rule-step"><div class="content"><b>Comandi del bot</b>: /stato, /posizioni, /agente, /carta, /avvisi rispondono con i dati del momento, in sola lettura. Sotto i messaggi ci sono i tasti Stato, Posizioni e Agente, che rispondono dentro Telegram; negli allarmi c'è anche Emergenza, che chiede conferma (Sì/No, valida 2 minuti). /emergenza fa lo stesso. Rispondono solo alla tua chat.</div></div>
                     </div>
@@ -964,7 +944,7 @@
                     <div class="rule-card">
                         <div class="rule-card-title blue">Glossario</div>
                         <div class="rule-step"><div class="content"><b>ATR</b> · Average True Range. Misura la volatilità media. Usato per hint SL.</div></div>
-                        <div class="rule-step"><div class="content"><b>Consensus</b> · Accordo tra sorgenti (Kronos + 3 strategie). ≥ 2 = segnale valido.</div></div>
+                        <div class="rule-step"><div class="content"><b>Consensus</b> · Accordo tra le 3 strategie. ≥ 2 = segnale valido.</div></div>
                         <div class="rule-step"><div class="content"><b>EMA</b> · Exponential Moving Average. Media mobile esponenziale (20/50/200).</div></div>
                         <div class="rule-step"><div class="content"><b>Expectancy</b> · PnL medio per trade. Positivo = profittevole.</div></div>
                         <div class="rule-step"><div class="content"><b>Fee</b> · Commissione exchange (ingresso + uscita). 0.1% tipico spot.</div></div>
@@ -986,7 +966,7 @@
                         <div class="rule-step"><div class="content"><b>3. Prova finale</b> → gli ultimi 12 mesi sono sigillati: una candidata li vede una volta sola, a regole congelate. Solo così diventa <b>confermata</b>.</div></div>
                         <div class="rule-step"><div class="content"><b>4. Su carta</b> → il bot segue i segnali dal vivo senza ordini (Agente → Strategie) e avvisa su Telegram.</div></div>
                         <div class="rule-step"><div class="content"><b>5. Reale</b> → solo strategie confermate, con l'interruttore degli ordini veri acceso e le chiavi Bitget impostate.</div></div>
-                        <div class="highlight-box"><b>Kronos</b>: validato su oltre 3.700 previsioni fuori campione, <b>nessun vantaggio dimostrato</b>. Per questo i suoi segnali portano l'avviso "non validato".</div>
+                        <div class="highlight-box"><b>Kronos tolto</b> il 2026-11-20: su 789 previsioni verificate indovinava la direzione il 37,7% delle volte, quasi come il caso. Le entrate automatiche vengono ora dalle strategie del laboratorio.</div>
                     </div>
                     <div class="rule-card">
                         <div class="rule-card-title blue">Agente → Strategie e Rischio</div>
@@ -1032,7 +1012,7 @@
                     </div>
                     <div class="rule-card">
                         <div class="rule-card-title blue">Il percorso di una strategia</div>
-                        <div class="rule-step"><div class="content"><b>Coin:</b> le strategie lavorano su BTC, ETH, SOL, XRP, DOGE, BNB, ADA e LINK (più mercati = più trade e più conferme). Nel Mercato le 8 coin sono sulla riga in alto (scorrono di lato), accanto ai timeframe; per XRP, DOGE, BNB, ADA e LINK il grafico mostra le candele vere di Bitget ma non la previsione di Kronos (solo BTC, ETH e SOL): per un'analisi c'è Analisi AI live. I segnali tecnici sono su tutte le 8, a pagine da 3 coin. In Home le 3 coin in alto si scelgono da sole ogni minuto: prima quelle con una posizione aperta (vera, simulata o su carta), poi quelle con un avviso di prezzo entro il 3%, poi quelle che si muovono di più nelle 24 ore.</div></div>
+                        <div class="rule-step"><div class="content"><b>Coin:</b> le strategie lavorano su BTC, ETH, SOL, XRP, DOGE, BNB, ADA e LINK (più mercati = più trade e più conferme). Nel Mercato le 8 coin sono sulla riga in alto (scorrono di lato), accanto ai timeframe; il grafico mostra le candele vere di Bitget; per un'analisi c'è Analisi AI live. I segnali tecnici sono su tutte le 8, a pagine da 3 coin. In Home le 3 coin in alto si scelgono da sole ogni minuto: prima quelle con una posizione aperta (vera, simulata o su carta), poi quelle con un avviso di prezzo entro il 3%, poi quelle che si muovono di più nelle 24 ore.</div></div>
                         <div class="rule-step"><div class="content"><b>Pagine che si sistemano da sole</b> (quando le apri, mai mentre le guardi): il Mercato parte sulla coin più rilevante; i Segnali mettono in prima pagina le coin con il segnale più forte o una posizione; gli Avvisi mostrano in cima i più vicini a scattare; Risultati si apre sulla fonte che ha dati nel periodo; l'Agente si apre su Rischio se c'è un blocco, un'emergenza o una pausa per eventi. Se scegli tu una coin o una scheda, la tua scelta vale per 30 minuti. Trade e timeframe non cambiano mai da soli.</div></div>
                         <div class="rule-step"><div class="content"><b>1. Candidata</b> → il laboratorio la trova migliore del mercato dopo i costi, e regge il controllo sulle prove multiple.</div></div>
                         <div class="rule-step"><div class="content"><b>2. Su carta</b> → segue i segnali dal vivo senza soldi. Va peggio dello storico? Spenta. Con meno di 4 strategie accese, l'agente aggiunge le più promettenti non candidate <b>in osservazione</b>: solo carta, per avere dati prima; niente prova finale né reale finché non diventano candidate.</div></div>
@@ -1122,11 +1102,12 @@
     </main>
 
     <!-- ==================== NAVBAR ==================== -->
+    <div class="nav-wrap">
+    <div class="nav-dots" id="navDots">
+        <div class="nav-dot active" onclick="scrollNavTo(0)"></div>
+        <div class="nav-dot" onclick="scrollNavTo(1)"></div>
+    </div>
     <nav class="nav-bar">
-        <div class="nav-dots" id="navDots">
-            <div class="nav-dot active" onclick="scrollNavTo(0)"></div>
-            <div class="nav-dot" onclick="scrollNavTo(1)"></div>
-        </div>
         <div class="nav-scroll" id="navScroll">
             <div class="nav-page">
                 <div class="nav-item active" onclick="switchTab('home')" id="nav-home">
@@ -1168,6 +1149,7 @@
             </div>
         </div>
     </nav>
+    </div>
 </div>
 
 <!-- ==================== MODALI ==================== -->

@@ -5,7 +5,7 @@ import * as Terminal from './terminal.js';
 
 // --- ANALISI AI IN TEMPO REALE ---
 // Al tocco raccoglie i dati del momento: prezzo live, candele 1d/4h/1h da Bitget, funding e open
-// interest dei futures, consenso delle regole tecniche e piano Kronos. Il server (src/core/commands.js)
+// interest dei futures, consenso delle regole tecniche. Il server (src/core/commands.js)
 // calcola gli indicatori e chiede a un modello Groq un'analisi strutturata. È un'opinione: nessuno
 // di questi dati ha un vantaggio dimostrato, e il testo lo dice.
 
@@ -54,14 +54,12 @@ export async function fetchAnalysis({ symbol, tf, trade = null }, onStep = () =>
     if (!d1.length && !h4.length && !h1.length) throw new Error('Bitget non risponde: impossibile leggere le candele live.');
     const fut = Terminal.getFutures ? Terminal.getFutures(symbol) : null;
     const agg = aggregateCellSignals(symbol, tf);
-    const kronos = State.allData && State.allData[`${symbol}_${tf}`];
     const px = price || (trade && (trade.currentPrice || trade.entryPrice));
     const payload = {
         symbol, timeframe: tf, type: trade ? trade.type : 'NONE', currentPrice: px,
         candles: { '1d': d1, '4h': h4, '1h': h1 },
         futures: fut ? { funding_rate_pct: fut.funding_rate_pct, oi_change_24h_pct: fut.open_interest_change_24h_pct, long_positions_pct: fut.long_positions_pct } : {},
-        consensus: agg ? { direction: agg.consensus, agreement: agg.agreement } : {},
-        ai_plan: kronos && kronos.ai_plan ? { bias: kronos.ai_plan.bias, prob_up: kronos.prob_up } : {}
+        consensus: agg ? { direction: agg.consensus, agreement: agg.agreement } : {}
     };
     if (trade) Object.assign(payload, {
         entry: trade.entryPrice, stop: trade.slPrice, take: trade.tpPrice, leverage: trade.leverage || 1,

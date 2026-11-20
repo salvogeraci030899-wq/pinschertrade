@@ -29,7 +29,7 @@ export function initCalculator() {
 
 let futFeeTouched = false;
 const TF_HOURS = { '1h': 1, '4h': 4, '1d': 24 };
-const HORIZON_CANDLES = 7;        // durata di un segnale Kronos, in candele
+const HORIZON_CANDLES = 7;        // durata prevista di un'operazione, in candele
 const PRUDENT_MAX_LEV = 5;       // tetto prudenziale (lo stesso dell'esecutore automatico, executor.RISK_BOUNDS)
 const FALLBACK_MMR = 0.005;       // margine di mantenimento usato se le fasce di Bitget non sono disponibili
 
@@ -333,22 +333,6 @@ export function renderBreakEven() {
     else { el('beBadge').textContent = 'In perdita'; el('beBadge').className = 'be-badge bad'; }
 }
 
-export function sendToCalculator() {
-    if (!State.currentAIPlan) return;
-    if (State.currentAIPlan.bias === 'NEUTRO' && !State.currentAIPlan.direction) { 
-        if (window.showAlert) window.showAlert('Piano neutro', 'Nessun setup direzionale.'); 
-        return; 
-    }
-    State.calcContext = { asset: State.currentAsset, tf: State.currentTF };
-    setCalcDirection(State.currentAIPlan.direction || (State.currentAIPlan.bias === 'SHORT' ? 'SHORT' : 'LONG'));
-    $('calcEntry').value = State.currentAIPlan.entry;
-    $('calcStop').value = State.currentAIPlan.stop_loss;
-    $('calcTarget').value = State.currentAIPlan.take_profit;
-    setCtxLabel();
-    if (window.switchTab) window.switchTab('calculator');
-    calc();
-}
-
 // --- Modalità della pagina Trade: Simulato (trade dell'app) o Reale (ordini veri sui futures di Bitget) ---
 const isRealMode = () => tradingMode().mode === 'on';
 export function syncTradeMode() {
@@ -511,17 +495,10 @@ export async function openTradeFromCalculator() {
         const livePrice = parseFloat(json.data[0].lastPr);
         State.pendingTradePayload.livePrice = livePrice;
 
-        const higher = { '1h': ['4h', '1d'], '4h': ['1d'], '1d': [] }[c.tf] || [];
         let blockReason = null;
-        for (const tf of higher) {
-            const d = State.allData && State.allData[`${c.asset}_${tf}`];
-            if (!d || typeof d.prob_up !== 'number') continue;
-            const sig = d.prob_up >= 80 ? 'LONG' : (d.prob_up <= 20 ? 'SHORT' : 'NEUTRO');
-            if (sig !== 'NEUTRO' && sig !== direction) { blockReason = `Conflitto ${tf}: dice ${sig} (${d.prob_up}%), ma stai aprendo ${direction}.`; break; }
-        }
         
         const rr = Math.abs(target - entry) / Math.abs(entry - stop);
-        const need = (State.allData && State.allData[`${c.asset}_${c.tf}`]?.ai_plan?.min_rr) || 1.5;
+        const need = 1.5;
         if (!blockReason && rr < need) blockReason = `R:R ${rr.toFixed(2)} è sotto ${need}.`;
         if (!blockReason && State.simState.activeTrades.some(t => t.symbol === c.asset)) blockReason = `Hai già una posizione su ${SYM(c.asset)}.`;
         
@@ -569,7 +546,7 @@ function calcPageOvershoot(page) {
     if (!main) return 0;
     const pageBottom = main.getBoundingClientRect().top - main.scrollTop + page.offsetTop - main.offsetTop + page.offsetHeight;
     let limit = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const nav = document.querySelector('.nav-bar');
+    const nav = document.querySelector('.nav-wrap');
     // getClientRects vuoto = navbar nascosta (es. grafico a schermo intero); offsetParent non va bene: è null per gli elementi fixed
     if (nav && nav.getClientRects().length > 0) limit = Math.min(limit, nav.getBoundingClientRect().top);
     return Math.max(0, Math.ceil(pageBottom - limit));

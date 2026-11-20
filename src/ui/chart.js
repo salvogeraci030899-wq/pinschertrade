@@ -1,5 +1,5 @@
 // src/ui/chart.js
-// Factory unica per i grafici dell'app (Kronos e candele).
+// Factory unica per i grafici dell'app (candele, volumi, markers e linee di prezzo).
 // Usata da ui/terminal.js (candele + forecast + bande + markers + priceLines)
 // e da ui/home-charts.js (candele + volume).
 
@@ -33,8 +33,6 @@ const DEFAULTS = {
     upColor: '#30d158',
     downColor: '#ff453a',
     showVolume: false,
-    showForecast: false,
-    showBands: false,
     interactive: true
 };
 
@@ -102,9 +100,6 @@ export function createChart(el, opts = {}) {
         chart,
         candleSeries,
         volumeSeries: null,
-        forecastSeries: null,
-        upperSeries: null,
-        lowerSeries: null,
         priceLines: [],
 
         transparent: opts.bgColor === 'transparent',
@@ -133,28 +128,6 @@ export function createChart(el, opts = {}) {
         });
         handle.volumeSeries.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     }
-    if (cfg.showForecast) {
-        handle.forecastSeries = chart.addCandlestickSeries({
-            upColor: 'rgba(255, 159, 10, 0.6)',
-            downColor: 'rgba(255, 159, 10, 0.6)',
-            borderVisible: false
-        });
-    }
-    if (cfg.showBands) {
-        handle.upperSeries = chart.addLineSeries({
-            color: '#8e8e93',
-            lineWidth: 1,
-            lineStyle: LightweightCharts.LineStyle.Dashed,
-            crosshairMarkerVisible: false
-        });
-        handle.lowerSeries = chart.addLineSeries({
-            color: '#8e8e93',
-            lineWidth: 1,
-            lineStyle: LightweightCharts.LineStyle.Dashed,
-            crosshairMarkerVisible: false
-        });
-    }
-
     ro = new ResizeObserver(() => {
         const w = el.clientWidth;
         const h = el.clientHeight;
@@ -196,17 +169,6 @@ export function setCandles(handle, candles) {
 export function setVolume(handle, data) {
     if (!handle || !handle.volumeSeries) return;
     try { handle.volumeSeries.setData(data || []); } catch (e) { /* silent */ }
-}
-
-export function setForecast(handle, data) {
-    if (!handle || !handle.forecastSeries) return;
-    try { handle.forecastSeries.setData(data || []); } catch (e) { /* silent */ }
-}
-
-export function setBands(handle, upper, lower) {
-    if (!handle) return;
-    if (handle.upperSeries) { try { handle.upperSeries.setData(upper || []); } catch (e) {} }
-    if (handle.lowerSeries) { try { handle.lowerSeries.setData(lower || []); } catch (e) {} }
 }
 
 export function setMarkers(handle, markers) {
