@@ -438,8 +438,6 @@ function generalFacts(c) {
 Prezzi: ${prices}.
 Modalità ordini: ${c.trading === 'on' ? 'reale' : 'simulato'}. Emergenza: ${c.emergency ? 'sì' : 'no'}.
 Saldo Bitget: ${n(c.bitget_total)} USDT, posizioni reali ${n(c.bitget_positions)}.
-Conto simulato dell'app: capitale libero ${n(c.sim_free)} USDT, posizioni aperte ${n(c.sim_open)}.
-Ultimo giro del bot: ${n(c.bot_minutes)} minuti fa (parte ogni 15 minuti).
 Strategie accese (massimo 6): ${active.length ? active.join('; ') : 'nessuna'}.
 Confermate dalla prova finale: ${list(c.confirmed, 10).join(', ') || 'nessuna'}.
 Avvisi di prezzo attivi: ${alerts.length ? alerts.join(', ') : 'nessuno'}.

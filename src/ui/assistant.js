@@ -15,10 +15,8 @@ import { findRealPosition, realPositions } from './history.js';
 // Voce: registrazione nel telefono (MediaRecorder) → trascrizione Whisper su Groq; le risposte le
 // legge la sintesi vocale di iOS.
 
-let tradeId = null, realSymbol = null, general = false, history = [], speak = false, rec = null, chunks = [], recTimer = null, busy = false;
+let realSymbol = null, general = false, history = [], speak = false, rec = null, chunks = [], recTimer = null, busy = false;
 const MAX_REC_MS = 30000;
-
-const trade = () => State.simState.activeTrades.find(t => t.id === tradeId);
 
 // La chat scorre di lato: ogni tua domanda apre una nuova schermata (CSS: break-before), le risposte lunghe
 // continuano nella schermata a destra. Si vede sempre l'ultima; i puntini dicono quante ce ne sono.
@@ -83,27 +81,23 @@ export function openAssistantReal(symbol, voice) {
     openAssistant(null, voice, p);
 }
 
+// Chat generale (nessuna posizione) o chat su una posizione vera di Bitget (real)
 export function openAssistant(id, voice, real) {
     if (!real) realSymbol = null;
-    general = !id && !real;
-    const t = general || real ? null : State.simState.activeTrades.find(x => x.id === id);
-    if (!general && !real && !t) return;
-    tradeId = general || real ? null : id; history = []; speak = !!voice;
+    general = !real;
+    history = []; speak = !!voice;
     const realMode = tradingMode().mode === 'on';
-    $('assistTitle').textContent = general ? 'Assistente' : real
-        ? `${SYM(real.symbol)} ${real.market === 'spot' ? 'spot' : real.side.toUpperCase()}` : `${SYM(t.symbol)} ${t.type}`;
+    $('assistTitle').textContent = general ? 'Assistente' : `${SYM(real.symbol)} ${real.market === 'spot' ? 'spot' : real.side.toUpperCase()}`;
     const sub = $('assistSub');
-    sub.textContent = general ? (realMode ? 'Conto Bitget · reale' : 'Conto simulato') : real ? `Bitget ${real.market === 'spot' ? 'spot' : 'futures'} · ORDINI VERI` : 'Posizione simulata';
+    sub.textContent = general ? (realMode ? 'Conto Bitget · reale' : 'Conto simulato · carta') : `Bitget ${real.market === 'spot' ? 'spot' : 'futures'} · ORDINI VERI`;
     sub.className = (real || (general && realMode)) ? 'real' : '';
-    renderCtx(real, t);
+    renderCtx(real);
     renderQuick(!!real);
     $('assistLog').innerHTML = '';
     updateDots();
     addMsg('bot', real
         ? 'Dimmi cosa fare con questa posizione, scrivendo o con il microfono, oppure usa un comando rapido qui sotto. Diventa un ordine vero su Bitget solo dopo la tua conferma.'
-        : general
-        ? 'Chiedimi del conto, delle posizioni o del tool, oppure usa un comando rapido qui sotto: puoi chiudere più posizioni insieme. Ogni azione la confermi tu.'
-        : 'Dimmi cosa fare con questa posizione, scrivendo o con il microfono, oppure usa un comando rapido qui sotto. Ogni azione la confermi tu.');
+        : 'Chiedimi del conto, delle posizioni o del tool, oppure usa un comando rapido qui sotto: puoi chiudere più posizioni insieme. Ogni azione la confermi tu.');
     $('assistInput').value = '';
     $('assistSpeak').classList.toggle('active', speak);
     status('');
@@ -115,7 +109,7 @@ export function openAssistant(id, voice, real) {
 }
 
 // Riquadro con i dati principali della posizione (o del conto, nella chat generale)
-function renderCtx(real, t) {
+function renderCtx(real) {
     const box = $('assistCtx');
     const it = v => (v == null || !isFinite(v) ? '—' : fmtPrice(v));
     const pnlTxt = v => (v == null || !isFinite(v) ? '—' : `${v >= 0 ? '+' : ''}${Number(v).toFixed(2).replace('.', ',')}`);
@@ -124,9 +118,6 @@ function renderCtx(real, t) {
         const u = Trade.liveUpl(real);
         box.innerHTML = cell('Prezzo', it(State.livePx[real.symbol] || real.mark)) + cell('PnL', pnlTxt(u), u > 0 ? 'text-accent' : u < 0 ? 'text-danger' : '')
             + cell('Stop', it(real.sl), real.sl ? '' : 'text-warning') + cell('Target', it(real.tp));
-    } else if (t) {
-        const px = State.livePx[t.symbol] || t.currentPrice || t.entryPrice, n = calcPnl(t, px).net;
-        box.innerHTML = cell('Prezzo', it(px)) + cell('PnL netto', pnlTxt(n), n > 0 ? 'text-accent' : n < 0 ? 'text-danger' : '') + cell('Stop', it(t.slPrice)) + cell('Target', it(t.tpPrice));
     } else {
         const list = allOpen();
         const tot = list.reduce((a, x) => a + (x.pnl || 0), 0);
@@ -163,13 +154,13 @@ export function assistQuick(i) {
     if (q.ask) { sendAssist(q.ask); return; }
     if (q.analysis) { chatAnalysis(); return; }
     addMsg('user', escapeHtml(q.label));
-    (general ? showGeneralPlan : realSymbol ? showRealPlan : showPlan)(q.action);
+    (general ? showGeneralPlan : showRealPlan)(q.action);
 }
 
 // Analisi AI in tempo reale della posizione, scritta direttamente in chat
 async function chatAnalysis() {
     const rp = realSymbol ? realPos() : null;
-    const t = rp ? { ...realTrade(rp), real: true, pnl: Trade.liveUpl(rp) || 0 } : trade();
+    const t = rp ? { ...realTrade(rp), real: true, pnl: Trade.liveUpl(rp) || 0 } : null;
     if (!t) { addMsg('bot', 'La posizione non è più aperta.'); return; }
     addMsg('user', 'Analisi AI');
     busy = true; status('Raccolgo prezzi, candele 1d/4h/1h e dati futures…');
@@ -188,10 +179,7 @@ function allOpen() {
     if (tradingMode().mode === 'on') {
         return realPositions().map(p => ({ real: p, name: `${SYM(p.symbol)} ${p.market === 'spot' ? 'spot' : p.side.toUpperCase()}`, pnl: Trade.liveUpl(p) }));
     }
-    return State.simState.activeTrades.map(t => {
-        const px = State.livePx[t.symbol] || t.currentPrice || t.entryPrice;
-        return { sim: t, name: `${SYM(t.symbol)} ${t.type}`, pnl: calcPnl(t, px).net };
-    });
+    return [];      // in Simulato non ci sono posizioni a mano: la carta fa da sola
 }
 const pnlLabel = v => (v == null ? 'PnL non noto' : `${v >= 0 ? '+' : ''}${Number(v).toFixed(2).replace('.', ',')} USDT`);
 
@@ -206,7 +194,7 @@ function planCloseMany(filter) {
     const list = pick.map(x => `${x.name} (${pnlLabel(x.pnl)})`).join(', ');
     return { ok: true, real,
         summary: `${real ? 'ORDINI VERI su Bitget: ' : ''}chiudo ${pick.length === 1 ? 'la posizione' : `le ${pick.length} posizioni`} ${what}: ${list}.`,
-        run: () => (real ? sendMany(pick.map(x => ({ p: x.real, action: 'close' }))) : closeSimMany(pick)) };
+        run: () => sendMany(pick.map(x => ({ p: x.real, action: 'close' }))) };
 }
 
 // Stop a pareggio (commissioni comprese) su tutte le posizioni in profitto che lo permettono
@@ -214,8 +202,8 @@ function planBreakevenAll() {
     const items = [], skipped = [];
     for (const x of allOpen()) {
         if (!(x.pnl > 0)) continue;
-        const t = x.real ? realTrade(x.real) : x.sim;
-        const px = x.real ? (State.livePx[x.real.symbol] || x.real.mark) : (State.livePx[t.symbol] || t.currentPrice || t.entryPrice);
+        const t = realTrade(x.real);
+        const px = State.livePx[x.real.symbol] || x.real.mark;
         const plan = planAction(t, { type: 'stop_breakeven' }, px);
         if (plan.ok) items.push({ x, plan }); else skipped.push(x.name);
     }
@@ -223,13 +211,7 @@ function planBreakevenAll() {
     const real = !!items[0].x.real;
     return { ok: true, real,
         summary: `${real ? 'ORDINI VERI su Bitget: ' : ''}stop a pareggio su ${items.map(i => `${i.x.name} a ${fmtPrice(i.plan.price)}`).join(', ')}.${skipped.length ? ` Restano come sono: ${skipped.join(', ')}.` : ''}`,
-        run: () => (real ? sendMany(items.map(i => ({ p: i.x.real, action: 'sl', price: i.plan.price })))
-            : items.forEach(i => Trade.applyPlan(i.x.sim.id, i.plan))) };
-}
-
-function closeSimMany(pick) {
-    pick.forEach(x => Trade.closeTrade(x.sim.id, 'MANUALE'));
-    addMsg('bot', `Chiuse ${pick.length} posizioni simulate.`);
+        run: () => sendMany(items.map(i => ({ p: i.x.real, action: 'sl', price: i.plan.price }))) };
 }
 
 // Un comando a Bitget per posizione, uno dopo l'altro; gli esiti arrivano in Posizioni → Ordini e su Telegram
@@ -250,7 +232,6 @@ export function closeAssistant() {
     stopRecording(true);
     try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
     $('assistModal').classList.remove('active');
-    tradeId = null;
 }
 
 export function toggleAssistSpeak() {
@@ -263,7 +244,7 @@ export async function sendAssist(textArg) {
     const input = $('assistInput');
     const text = (typeof textArg === 'string' ? textArg : input.value).trim();
     const rp = realSymbol ? realPos() : null;
-    const t = general ? null : rp ? realTrade(rp) : trade();
+    const t = general ? null : rp ? realTrade(rp) : null;
     if (!text || busy) return;
     if (!general && !t) { addMsg('bot', 'La posizione non è più aperta.'); return; }
     input.value = '';
@@ -279,27 +260,10 @@ export async function sendAssist(textArg) {
         history = history.slice(-6);
         addMsg('bot', escapeHtml(out.reply));
         say(out.reply);
-        if (out.action) (general ? showGeneralPlan : rp ? showRealPlan : showPlan)(out.action);
+        if (out.action) (general ? showGeneralPlan : showRealPlan)(out.action);
     } catch (e) {
         addMsg('bot error', `Non riesco a rispondere: ${escapeHtml(e.message)}`);
     } finally { busy = false; status(''); }
-}
-
-function showPlan(action) {
-    const plan = Trade.planForTrade(tradeId, action);
-    if (!plan.ok) { addMsg('bot warn', escapeHtml(plan.error)); say(plan.error); return; }
-    const box = addMsg('plan', `<div>${escapeHtml(plan.summary)}</div><div class="assist-plan-actions"><button type="button" class="btn-cancel">Annulla</button><button type="button" class="btn-confirm">Conferma</button></div>`);
-    const [no, yes] = box.querySelectorAll('button');
-    const done = text => { box.querySelector('.assist-plan-actions').outerHTML = `<div class="assist-plan-done">${text}</div>`; };
-    no.onclick = () => done('Annullato.');
-    yes.onclick = () => {
-        // ricalcolo al momento della conferma: il prezzo può essere cambiato
-        const fresh = Trade.planForTrade(tradeId, action);
-        if (!fresh.ok) { done(escapeHtml(fresh.error)); return; }
-        const ok = Trade.applyPlan(tradeId, fresh);
-        done(ok ? 'Fatto.' : 'Non applicato: la posizione non è più aperta.');
-        if (ok && fresh.kind === 'close_now') setTimeout(closeAssistant, 900);
-    };
 }
 
 // Piano su posizione reale: dalla regola al comando per Bitget
@@ -407,14 +371,10 @@ function generalContext() {
     const available = Object.entries(results).filter(([, r]) => r.n > 0 && !BLOCKED.includes(r.family))
         .sort((a, b) => b[1].excess_avg_pct - a[1].excess_avg_pct).map(([k]) => k);
     const acc = live && live.account;
-    let last = 0;
-    for (const v of Object.values(State.allData || {})) if (v && v.last_update) last = Math.max(last, Date.parse(v.last_update));
     return {
-        prices: Object.fromEntries(TRADE_SYMBOLS.map(s => [s, State.livePx[s] ?? (State.allData && State.allData[`${s}_1d`] ? State.allData[`${s}_1d`].current_price : null)])),
+        prices: Object.fromEntries(TRADE_SYMBOLS.map(s => [s, State.livePx[s] ?? null])),
         trading: tradingMode().mode, emergency: !!(cfg && cfg.emergency),
         bitget_total: acc && acc.connected ? (acc.total_usdt ?? acc.equity) : null, bitget_positions: acc && acc.connected ? acc.positions : null,
-        sim_free: Number(State.simState.freeBalance.toFixed(2)), sim_open: State.simState.activeTrades.length,
-        bot_minutes: last ? Math.round((Date.now() - last) / 60000) : null,
         active, available, confirmed: (lab && lab.confirmed) || [],
         alerts: Auto.priceAlerts().map(a => ({ symbol: a.symbol, side: a.side, price: a.price }))
     };
@@ -454,7 +414,7 @@ function planGeneral(a) {
         case 'open_page':
             return { ok: true, summary: `Apro ${PAGE_NAMES[a.page] || a.page}.`, run: () => { closeAssistant(); window.switchTab(a.page); } };
         case 'price_alert': {
-            const px = State.livePx[a.symbol] ?? (State.allData && State.allData[`${a.symbol}_1d`] ? State.allData[`${a.symbol}_1d`].current_price : null);
+            const px = State.livePx[a.symbol] ?? null;
             if (!(px > 0)) return { ok: false, error: `Prezzo attuale di ${SYM(a.symbol)} non disponibile: riprova fra poco.` };
             if (Math.abs(a.price / px - 1) < 0.0005) return { ok: false, error: `${SYM(a.symbol)} è già a ${fmtPx(px)}.` };
             if (Math.abs(a.price / px - 1) > 0.5) return { ok: false, error: `${fmtPx(a.price)} è lontanissimo dal prezzo attuale (${fmtPx(px)}): controlla la cifra.` };

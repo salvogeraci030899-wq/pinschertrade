@@ -1,6 +1,5 @@
-import { State } from '../core/state.js';
 import { getThemePref, setThemePref, getStatusBarPref, setStatusBarPref, getGlassPref, setGlassPref } from '../core/theme.js';
-import { $, fmtUsdt, getApiBase, getGhToken, commandMode, getDataKey, setDataKey } from '../utils/helpers.js';
+import { $, getApiBase, getGhToken, commandMode, getDataKey, setDataKey } from '../utils/helpers.js';
 import { isEncrypted, decryptText, newDataKey } from '../core/datacrypt.js';
 import { getAutoState, riskCfg, loadAutomation, bitgetAccountText } from './automation.js';
 
@@ -74,9 +73,6 @@ export function renderAccount() {
     set('accRiskLev', `${r.max_leverage}x · max ${r.max_open_positions}`);
     set('accRiskDay', `${r.max_daily_loss_pct}%`);
 
-    // Conto simulato dell'app
-    set('accSimFree', fmtUsdt(State.simState.freeBalance));
-    set('accSimOpen', String(State.simState.activeTrades.length));
 }
 
 // Pastiglia "SIMULATO / REALE" in Home e valore nelle Impostazioni

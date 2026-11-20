@@ -142,8 +142,7 @@ export const sendAlertCommand = (body, okText) => send({ type: 'alert', ...body 
 let caSym = null, caPx = null;
 export function openChartAlert(symbol, px) {
     caSym = symbol;
-    const daily = State.allData && State.allData[`${symbol}_1d`];
-    caPx = px > 0 ? px : (State.livePx[symbol] || (daily && daily.current_price) || null);
+    caPx = px > 0 ? px : (State.livePx[symbol] || null);
     $('caCoins').innerHTML = TRADE_SYMBOLS.map(s => `<button type="button" class="pill-btn${s === symbol ? ' active' : ''}" onclick="openChartAlert('${s}')">${s.replace('USDT', '')}</button>`).join('');
     $('caTitle').textContent = `Avviso su ${symbol.replace('USDT', '')}`;
     $('caNow').textContent = caPx ? `Ora ${fmtPrice(caPx)} USDT` : 'Prezzo attuale non disponibile';

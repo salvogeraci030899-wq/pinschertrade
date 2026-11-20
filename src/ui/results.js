@@ -2,17 +2,15 @@
 // Fonti, mai mescolate:
 //   Reale:    conto Bitget. Totale del periodo dallo storico del patrimonio (equity_history.json, al netto di
 //             versamenti e prelievi); se lo storico non copre il periodo, la somma dei trade chiusi.
-//   Simulato: i trade simulati dell'app (al netto di commissioni e tasse simulate).
 //   Carta:    le strategie su carta dell'agente, in % del patrimonio con il rischio per trade attuale.
 // Periodi: oggi, settimana (da lunedì), mese, anno, tutto. Elenchi a scorrimento orizzontale.
 // In Reale i trade si dividono in A mano e Agente: è dell'agente un trade chiuso su Bitget che corrisponde
 // (coin, lato, apertura entro 10 minuti) a una posizione aperta dall'esecutore (live_trades.json).
-import { State } from '../core/state.js';
 import { $, SYM, escapeHtml, fmtIt, fetchData, markChosen, chosenRecently } from '../utils/helpers.js';
 import { isRealMode, realHistory, realAccount } from './history.js';
 import { getAutoState, loadAutomation } from './automation.js';
 
-const SRC = { real: 'Bitget · reale', sim: 'Trade simulati dell\'app', paper: 'Strategie su carta (stesse regole del reale)' };
+const SRC = { real: 'Bitget · reale', paper: 'Strategie su carta (stesse regole del reale)' };
 const PERIODS = { day: 'Oggi', week: 'Settimana', month: 'Mese', year: 'Anno', all: 'Tutto' };
 const WHO = { all: 'Tutti', manual: 'A mano', agent: 'Agente' };
 let src = null, period = 'month', who = 'all', equity = null, equityAt = 0;
@@ -51,7 +49,6 @@ async function loadEquity() {
 function trades(source) {
     if (source === 'real') return realHistory().map(h => { const k = agentKey(h); return { t: h.closedAt, symbol: h.symbol, side: h.type, pnl: h.pnl, fees: h.fees || 0, entry: h.entry, exit: h.exit, market: h.market, by: k ? 'agent' : 'manual', key: k || undefined }; })
         .filter(x => who === 'all' || x.by === who);
-    if (source === 'sim') return (State.simState.history || []).map(h => ({ t: h.closedAt || h.exitTime, symbol: h.symbol, side: h.type, pnl: Number(h.pnl) || 0, fees: (h.fees || 0) + (h.tax || 0), entry: h.entryPrice || h.entry, exit: h.exitPrice || h.exit, market: h.market, reason: h.reason }));
     const { ledger, cfg, live } = getAutoState();
     const risk = Number(cfg && cfg.risk && cfg.risk.risk_per_trade_pct) || 0.5;
     const out = [];
@@ -94,7 +91,6 @@ function summary(source, p) {
     if (!usedEquity) {
         let c = 0;
         curve = list.map(x => [x.t, (c += x.pnl)]);
-        if (source === 'sim') base = State.simState.initialAccountBalance;
         if (source === 'real') { const acc = realAccount(); base = acc && acc.total_usdt ? acc.total_usdt - total : null; }
     }
     let peak = 0, dd = 0;
@@ -124,7 +120,7 @@ function spark(curve) {
 export function setResultsSource(s) { markChosen('resSrc'); src = SRC[s] ? s : 'real'; renderResults(); }
 
 // All'apertura della pagina (se non hai scelto tu negli ultimi 30 minuti): la fonte che ha dati nel periodo,
-// nell'ordine Reale, Carta, Simulato; se nessuna ne ha, quella della modalità attiva
+// nell'ordine Reale, Carta; se nessuna ne ha, quella della modalità attiva
 export function autoResultsSource() { if (!chosenRecently('resSrc')) src = null; }
 function pickSource() {
     const start = periodStart(period).getTime();
@@ -133,8 +129,7 @@ function pickSource() {
     const realDays = equity && equity.days && Object.entries(equity.days).some(([d, r]) => d >= from && r.pnl);
     if (realDays || has('real')) return 'real';
     if (has('paper')) return 'paper';
-    if (has('sim')) return 'sim';
-    return isRealMode() ? 'real' : 'sim';
+    return isRealMode() ? 'real' : 'paper';
 }
 export function setResultsPeriod(p) { period = PERIODS[p] ? p : 'month'; renderResults(); }
 export function setResultsWho(w) { who = WHO[w] ? w : 'all'; renderResults(); }
@@ -175,6 +170,6 @@ export async function renderResults() {
         <div class="section-title"><span>Da dove viene</span></div>
         <div class="res-hlist">${coinCards || '<div class="empty-hint">Nessun trade chiuso nel periodo.</div>'}</div>
         <div class="section-title"><span>Trade chiusi <small class="auto-count">${s.list.length || ''}</small></span>
-            <span class="section-actions">${src === 'real' ? Object.entries(WHO).map(([k, l]) => `<button class="btn-link-secondary${k === who ? ' on' : ''}" onclick="setResultsWho('${k}')">${l}</button>`).join('') : ''}${src === 'sim' ? '<button class="btn-link-secondary" onclick="exportCSV()">Esporta CSV</button><button class="btn-link-secondary btn-link-danger" onclick="confirmReset()">Reset</button>' : ''}</span></div>
+            <span class="section-actions">${src === 'real' ? Object.entries(WHO).map(([k, l]) => `<button class="btn-link-secondary${k === who ? ' on' : ''}" onclick="setResultsWho('${k}')">${l}</button>`).join('') : ''}</span></div>
         <div class="res-hlist res-trades">${tradeCards || '<div class="empty-hint">Nessun trade chiuso nel periodo.</div>'}</div>`;
 }

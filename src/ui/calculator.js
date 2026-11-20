@@ -77,6 +77,13 @@ export function setCtxLabel() {
     el.textContent = SYM(c.asset);
 }
 
+// Capitale di partenza in Simulato: il patrimonio della carta (l'esecutore simulato), o il capitale di prova
+function paperCapital() {
+    const st = getAutoState(), sim = st.live && st.live.simulated;
+    const eq = sim && Number(sim.equity);
+    return eq > 0 ? eq : Number(st.cfg && st.cfg.risk && st.cfg.risk.dry_run_equity) || 1000;
+}
+
 export function syncCapital() {
     if (State.capitalTouched) return;
     const capInput = $('calcCapital');
@@ -85,7 +92,7 @@ export function syncCapital() {
     const st = getAutoState(), acc = st.live && st.live.account;
     const real = tradingMode().mode === 'on' && acc && acc.connected;
     const spotUsdt = () => { const u = (acc.spot_coins || []).find(c => c.coin === 'USDT'); return u ? u.qty : 0; };
-    const cap = !real ? State.simState.freeBalance
+    const cap = !real ? paperCapital()
         : State.currentMarket === 'SPOT' ? spotUsdt()
         : ((acc.accounts_usdt && acc.accounts_usdt.futures != null) ? acc.accounts_usdt.futures : acc.equity);
     capInput.value = Math.round(cap * 100) / 100;
@@ -338,16 +345,17 @@ const isRealMode = () => tradingMode().mode === 'on';
 export function syncTradeMode() {
     const real = isRealMode();
     const lbl = $('calcModeLbl');
-    if (lbl) { lbl.textContent = real ? 'Reale · Bitget' : 'Simulato'; lbl.className = real ? 'text-warning' : ''; }
+    if (lbl) { lbl.textContent = real ? 'Reale · Bitget' : 'Calcolo'; lbl.className = real ? 'text-warning' : ''; }
     // Spot in Reale: si compra soltanto (niente short né leva)
     const spotReal = real && State.currentMarket === 'SPOT';
     const shortBtn = document.querySelector('.option-toggle[data-target="calcDirection"] [data-value="SHORT"]');
     if (shortBtn) shortBtn.style.display = spotReal ? 'none' : '';
     if (spotReal && $('calcDirection').value === 'SHORT') { setCalcDirection('LONG'); calc(); }
     const btn = $('calcOpenBtn');
+    if (btn) btn.style.display = real ? '' : 'none';            // in Simulato nessun ordine: solo calcolo
     if (btn && !btn.disabled) {
         btn.classList.toggle('btn-real', real);
-        $('calcOpenLbl').textContent = !real ? 'Apri Trade Simulato' : spotReal ? 'Compra su Bitget (spot)' : 'Invia ordine su Bitget (futures)';
+        $('calcOpenLbl').textContent = spotReal ? 'Compra su Bitget (spot)' : 'Invia ordine su Bitget (futures)';
     }
     // cambiando modalità il capitale riparte dal conto giusto (app o futures di Bitget)
     if (real !== lastReal) { lastReal = real; State.capitalTouched = false; }
@@ -463,73 +471,10 @@ async function openSpotOrder() {
     openAutoConfirm('Conferma acquisto vero', msg, 'Compra', () => sendOrder({ type: 'position', action: 'open', market: 'spot', symbol, side: 'long', price: String(stop), size: String(qty), leverage: '1', tp: target > 0 ? String(target) : '' }, say));
 }
 
+// Solo in Reale: in Simulato la pagina è un calcolatore (il tasto è nascosto) e i trade simulati li fa la carta.
 export async function openTradeFromCalculator() {
     if (isRealMode()) return openRealOrder();
-    const entry = getVal('calcEntry');
-    const stop = getVal('calcStop');
-    const target = getVal('calcTarget');
-    const direction = document.getElementById('calcDirection').value;
-    const size = numFromText('resSize');
-    const margin = numFromText('resMargin');
-
-    if (!entry || !stop || !target) { if (window.showAlert) window.showAlert("Errore", "Compila tutti i campi."); return; }
-    if (!(size > 0) || !(margin > 0)) { if (window.showAlert) window.showAlert("Errore", "Size non valida."); return; }
-    if (margin > State.simState.freeBalance) { if (window.showAlert) window.showAlert("Errore", `Capitale insufficiente. Hai ${State.simState.freeBalance.toFixed(2)} USDT.`); return; }
-
-    const c = State.calcContext || { asset: State.currentAsset, tf: State.currentTF };
-    State.pendingTradePayload = { entry, stop, target, direction, size, margin };
-
-    // FIX: Cerca il bottone giusto (btn-cta-primary) e previene crash se non esiste
-    const btn = document.getElementById('calcOpenBtn');
-    let originalText = '';
-    if (btn) {
-        originalText = btn.innerHTML;
-        btn.innerHTML = "Verifica...";
-        btn.disabled = true;
-    }
-
-    try {
-        const res = await fetchT(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${c.asset}`);
-        const json = await res.json();
-        if (json.code !== "00000" || !json.data[0]) throw new Error("Prezzo live non disponibile");
-        const livePrice = parseFloat(json.data[0].lastPr);
-        State.pendingTradePayload.livePrice = livePrice;
-
-        let blockReason = null;
-        
-        const rr = Math.abs(target - entry) / Math.abs(entry - stop);
-        const need = 1.5;
-        if (!blockReason && rr < need) blockReason = `R:R ${rr.toFixed(2)} è sotto ${need}.`;
-        if (!blockReason && State.simState.activeTrades.some(t => t.symbol === c.asset)) blockReason = `Hai già una posizione su ${SYM(c.asset)}.`;
-        
-        const dist = Math.abs(livePrice - entry) / entry * 100;
-        if (!blockReason && dist > 0.5) blockReason = `Prezzo ${dist.toFixed(2)}% lontano dall'entry (max 0.5%).`;
-
-        if (blockReason) { 
-            document.getElementById('forceTradeReason').textContent = blockReason; 
-            document.getElementById('forceTradeModal').classList.add('active'); 
-            return; 
-        }
-
-        if (window.executeTradeOpen) await window.executeTradeOpen();
-    } catch (e) { 
-        if (window.showAlert) window.showAlert("Errore", "Impossibile aprire il trade: " + e.message); 
-    }
-    finally { 
-        if (btn) {
-            btn.innerHTML = originalText; 
-            btn.disabled = false; 
-        }
-    }
 }
-
-export function closeForceTradeModal() { document.getElementById('forceTradeModal').classList.remove('active'); State.pendingTradePayload = null; }
-export async function confirmForceTrade() {
-    document.getElementById('forceTradeModal').classList.remove('active');
-    if (!State.pendingTradePayload || !State.pendingTradePayload.livePrice) return;
-    if (window.executeTradeOpen) await window.executeTradeOpen();
-}
-
 // --- Pagina Rischio sempre senza scroll ---
 // Se la scheda non entra nello spazio disponibile (schermi bassi, avvisi e suggerimenti visibili),
 // viene rimpicciolita con CSS zoom quanto basta. Si ricalcola quando cambia la misura della pagina
