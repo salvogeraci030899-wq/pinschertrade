@@ -32,7 +32,9 @@ def setup(trades, mode="live", cfg_extra=None):
 
 
 def go(cfg, ledger, path, client=None, now=NOW, notes=None):
-    return ex.run(cfg, ledger, client, "demo" if client else "simulata", path, now=now, notify=(notes.append if notes is not None else None), specs_fn=SPECS)
+    # prezzi e funding finti: i test non devono dipendere dalla rete (su GitHub i prezzi veri di Bitget farebbero cambiare il conto)
+    return ex.run(cfg, ledger, client, "demo" if client else "simulata", path, now=now, notify=(notes.append if notes is not None else None), specs_fn=SPECS,
+                  prices_fn=lambda syms: {}, funding_fn=lambda syms: {})
 
 
 def test_dimensionamento():
@@ -77,7 +79,7 @@ def test_solo_strategie_live():
         path = os.path.join(d, "live.json")
         # con un client vero REALE una strategia su carta non apre mai ordini; la demo (soldi finti) la segue
         cfg, ledger = setup([trade()], mode="paper")
-        ex.run(cfg, ledger, bg.DryRunClient(10_000), "reale", path, now=NOW, specs_fn=SPECS)
+        ex.run(cfg, ledger, bg.DryRunClient(10_000), "reale", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
         assert json.load(open(path))["positions"] == {}
         demo = os.path.join(d, "demo.json")
         go(cfg, ledger, demo, bg.DryRunClient(10_000))                                     # mode "demo"
@@ -193,24 +195,24 @@ def test_ripartenza_da_zero_solo_il_conto_simulato():
         path, ep = os.path.join(d, "live.json"), os.path.join(d, "reset_epoch.json")
         cfg, ledger = setup([trade()], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000}})
         json.dump({"epoch": "A"}, open(ep, "w"))
-        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, epoch_path=ep)
         st = json.load(open(path))
         assert st["epoch"] == "A" and st["positions"][trade()["id"]]["status"] == "open"
         # stessa epoca: non si azzera
-        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, epoch_path=ep)
         assert json.load(open(path))["positions"][trade()["id"]]["status"] == "open"
         # nuova epoca con ordini simulati: riparte da capo (qui l'ingresso e' nuovo e il conto torna al capitale)
         json.dump({"epoch": "B"}, open(ep, "w"))
         cfg2, ledger2 = setup([], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000}})
-        ex.run(cfg2, ledger2, None, "simulata", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        ex.run(cfg2, ledger2, None, "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, epoch_path=ep)
         st = json.load(open(path))
         assert st["epoch"] == "B" and st["positions"] == {} and st["simulated"]["cash"] == 10_000
         # con un client vero l'epoca cambia ma le posizioni non si toccano
         cfg3, ledger3 = setup([trade()], mode="live", cfg_extra={"risk": {"dry_run_equity": 10_000}})
         client = bg.DryRunClient(10_000)
-        ex.run(cfg3, ledger3, client, "demo", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        ex.run(cfg3, ledger3, client, "demo", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, epoch_path=ep)
         json.dump({"epoch": "C"}, open(ep, "w"))
-        ex.run(cfg3, ledger3, client, "demo", path, now=NOW, specs_fn=SPECS, epoch_path=ep)
+        ex.run(cfg3, ledger3, client, "demo", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, epoch_path=ep)
         st = json.load(open(path))
         assert st["epoch"] == "C" and st["positions"][trade()["id"]]["status"] == "open"
 
@@ -277,7 +279,7 @@ def test_obiettivo_di_portafoglio_somma_vincenti_e_perdenti():
         st = json.load(open(path))
         assert sum(p["status"] == "open" for p in st["positions"].values()) == 2
         # BTC sale del 3% (guadagno), ETH scende dell'1% (perdita): il totale (circa +0,8% dopo i costi) supera +0,5% del conto
-        ex.run(cfg, ledger, None, "simulata", path, now=NOW, notify=notes.append, specs_fn=SPECS,
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, notify=notes.append, specs_fn=SPECS, funding_fn=lambda s: {},
                prices_fn=lambda s: {"BTCUSDT": 103_000.0, "ETHUSDT": 2970.0})
         st = json.load(open(path))
         assert all(p["status"] == "closed" and p["close_reason"] == "OBIETTIVO DI PORTAFOGLIO" for p in st["positions"].values())
