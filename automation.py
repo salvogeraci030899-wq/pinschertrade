@@ -144,7 +144,7 @@ def set_risk(cfg, field, value):
     lo, hi = executor.RISK_BOUNDS[field]
     if not lo <= v <= hi:
         raise CommandError(f"{field} deve essere tra {lo:g} e {hi:g}.")
-    if field in ("max_leverage", "max_open_positions", "max_same_direction"):
+    if field in ("max_leverage", "max_open_positions", "max_same_direction", "real_follows_paper"):
         if v != int(v):
             raise CommandError(f"{field} deve essere un numero intero.")
         v = int(v)

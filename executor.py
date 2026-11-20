@@ -58,6 +58,7 @@ DEFAULT_RISK = {
     "portfolio_stop_pct": 0.0,      # lo stesso in perdita: a -X% chiude tutto (0 = spento)
     "max_strategy_dd_pct": 5.0,     # perdita massima di una strategia reale dal suo massimo: oltre, l'agente la riporta su carta
     "dry_run_equity": 1000.0,
+    "real_follows_paper": 0,        # 1 = anche in REALE l'esecutore segue le strategie su carta (non confermate), con tutti i limiti: scelta esplicita, spenta di default
     "shadow_paper": True,           # con gli ordini simulati l'esecutore segue anche le strategie su carta, con gli STESSI limiti del reale
 }
 # Valori ammessi per ogni limite (anche dall'app): fuori da qui il comando viene rifiutato
@@ -72,6 +73,7 @@ RISK_BOUNDS = {
     "max_strategy_dd_pct": (1.0, 20.0),
     "portfolio_target_pct": (0.0, 20.0),
     "portfolio_stop_pct": (0.0, 20.0),
+    "real_follows_paper": (0, 1),
     "dry_run_equity": (100.0, 1_000_000.0),
 }
 DEFAULT_SPECS = {"volume_place": 3, "price_place": 1, "min_size": 0.001}
@@ -374,7 +376,8 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     # (shadow_paper): stessi limiti, stessa dimensione, stessa gestione del giorno: il passaggio al reale cambia solo il client.
     # Anche la demo di Bitget (soldi finti) segue la carta: serve a provare ordini, stop e quantita' veri senza rischio.
     # Il reale no: li' solo le strategie live, cioe' confermate.
-    follow = {"live"} | ({"paper"} if mode in ("simulata", "demo") and risk.get("shadow_paper", True) else set())
+    follow_paper = (mode in ("simulata", "demo") and risk.get("shadow_paper", True)) or (mode == "reale" and int(risk.get("real_follows_paper") or 0) == 1)
+    follow = {"live"} | ({"paper"} if follow_paper else set())
     wanted, exits = {}, {}
     for key, entry in (ledger.get("strategies") or {}).items():
         if entry.get("mode") not in follow or (cfg.get("strategies") or {}).get(key) not in follow:
