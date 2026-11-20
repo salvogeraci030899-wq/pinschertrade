@@ -266,7 +266,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 
 
 /* --- RISK MANAGER --- */
-.calc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--sp-4) var(--sp-4); display: flex; flex-direction: column; flex: 1; justify-content: space-evenly; text-align: center; }
+.calc-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: var(--sp-4) var(--sp-4); display: flex; flex-direction: column; flex: 1; justify-content: space-evenly; gap: var(--sp-3); text-align: center; }
 /* Rimpicciolita da src/ui/calculator.js (fitCalcCard) quando non entra nello schermo */
 #page-calculator .calc-card { zoom: var(--calc-zoom, 1); }
 /* Margine extra in fondo quando la pagina scende sotto la parte visibile (Safari mobile) */
