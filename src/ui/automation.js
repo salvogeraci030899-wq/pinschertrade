@@ -214,7 +214,7 @@ const pct = (v, d = 2) => (v == null ? '—' : `${v >= 0 ? '+' : ''}${fmtIt(v, d
 // Chiusura di portafoglio: totale di tutte le posizioni aperte insieme (vincenti e perdenti); a +X% o −Y% del conto l'esecutore chiude tutto
 const PORTFOLIO_HELP = 'L\'esecutore somma il risultato di tutte le posizioni aperte insieme, vincenti e perdenti (comprese quelle già chiuse da quando il conto era senza posizioni).\n\nQuando il totale arriva all\'obiettivo (+X% del conto) chiude tutto e aspetta nuovi segnali. Lo stesso, in perdita, con lo stop di portafoglio (−Y%).\n\nSi aggiunge a stop e target di ogni singolo trade: non li sostituisce. Con 0 è spenta. Si imposta in Limiti di rischio.';
 export function openPortfolioHelp() { window.showAlert('Chiusura di portafoglio', PORTFOLIO_HELP); }
-function portfolioLine() {
+export function portfolioLine() {
     const r = riskCfg(), t = Number(r.portfolio_target_pct) || 0, s = Number(r.portfolio_stop_pct) || 0;
     if (!t && !s) return { text: 'spenta', cls: '' };
     const sim = !live || !live.mode || live.mode === 'simulata';

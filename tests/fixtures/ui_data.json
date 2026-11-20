@@ -19,13 +19,16 @@
   ],
   "risk": {
    "trading_enabled": false,
-   "risk_per_trade_pct": 0.5,
+   "risk_per_trade_pct": 1.0,
    "max_leverage": 3,
    "max_exposure_x": 1.5,
    "max_open_positions": 3,
    "max_daily_loss_pct": 3.0,
    "daily_target_pct": 2.0,
-   "max_strategy_dd_pct": 5.0
+   "max_strategy_dd_pct": 5.0,
+   "portfolio_target_pct": 2.0,
+   "portfolio_stop_pct": 2.0,
+   "real_follows_paper": 0
   },
   "agent": {
    "autonomy": "paper",
@@ -50,10 +53,38 @@
   ]
  },
  "live_trades.json": {
-  "positions": {},
+  "positions": {
+   "a1": {
+    "symbol": "BTCUSDT",
+    "side": "long",
+    "status": "closed",
+    "net": 4.2,
+    "closed_at": "2026-11-20T10:47:43+00:00",
+    "opened_at": "2026-11-20T00:47:43+00:00",
+    "key": "big_candle_trail:1d"
+   },
+   "a2": {
+    "symbol": "ETHUSDT",
+    "side": "short",
+    "status": "closed",
+    "net": -2.1,
+    "closed_at": "2026-11-20T12:27:43+00:00",
+    "opened_at": "2026-11-20T02:27:43+00:00",
+    "key": "donchian20_regime:4h"
+   },
+   "a3": {
+    "symbol": "SOLUSDT",
+    "side": "long",
+    "status": "open",
+    "opened_at": "2026-11-20T14:47:43+00:00",
+    "key": "big_candle:1d",
+    "entry": 150,
+    "size": 1
+   }
+  },
   "day": {
-   "date": "2026-11-12",
-   "start_equity": 250.0,
+   "date": "2026-11-20",
+   "start_equity": 1005.0,
    "blocked": false
   },
   "halted": false,
@@ -66,7 +97,10 @@
   ],
   "mode": "simulata",
   "simulated": {
-   "equity": 250.0,
+   "equity": 1012.4,
+   "start": 1000,
+   "unrealized": 3.1,
+   "cash": 1009,
    "positions": {}
   },
   "account": {
@@ -140,7 +174,10 @@
    "h1",
    "h2"
   ],
-  "manual": []
+  "manual": [],
+  "basket": {
+   "start": 1008.0
+  }
  },
  "paper_trades.json": {
   "started": "2026-11-01",
