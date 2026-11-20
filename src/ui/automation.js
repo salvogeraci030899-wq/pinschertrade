@@ -21,6 +21,8 @@ const RISK_FIELDS = [
     ['max_open_positions', 'Posizioni aperte al massimo', 1, 6, 1],
     ['max_same_direction', 'Nello stesso verso al massimo (tutte long o tutte short)', 1, 6, 1],
     ['max_daily_loss_pct', 'Perdita massima al giorno (%)', 1, 10, 0.5],
+    ['portfolio_target_pct', 'Obiettivo di portafoglio: chiude tutto a +% del conto (0 = spento)', 0, 20, 0.5],
+    ['portfolio_stop_pct', 'Stop di portafoglio: chiude tutto a −% del conto (0 = spento)', 0, 20, 0.5],
 ];
 export const riskCfg = () => ({ ...DEFAULT_RISK, ...((cfg && cfg.risk) || {}) });
 // Stato letto dai file pubblicati, per le pagine Account e Impostazioni

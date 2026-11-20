@@ -54,6 +54,8 @@ DEFAULT_RISK = {
     "max_same_direction": 2,        # posizioni nello stesso verso al massimo (le coin si muovono insieme)
     "max_daily_loss_pct": 3.0,
     "daily_target_pct": 0.0,        # obiettivo del giorno: raggiunto, niente nuovi ingressi fino a domani (0 = nessuno)
+    "portfolio_target_pct": 0.0,    # in AGGIUNTA a stop e target di ogni trade: se il totale delle posizioni aperte (vincenti e perdenti insieme) arriva a +X% del conto, chiude tutto (0 = spento)
+    "portfolio_stop_pct": 0.0,      # lo stesso in perdita: a -X% chiude tutto (0 = spento)
     "max_strategy_dd_pct": 5.0,     # perdita massima di una strategia reale dal suo massimo: oltre, l'agente la riporta su carta
     "dry_run_equity": 1000.0,
     "shadow_paper": True,           # con gli ordini simulati l'esecutore segue anche le strategie su carta, con gli STESSI limiti del reale
@@ -68,6 +70,8 @@ RISK_BOUNDS = {
     "max_daily_loss_pct": (1.0, 10.0),
     "daily_target_pct": (0.0, 10.0),
     "max_strategy_dd_pct": (1.0, 20.0),
+    "portfolio_target_pct": (0.0, 20.0),
+    "portfolio_stop_pct": (0.0, 20.0),
     "dry_run_equity": (100.0, 1_000_000.0),
 }
 DEFAULT_SPECS = {"volume_place": 3, "price_place": 1, "min_size": 0.001}
@@ -335,6 +339,35 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
         state["day"]["target_hit"] = True
         say(f"Obiettivo del giorno raggiunto: {day_pnl:+.2f}% (obiettivo {target}%). Niente nuovi ingressi fino a domani.")
         log("daily_target", pnl_pct=round(day_pnl, 2))
+
+    # --- obiettivo di portafoglio: in aggiunta a stop e target dei singoli trade ---
+    # Si segue il totale del "cestino": dal momento in cui il conto è senza posizioni fino a ora (posizioni già chiuse
+    # nel cestino comprese). Se arriva a +X% (o -Y%) si chiude tutto quello che l'esecutore ha aperto. I trade su carta
+    # già aperti non si riaprono: restano registrati come chiusi dall'esecutore.
+    p_target, p_stop = risk.get("portfolio_target_pct") or 0, risk.get("portfolio_stop_pct") or 0
+    live_open = {tid: p for tid, p in state["positions"].items() if p["status"] == "open"}
+    if not live_open:
+        state["basket"] = {"start": equity}
+    elif not state.get("basket"):
+        state["basket"] = {"start": equity}      # posizioni di prima dell'obiettivo: si parte da adesso
+    if live_open and (p_target > 0 or p_stop > 0) and state["basket"].get("start"):
+        b_pnl = (equity / state["basket"]["start"] - 1) * 100
+        hit = "OBIETTIVO DI PORTAFOGLIO" if p_target > 0 and b_pnl >= p_target else "STOP DI PORTAFOGLIO" if p_stop > 0 and b_pnl <= -p_stop else None
+        if hit:
+            closed_n = 0
+            for tid, p in live_open.items():
+                try:
+                    client.close_position(p["symbol"], p["side"])
+                    p.update(status="closed", closed_at=now.isoformat(timespec="seconds"), close_reason=hit)
+                    closed_n += 1
+                except Exception as e:
+                    log("error", id=tid, error=str(e))
+                    say(f"{hit}: chiusura di {p['symbol']} FALLITA ({e}). Controlla su Bitget.")
+            gain = equity - state["basket"]["start"]
+            log("portfolio_exit", reason=hit, pnl_pct=round(b_pnl, 2), closed=closed_n)
+            say(f"{hit}: totale delle posizioni {b_pnl:+.2f}% ({gain:+.2f} USDT). Chiuse {closed_n} posizioni, si aspettano nuovi segnali.")
+            ours = {}
+            state["basket"] = {"start": equity}
 
     # --- trade che le strategie live vogliono aperti adesso ---
     # Con gli ordini veri (demo o reale) si seguono solo le strategie live. Con gli ordini simulati si seguono anche quelle su carta
