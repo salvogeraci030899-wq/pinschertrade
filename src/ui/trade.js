@@ -132,7 +132,7 @@ function renderRealPositions(el) {
     const list = realList();
     const events = ((getAutoState().live || {}).events || []).filter(e => e && e.kind === 'manual');
     const lastEv = events[events.length - 1];
-    const sig = `real|${acc && acc.checked_at}|${list.map(p => `${p.key}${p.tp}/${p.sl}/${isRealOrderRemoving(p.key, 'tp')}${isRealOrderRemoving(p.key, 'sl')}`).join()}|${lastEv && lastEv.at}|${isRefreshingAccount()}|${State.simState.activeTrades.length}`;
+    const sig = `real|${acc && acc.checked_at}|${list.map(p => `${p.key}${p.tp}/${p.sl}/${isRealOrderRemoving(p.key, 'tp')}${isRealOrderRemoving(p.key, 'sl')}`).join()}|${lastEv && lastEv.at}|${isRefreshingAccount()}`;
     if (sig === State.atSig) return;
     State.atSig = sig;
     const when = acc && acc.checked_at ? `, letto alle ${new Date(acc.checked_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}` : '';
