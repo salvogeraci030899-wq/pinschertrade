@@ -1336,3 +1336,4 @@ html.glass[data-theme="light"] .lock-dots span.on { background: var(--text); bor
 html.glass .lock-icon { border: 1px solid var(--glass-border); box-shadow: var(--glass-light), 0 10px 30px rgba(0, 0, 0, 0.35); }
 html.glass .lock-link { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--r-pill); padding: 8px 18px; box-shadow: var(--glass-light);
     -webkit-backdrop-filter: blur(22px) saturate(180%); backdrop-filter: blur(22px) saturate(180%); }
+#autoConfirmMsg { white-space: pre-line; }

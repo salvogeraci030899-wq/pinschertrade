@@ -13,7 +13,7 @@ const MAX_ACTIVE = 6;      // stesso limite di automation.py
 const PER_PAGE = 3;        // strategie per pagina nella lista (scorrimento orizzontale)
 let cfg = null, ledger = null, lab = null, live = null, loaded = false, loading = false;
 // Limiti di rischio dell'esecutore: stessi valori predefiniti e intervalli di executor.py
-const DEFAULT_RISK = { trading_enabled: false, risk_per_trade_pct: 0.5, max_leverage: 3, max_exposure_x: 1.5, max_open_positions: 3, max_same_direction: 2, max_daily_loss_pct: 3, dry_run_equity: 1000 };
+const DEFAULT_RISK = { trading_enabled: false, risk_per_trade_pct: 0.5, max_leverage: 3, max_exposure_x: 1.5, max_open_positions: 3, max_same_direction: 2, max_daily_loss_pct: 3, portfolio_target_pct: 0, portfolio_stop_pct: 0, dry_run_equity: 1000 };
 const RISK_FIELDS = [
     ['risk_per_trade_pct', 'Rischio per trade (%)', 0.1, 2, 0.1],
     ['max_leverage', 'Leva massima (x)', 1, 5, 1],
@@ -116,7 +116,7 @@ function renderAlerts() {
     if (!box) return;
     const list = priceAlerts();
     box.innerHTML = !loaded ? '<div class="empty-hint">Caricamento…</div>'
-        : list.length ? list.map(a => `<div class="auto-add-item"><span><b>${escapeHtml(fmtAlert(a))}</b><br><small>${a.side === 'above' ? 'in salita' : 'in discesa'} · dal ${escapeHtml(day(a.created_at))}</small></span><button type="button" class="alert-del" onclick="removePriceAlert('${escapeHtml(a.id)}')">Togli</button></div>`).join('')
+        : list.length ? list.map(a => `<div class="auto-add-item"><span><b>${escapeHtml(fmtAlert(a))}</b><br><small>${a.side === 'above' ? 'in salita' : 'in discesa'} · dal ${escapeHtml(day(a.created_at))}</small></span><button type="button" class="alert-del" onclick="askRemovePriceAlert('${escapeHtml(a.id)}')">Togli</button></div>`).join('')
         : '<div class="empty-hint">Nessun avviso attivo. Chiedilo all\'assistente: «avvisami se BTC arriva a 75.000».</div>';
 }
 export async function openAlerts() {
@@ -125,6 +125,10 @@ export async function openAlerts() {
     if (!loaded) { await loadAutomation(); renderAlerts(); }
 }
 export function closeAlerts() { $('alertsModal').classList.remove('active'); }
+export function askRemovePriceAlert(id) {
+    if (!/^[0-9a-f]{8}$/.test(id)) return;
+    openAutoConfirm('Togliere l\'avviso?', 'L\'avviso di prezzo viene cancellato: non ti arriverà più il messaggio su Telegram.', 'Togli', () => removePriceAlert(id));
+}
 export async function removePriceAlert(id) {
     if (!/^[0-9a-f]{8}$/.test(id)) return;
     removingAlerts.add(id);
@@ -313,7 +317,7 @@ export function renderAutomation() {
         const info = st && (st.n || st.open || st.skipped)
             ? `Su carta: ${st.n} ${st.n === 1 ? 'chiuso' : 'chiusi'}${st.n ? ` (${pct(st.avg_net_pct)} medio)` : ''}, ${st.open} ${st.open === 1 ? 'aperto' : 'aperti'}${st.skipped ? `, ${st.skipped} non ${st.skipped === 1 ? 'aperto' : 'aperti'} per i limiti` : ''}${st.vs_backtest && st.vs_backtest.verdict !== 'pochi_trade' ? ' · ' + { in_linea: 'in linea con lo storico', sotto: 'sotto lo storico', sopra: 'sopra lo storico' }[st.vs_backtest.verdict] : ''}`
             : (res ? `Storico: ${res.n} trade, oltre il mercato ${pct(res.excess_avg_pct)}${res.holdout ? (res.holdout.confirmed ? ' · confermata' : ' · bocciata alla prova finale') : ''}` : 'Nessun dato');
-        const btn = (m, text, disabled, title) => `<button type="button" class="pill-btn${mode === m ? ' active' : ''}" ${disabled ? 'disabled' : ''} title="${title || ''}" onclick="setAutoMode('${escapeHtml(key)}','${m}')">${text}</button>`;
+        const btn = (m, text, disabled, title) => `<button type="button" class="pill-btn${mode === m ? ' active' : ''}" ${disabled ? 'disabled' : ''} title="${title || ''}" onclick="askAutoMode('${escapeHtml(key)}','${m}')">${text}</button>`;
         return `<div class="auto-item">
             <div class="auto-item-head"><b class="clickable auto-open-trades" onclick="openPaperTrades('${escapeHtml(key)}')">${escapeHtml(label(key))} ›</b>${pending[key] ? '<span class="text-warning">in corso…</span>' : (observingKeys().has(key) ? '<span class="auto-tag" title="Messa dall\'agente solo per raccogliere dati: niente prova finale né reale">osservazione</span>' : '')}</div>
             <div class="auto-item-info">${escapeHtml(info)}</div>
@@ -393,7 +397,8 @@ export function agentPromote(key) {
     openAutoConfirm('Passare al reale?', `${label(key)} userà soldi veri su Bitget, con i limiti di rischio attuali. Va bene su carta, ma i risultati passati non garantiscono quelli futuri. Servono anche l'interruttore degli ordini veri acceso e le chiavi Bitget.`, 'Passa al reale', () => setAutoMode(key, 'live'));
 }
 export function runAgent() {
-    send({ type: 'run_agent' }, 'Agente avviato: laboratorio e scelte in circa 15-30 minuti, rapporto su Telegram.');
+    openAutoConfirm('Avviare l\'agente?', 'Rilancia laboratorio e scelte: circa 15-30 minuti, rapporto su Telegram. Non apre ordini veri da solo se l\'autonomia reale è spenta.', 'Avvia',
+        () => send({ type: 'run_agent' }, 'Agente avviato: laboratorio e scelte in circa 15-30 minuti, rapporto su Telegram.'));
 }
 
 const NO_SERVER = 'Per inviare comandi serve un token GitHub (Opzioni → Comandi) oppure l\'indirizzo di un server.';
@@ -426,6 +431,22 @@ async function send(body, okText) {
     return true;
 }
 
+// Dall'app nessun comando parte senza un tuo tocco su Conferma (l'assistente ha già la sua conferma e usa setAutoMode)
+export function askAutoMode(key, mode) {
+    if (currentMode(key) === mode) return;
+    if (mode === 'live' && !isConfirmed(key)) return;
+    if (mode !== 'off' && !activeKeys().has(key) && activeKeys().size >= MAX_ACTIVE) {
+        window.showAlert('Limite raggiunto', `Al massimo ${MAX_ACTIVE} strategie accese insieme: spegnine una prima.`);
+        return;
+    }
+    const [title, msg, ok] = {
+        off: ['Spegnere la strategia?', `${label(key)} non seguirà più i segnali. I trade già registrati su carta restano nel registro.`, 'Spegni'],
+        paper: ['Mettere su carta?', `${label(key)} segue i segnali senza ordini veri: serve a raccogliere dati.`, 'Metti su carta'],
+        live: ['Passare al reale?', `${label(key)} userà soldi veri su Bitget, con i limiti di rischio attuali. Servono anche le chiavi Bitget e l'interruttore degli ordini veri acceso. I risultati passati non garantiscono quelli futuri.`, 'Passa al reale']
+    }[mode];
+    openAutoConfirm(title, msg, ok, () => setAutoMode(key, mode));
+}
+
 export async function setAutoMode(key, mode) {
     if (currentMode(key) === mode) return;
     if (mode === 'live' && !isConfirmed(key)) return;
@@ -450,6 +471,9 @@ export function toggleEmergency() {
         });
 }
 
+export function askRunLab() {
+    openAutoConfirm('Rilanciare il laboratorio?', 'Ricalcola tutte le strategie sullo storico: circa 10 minuti. Non cambia nulla di ciò che gira su carta o in reale.', 'Rilancia', () => runAutoJob('run_lab'));
+}
 export function runAutoJob(type) {
     const text = { run_lab: 'Laboratorio strategie avviato: risultati in circa 10 minuti (Agente → Laboratorio).' }[type];
     if (text) send({ type }, text);
@@ -534,7 +558,7 @@ export function closeAutoAdd() { $('autoAddModal').classList.remove('active'); }
 
 export function addAutoPaper(key) {
     closeAutoAdd();
-    setAutoMode(key, 'paper');
+    askAutoMode(key, 'paper');
 }
 
 // --- Limiti di rischio e interruttore degli ordini veri ---
@@ -557,11 +581,17 @@ export async function saveAutoRisk() {
         }
         if (v !== Number(risk[f])) changes.push({ type: 'set_risk', field: f, value: String(v) });
     }
-    closeAutoRisk();
-    if (!changes.length) return;
-    for (const c of changes) if (!(await send(c, ''))) return;
-    window.showAlert('Comandi inviati', `${changes.length} ${changes.length === 1 ? 'modifica inviata' : 'modifiche inviate'}: visibili qui dopo qualche minuto.`);
-    setTimeout(loadAutomation, 90000);
+    if (!changes.length) { closeAutoRisk(); return; }
+    const NAMES = { risk_per_trade_pct: ['Rischio per trade', '%'], max_leverage: ['Leva massima', 'x'], max_exposure_x: ['Esposizione totale', 'x'], max_open_positions: ['Posizioni aperte', ''],
+        max_same_direction: ['Nello stesso verso', ''], max_daily_loss_pct: ['Perdita al giorno', '%'], portfolio_target_pct: ['Obiettivo di portafoglio', '%'], portfolio_stop_pct: ['Stop di portafoglio', '%'] };
+    const summary = changes.map(c => { const [n, u] = NAMES[c.field] || [c.field, '']; return `${n}: ${fmtIt(Number(risk[c.field]), 2).replace(/,00$/, '')}${u} → ${fmtIt(Number(c.value), 2).replace(/,00$/, '')}${u}`; }).join('\n');
+    // la finestra dei limiti resta aperta sotto: se annulli non perdi quello che hai scritto
+    openAutoConfirm('Cambiare i limiti di rischio?', `${summary}\nValgono per l'esecutore, anche in simulazione.`, 'Conferma', async () => {
+        closeAutoRisk();
+        for (const c of changes) if (!(await send(c, ''))) return;
+        window.showAlert('Comandi inviati', `${changes.length} ${changes.length === 1 ? 'modifica inviata' : 'modifiche inviate'}: visibili qui dopo qualche minuto.`);
+        setTimeout(loadAutomation, 90000);
+    });
 }
 
 // --- Modalità ordini: Simulato / Reale (pagina Account) ---
@@ -583,7 +613,7 @@ export function setTradingMode(value) {
             + 'In Reale l\'esecutore apre ordini veri su Bitget per le strategie confermate e messe su Reale, con i limiti di rischio impostati. Con la leva puoi perdere tutto il capitale impiegato.',
             'Passa al reale', go);
     } else {
-        go();
+        openAutoConfirm('Tornare a Simulato?', 'Nessun nuovo ordine vero. Le posizioni già aperte su Bitget restano con i loro stop e target.', 'Torna a Simulato', go);
     }
 }
 
@@ -789,7 +819,7 @@ export function setAgent(field, value) {
         const P = PROFILE_TEXT;
         return openAutoConfirm(`Profilo ${AG_LABELS.profile[value].toLowerCase()}?`, `Imposta tutti i limiti di rischio: ${P[value]}.`, 'Imposta', go);
     }
-    go();
+    openAutoConfirm('Cambiare l\'agente?', `${AG_TITLES[field]}: ${AG_LABELS[field][value].toLowerCase()}.`, 'Conferma', go);
 }
 
 // --- Opzioni: indirizzo del server comandi ---

@@ -237,6 +237,27 @@ try {
             await page.evaluate(() => window.closeAutoConfirm());
             return on;
         });
+        // nessun comando parte senza la conferma: avvio dell'agente, rilancio del laboratorio, salvataggio dei limiti di rischio
+        await step('agente: Avvia ora chiede la conferma', async () => {
+            await page.evaluate(() => window.runAgent()); await page.waitForTimeout(300);
+            const on = await page.evaluate(() => document.getElementById('autoConfirmModal').classList.contains('active'));
+            await page.evaluate(() => window.closeAutoConfirm());
+            return on;
+        });
+        await step('agente: Rilancia laboratorio chiede la conferma', async () => {
+            await page.evaluate(() => window.askRunLab()); await page.waitForTimeout(300);
+            const on = await page.evaluate(() => document.getElementById('autoConfirmModal').classList.contains('active'));
+            await page.evaluate(() => window.closeAutoConfirm());
+            return on;
+        });
+        await step('rischio: salvare i limiti chiede la conferma e li elenca', async () => {
+            await page.evaluate(() => { window.openAutoRisk(); document.getElementById('risk_risk_per_trade_pct').value = '1.5'; window.saveAutoRisk(); });
+            await page.waitForTimeout(300);
+            const r = await page.evaluate(() => ({ on: document.getElementById('autoConfirmModal').classList.contains('active'), msg: document.getElementById('autoConfirmMsg').textContent,
+                still: document.getElementById('autoRiskModal').classList.contains('active') }));
+            await page.evaluate(() => { window.closeAutoConfirm(); window.closeAutoRisk(); });
+            return r.on && r.still && r.msg.includes('Rischio per trade');
+        });
         for (const e of new Set(errors)) problems.push(`${dev.n}, ${tag}: errore JavaScript: ${e}`);
         console.log(`ok ${dev.n}, ${tag}: ${pages.length} pagine`);
         await ctx.close();
