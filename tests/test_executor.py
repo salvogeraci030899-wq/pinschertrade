@@ -75,10 +75,16 @@ def test_ciclo_apertura_e_chiusura_simulato():
 def test_solo_strategie_live():
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "live.json")
-        # con un client vero (demo o reale) una strategia su carta non apre mai ordini
+        # con un client vero REALE una strategia su carta non apre mai ordini; la demo (soldi finti) la segue
         cfg, ledger = setup([trade()], mode="paper")
-        go(cfg, ledger, path, bg.DryRunClient(10_000))
+        ex.run(cfg, ledger, bg.DryRunClient(10_000), "reale", path, now=NOW, specs_fn=SPECS)
         assert json.load(open(path))["positions"] == {}
+        demo = os.path.join(d, "demo.json")
+        go(cfg, ledger, demo, bg.DryRunClient(10_000))                                     # mode "demo"
+        assert [p["status"] for p in json.load(open(demo))["positions"].values()] == ["open"]
+        cfg0, ledger0 = setup([trade()], mode="paper", cfg_extra={"risk": {"shadow_paper": False}})
+        go(cfg0, ledger0, os.path.join(d, "demo0.json"), bg.DryRunClient(10_000))          # con shadow spento neanche la demo
+        assert json.load(open(os.path.join(d, "demo0.json")))["positions"] == {}
         # shadow spento: neanche il conto simulato segue la carta
         cfg, ledger = setup([trade()], mode="paper", cfg_extra={"risk": {"shadow_paper": False}})
         go(cfg, ledger, os.path.join(d, "b.json"))

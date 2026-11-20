@@ -372,7 +372,9 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     # --- trade che le strategie live vogliono aperti adesso ---
     # Con gli ordini veri (demo o reale) si seguono solo le strategie live. Con gli ordini simulati si seguono anche quelle su carta
     # (shadow_paper): stessi limiti, stessa dimensione, stessa gestione del giorno: il passaggio al reale cambia solo il client.
-    follow = {"live"} | ({"paper"} if mode == "simulata" and risk.get("shadow_paper", True) else set())
+    # Anche la demo di Bitget (soldi finti) segue la carta: serve a provare ordini, stop e quantita' veri senza rischio.
+    # Il reale no: li' solo le strategie live, cioe' confermate.
+    follow = {"live"} | ({"paper"} if mode in ("simulata", "demo") and risk.get("shadow_paper", True) else set())
     wanted, exits = {}, {}
     for key, entry in (ledger.get("strategies") or {}).items():
         if entry.get("mode") not in follow or (cfg.get("strategies") or {}).get(key) not in follow:
