@@ -22,6 +22,28 @@
    "why": "Combina media veloce 20 con lenta 150, bilanciando reattività e filtro di trend consolidati.",
    "declared_at": "2026-11-15T23:07:28+00:00",
    "week": "2026-W46"
+  },
+  {
+   "name": "r_breakout_15_3",
+   "template": "breakout",
+   "params": {
+    "n": 15,
+    "trail": 3
+   },
+   "why": "Estende l'orizzonte a 15 giorni, potenziale miglioramento su trend più lunghi",
+   "declared_at": "2026-11-20T15:42:32+00:00",
+   "week": "2026-W47"
+  },
+  {
+   "name": "r_ema_cross_30_200",
+   "template": "ema_cross",
+   "params": {
+    "f": 30,
+    "s": 200
+   },
+   "why": "Incrocio più lento per catturare trend consolidati, diversificando dal modello 20/150",
+   "declared_at": "2026-11-20T15:42:32+00:00",
+   "week": "2026-W47"
   }
  ]
 }

@@ -1,6 +1,6 @@
 # Laboratorio strategie
 
-Generato il 2026-11-15T23:26:44+00:00 · 58 prove in questa esecuzione, 58 registrate in tutto.
+Generato il 2026-11-20T16:01:52+00:00 · 60 prove in questa esecuzione, 60 registrate in tutto.
 
 - **Ricerca** solo sullo storico prima del 2025-11-11; da lì in poi è **sigillato** per la prova finale.
 - **Costi** (scenario principale: futures, ordini a mercato): 0.11% per lato più funding. "Netto" = dopo questi costi, tasse escluse.
@@ -23,6 +23,7 @@ Generato il 2026-11-15T23:26:44+00:00 · 58 prove in questa esecuzione, 58 regis
 | donchian20_calm | trend | 268 | 39.6% | 17.5 candele | +3.371% | +5.2% / -4.0% | +3.129% | [-0.22%, +6.60%] | 0.0374 | +7.30% / +1.42% | +2.14% / +5.12% / +1.25% / +7.39% / +3.49% / +0.79% / +0.08% / +0.77% | no |
 | app_breakout_trail | trend | 114 | 38.6% | 27.2 candele | +1.019% | +0.8% / -5.1% | +3.102% | [-4.04%, +11.46%] | 0.2274 | +8.91% / +1.30% | +1.30% / +7.05% / +10.46% / +1.05% / -0.08% / +0.61% / -0.47% / +9.66% | no |
 | donchian20_long | trend | 244 | 40.6% | 15.2 candele | +5.339% | +6.6% / -4.3% | +3.096% | [-1.08%, +7.19%] | 0.0732 | +6.41% / +1.84% | -0.41% / +4.35% / +2.30% / +11.52% / +4.74% / -0.80% / +2.95% / -0.39% | no |
+| r_breakout_15_3 | ricerca | 429 | 37.8% | 20.4 candele | +2.459% | +5.7% / -5.7% | +2.858% | [-0.09%, +5.91%] | 0.0339 | +6.60% / +1.42% | +0.25% / +3.50% / +7.37% / +7.21% / +3.98% / +0.30% / +0.83% / -0.67% | no |
 | donchian20_regime | trend | 312 | 36.9% | 18.6 candele | +2.249% | +5.1% / -6.0% | +2.406% | [-1.32%, +6.49%] | 0.1185 | +8.13% / +0.36% | +0.56% / +2.76% / +3.91% / +6.09% / +4.02% / -2.30% / +6.03% / -0.19% | no |
 | donchian20 | trend | 403 | 36.0% | 19.5 candele | +1.786% | +5.6% / -5.3% | +2.118% | [-0.91%, +5.36%] | 0.0969 | +6.13% / +0.59% | +0.61% / +2.05% / +3.35% / +7.85% / +3.61% / -1.30% / +1.35% / -1.43% | no |
 | donchian55 | trend | 232 | 36.2% | 19.4 candele | +1.965% | +4.5% / -4.1% | +2.013% | [-1.84%, +6.65%] | 0.1829 | +7.98% / -0.21% | +1.48% / +3.61% / +4.55% / +8.32% / +0.34% / -1.57% / +2.96% / -4.40% | no |
@@ -34,6 +35,7 @@ Generato il 2026-11-15T23:26:44+00:00 · 58 prove in questa esecuzione, 58 regis
 | tsmom30 | momentum | 1951 | 48.0% | 6.7 candele | +0.477% | +4.6% / -6.5% | +0.447% | [-0.32%, +1.19%] | 0.1277 | +1.66% / -0.05% | +0.58% / +0.83% / +0.97% / +0.80% / +0.32% / +0.08% / -1.25% / +0.30% | no |
 | relstrength30 | forza relativa | 519 | 47.6% | 6.7 candele | +0.267% | +1.1% / -3.0% | +0.283% | [-0.49%, +1.06%] | 0.2400 | +0.31% / +0.26% | +0.00% / -0.51% / +1.33% / — / — / — / — / — | no |
 | tsmom30_long | momentum | 843 | 48.2% | 6.7 candele | +1.285% | +2.9% / -5.0% | +0.270% | [-1.05%, +1.65%] | 0.3516 | +1.75% / -0.23% | +0.24% / +0.95% / +0.04% / +0.35% / -0.04% / -0.59% / +0.04% / +0.52% | no |
+| r_ema_cross_30_200 | ricerca | 91 | 31.9% | 20.8 candele | -0.437% | +1.0% / -6.5% | +0.249% | [-5.49%, +6.42%] | 0.4683 | -7.51% / +2.58% | -5.58% / +0.54% / -0.52% / +0.73% / -9.74% / +1.51% / +10.10% / +10.57% | no |
 | tsmom90 | momentum | 1970 | 46.1% | 6.7 candele | -0.001% | -0.1% / -9.9% | -0.136% | [-0.90%, +0.64%] | 0.6360 | +0.13% / -0.25% | +0.00% / -0.09% / -0.08% / -0.80% / +0.69% / -0.70% / -0.20% / +0.29% | no |
 | relstrength90 | forza relativa | 480 | 46.7% | 6.6 candele | -0.207% | -1.1% / -6.2% | -0.213% | [-0.93%, +0.51%] | 0.7181 | -0.21% / -0.22% | -0.44% / -0.70% / +0.54% / — / — / — / — / — | no |
 | relstrength30_long | forza relativa | 275 | 47.3% | 6.7 candele | +0.980% | +1.4% / -5.1% | -0.241% | [-1.55%, +1.13%] | 0.6349 | -1.12% / +0.57% | -1.04% / -0.73% / +1.33% / — / — / — / — / — | no |
@@ -90,7 +92,7 @@ Generato il 2026-11-15T23:26:44+00:00 · 58 prove in questa esecuzione, 58 regis
 
 | Prova | Aperta il | Trade | Netto medio | Oltre il mercato | IC 95% | p | Esito |
 |---|---|---|---|---|---|---|---|
-| big_candle_trail:1d | 2026-11-11 | 73 | +1.125% | +1.074% | [-3.74%, +6.70%] | 0.3488 | non confermata |
+| big_candle_trail:1d | 2026-11-11 | 73 | +1.164% | +1.068% | [-3.75%, +6.67%] | 0.3496 | non confermata |
 
 ### Le strategie
 
@@ -118,3 +120,5 @@ Generato il 2026-11-15T23:26:44+00:00 · 58 prove in questa esecuzione, 58 regis
 - **crowd_fade** (funding): Contro la folla: short quando la quota di conti long è molto sopra la sua media a 30 giorni (z > 2), long quando è molto sotto (z < -2). Tenuta 7 candele, stop 3 ATR.
 - **r_breakout_80_4** (ricerca): rottura del massimo/minimo delle N candele precedenti, stop 2 ATR, stop che segue a T ATR (n=80, trail=4). Proposta dal ricercatore il 2026-11-15: Estende l'orizzonte a 80 candele, catturando breakout più lenti e migliorando il rapporto rischio/ritorno.
 - **r_ema_cross_20_150** (ricerca): media veloce F sopra/sotto la lenta S (long/short), stop 2 ATR, stop che segue a 3 ATR (f=20, s=150). Proposta dal ricercatore il 2026-11-15: Combina media veloce 20 con lenta 150, bilanciando reattività e filtro di trend consolidati.
+- **r_breakout_15_3** (ricerca): rottura del massimo/minimo delle N candele precedenti, stop 2 ATR, stop che segue a T ATR (n=15, trail=3). Proposta dal ricercatore il 2026-11-20: Estende l'orizzonte a 15 giorni, potenziale miglioramento su trend più lunghi
+- **r_ema_cross_30_200** (ricerca): media veloce F sopra/sotto la lenta S (long/short), stop 2 ATR, stop che segue a 3 ATR (f=30, s=200). Proposta dal ricercatore il 2026-11-20: Incrocio più lento per catturare trend consolidati, diversificando dal modello 20/150

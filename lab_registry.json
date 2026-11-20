@@ -145,6 +145,10 @@
    "description": "Contro la folla: short quando il funding degli ultimi 7 giorni \u00e8 nel 10% pi\u00f9 alto dell'ultimo anno (troppi long a leva), long quando \u00e8 nel 10% pi\u00f9 basso. Tenuta 7 candele, stop 3 ATR.",
    "first_tested": "2026-11-11"
   },
+  "r_breakout_15_3:1d": {
+   "description": "rottura del massimo/minimo delle N candele precedenti, stop 2 ATR, stop che segue a T ATR (n=15, trail=3). Proposta dal ricercatore il 2026-11-20: Estende l'orizzonte a 15 giorni, potenziale miglioramento su trend pi\u00f9 lunghi",
+   "first_tested": "2026-11-20"
+  },
   "r_breakout_80_4:1d": {
    "description": "rottura del massimo/minimo delle N candele precedenti, stop 2 ATR, stop che segue a T ATR (n=80, trail=4). Proposta dal ricercatore il 2026-11-15: Estende l'orizzonte a 80 candele, catturando breakout pi\u00f9 lenti e migliorando il rapporto rischio/ritorno.",
    "first_tested": "2026-11-15"
@@ -152,6 +156,10 @@
   "r_ema_cross_20_150:1d": {
    "description": "media veloce F sopra/sotto la lenta S (long/short), stop 2 ATR, stop che segue a 3 ATR (f=20, s=150). Proposta dal ricercatore il 2026-11-15: Combina media veloce 20 con lenta 150, bilanciando reattivit\u00e0 e filtro di trend consolidati.",
    "first_tested": "2026-11-15"
+  },
+  "r_ema_cross_30_200:1d": {
+   "description": "media veloce F sopra/sotto la lenta S (long/short), stop 2 ATR, stop che segue a 3 ATR (f=30, s=200). Proposta dal ricercatore il 2026-11-20: Incrocio pi\u00f9 lento per catturare trend consolidati, diversificando dal modello 20/150",
+   "first_tested": "2026-11-20"
   },
   "relstrength30:1d": {
    "description": "Long la coin con il rendimento a 30 candele pi\u00f9 alto delle tre, short quella con il pi\u00f9 basso. Tenuta 7 candele, stop 3 ATR.",
