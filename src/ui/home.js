@@ -218,7 +218,8 @@ function renderAutomationCard() {
     const { cfg, ledger, live } = bot;
     const modes = Object.values((cfg && cfg.strategies) || {});
     const paper = modes.filter(m => m === 'paper').length, real = modes.filter(m => m === 'live').length;
-    const stats = Object.values((ledger && ledger.strategies) || {}).map(s => s.stats || {});
+    const simOn = !!(live && live.mode === 'simulata' && live.simulated && !(cfg && cfg.risk && cfg.risk.shadow_paper === false));
+    const stats = simOn ? Object.values(live.strategy_stats || {}) : Object.values((ledger && ledger.strategies) || {}).map(s => s.stats || {});
     const closed = stats.reduce((s, x) => s + (x.n || 0), 0), opened = stats.reduce((s, x) => s + (x.open || 0), 0);
     if (cfg && cfg.emergency) setLine('homeAutoStrategies', 'EMERGENZA: tutto bloccato', 'text-danger');
     else if (live && live.halted) setLine('homeAutoStrategies', 'esecutore bloccato', 'text-danger');

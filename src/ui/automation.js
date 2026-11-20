@@ -37,6 +37,11 @@ function onModeData() {
     if (window.updateHome) window.updateHome();
 }
 export const getAutoState = () => ({ cfg, ledger, lab, live, loaded, pendingTrading });
+// Con gli ordini simulati la carta è l'esecutore simulato (stessi limiti del reale): le statistiche di una strategia contano solo i trade
+// che ha davvero aperto; quelli che i limiti avrebbero rifiutato si contano a parte ("non aperti").
+export const simStatsOn = () => !!(live && live.mode === 'simulata' && live.simulated && !(cfg && cfg.risk && cfg.risk.shadow_paper === false));
+export const strategyStats = key => (simStatsOn() ? ((live.strategy_stats || {})[key] || { n: 0, open: 0, skipped: 0 })
+    : ((ledger && ledger.strategies && ledger.strategies[key] && ledger.strategies[key].stats) || null));
 // Avvisi di prezzo (price_alerts.py): attivi = in automation.json e non ancora scattati (alerts_state.json)
 let firedAlerts = [];
 const removingAlerts = new Set();   // tolti dall'app, finché automation.json non si aggiorna
@@ -302,10 +307,10 @@ export function renderAutomation() {
     const keys = shownKeys();
     const card = key => {
         const mode = currentMode(key);
-        const st = ledger && ledger.strategies && ledger.strategies[key] && ledger.strategies[key].stats;
+        const st = strategyStats(key);
         const res = lab && lab.results && lab.results[key];
-        const info = st && (st.n || st.open)
-            ? `Su carta: ${st.n} ${st.n === 1 ? 'chiuso' : 'chiusi'}${st.n ? ` (${pct(st.avg_net_pct)} medio)` : ''}, ${st.open} ${st.open === 1 ? 'aperto' : 'aperti'}${st.vs_backtest && st.vs_backtest.verdict !== 'pochi_trade' ? ' · ' + { in_linea: 'in linea con lo storico', sotto: 'sotto lo storico', sopra: 'sopra lo storico' }[st.vs_backtest.verdict] : ''}`
+        const info = st && (st.n || st.open || st.skipped)
+            ? `Su carta: ${st.n} ${st.n === 1 ? 'chiuso' : 'chiusi'}${st.n ? ` (${pct(st.avg_net_pct)} medio)` : ''}, ${st.open} ${st.open === 1 ? 'aperto' : 'aperti'}${st.skipped ? `, ${st.skipped} non ${st.skipped === 1 ? 'aperto' : 'aperti'} per i limiti` : ''}${st.vs_backtest && st.vs_backtest.verdict !== 'pochi_trade' ? ' · ' + { in_linea: 'in linea con lo storico', sotto: 'sotto lo storico', sopra: 'sopra lo storico' }[st.vs_backtest.verdict] : ''}`
             : (res ? `Storico: ${res.n} trade, oltre il mercato ${pct(res.excess_avg_pct)}${res.holdout ? (res.holdout.confirmed ? ' · confermata' : ' · bocciata alla prova finale') : ''}` : 'Nessun dato');
         const btn = (m, text, disabled, title) => `<button type="button" class="pill-btn${mode === m ? ' active' : ''}" ${disabled ? 'disabled' : ''} title="${title || ''}" onclick="setAutoMode('${escapeHtml(key)}','${m}')">${text}</button>`;
         return `<div class="auto-item">
@@ -497,21 +502,28 @@ const dt = ts => (ts ? new Date(ts * 1000).toLocaleDateString('it-IT', { day: '2
 const px = v => (v == null ? '—' : fmtIt(v, v >= 1000 ? 0 : 2));
 export function openPaperTrades(key) {
     const e = ledger && ledger.strategies && ledger.strategies[key];
-    const trades = ((e && e.trades) || []).slice().sort((a, b) => b.t - a.t);
-    const st = (e && e.stats) || {};
+    // Con gli ordini simulati i trade sono quelli dell'esecutore (aperti, chiusi e non aperti per i limiti), nello stesso formato
+    const sim = simStatsOn();
+    const trades = sim
+        ? Object.entries(live.positions || {}).filter(([, p]) => p.key === key).map(([id, p]) => ({
+            id, symbol: p.symbol, dir: p.side === 'long' ? 1 : -1, open: p.status === 'open', skipped: p.status === 'skipped', skipReason: p.reason,
+            entry: p.entry, stop: p.stop, exit: p.exit, net: p.net != null && p.size && p.entry ? p.net / (p.size * p.entry) * 100 : null, reason: p.close_reason === 'SEGUE LA CARTA' ? '' : p.close_reason,
+            t: Date.parse(p.opened_at) / 1000 || 0, t_entry: Date.parse(p.opened_at) / 1000 || 0, t_exit: Date.parse(p.closed_at) / 1000 || 0 })).sort((a, b) => b.t - a.t)
+        : ((e && e.trades) || []).slice().sort((a, b) => b.t - a.t);
+    const st = strategyStats(key) || {};
     $('autoTradesTitle').textContent = label(key);
     const head = st.n
         ? `${st.n} ${st.n === 1 ? 'chiuso' : 'chiusi'} · vinti ${fmtIt(st.win_rate, 1)}% · medio ${pct(st.avg_net_pct)} · totale ${pct(st.total_net_pct)} · ${st.open} ${st.open === 1 ? 'aperto' : 'aperti'}`
         : `${st.open || 0} ${st.open === 1 ? 'aperto' : 'aperti'}, nessuno chiuso finora`;
     const cmp = vsBacktestText(st);
-    $('autoTradesBody').innerHTML = `<div class="settings-hint">${escapeHtml(head)}. Rendimenti per trade, netti di costi futures e funding.</div>`
+    $('autoTradesBody').innerHTML = `<div class="settings-hint">${escapeHtml(head)}. Rendimenti per trade, netti di costi futures e funding.${sim && st.skipped ? ` ${st.skipped} segnali non aperti: i limiti del reale non lo avrebbero permesso.` : ''}</div>`
         + (cmp ? `<div class="settings-hint ${st.vs_backtest.verdict === 'sotto' ? 'text-danger' : ''}">${escapeHtml(cmp)}</div>` : '') + (trades.length
         ? trades.map(t => {
             const side = t.dir > 0 ? 'LONG' : 'SHORT';
-            const res = t.open ? '<span class="text-ui">aperto</span>'
+            const res = t.skipped ? '<span class="text-warning">non aperto</span>' : t.open ? '<span class="text-ui">aperto</span>'
                 : (t.net != null ? `<b class="${t.net >= 0 ? 'text-accent' : 'text-danger'}">${pct(t.net)}</b>` : `${pct(t.gross)} lordo`);
-            return `<div class="paper-row"><div><b>${escapeHtml(t.symbol.replace('USDT', ''))} ${side}</b> <span class="paper-reason">${t.open ? '' : escapeHtml(t.reason || '')}${t.revised ? ' · rivisto' : ''}</span><br>
-                <small>${dt(t.t_entry)} → ${t.open ? 'oggi' : dt(t.t_exit)} · ${px(t.entry)} → ${t.open ? 'stop ' + px(t.stop) : px(t.exit)}</small></div><div>${res}</div></div>`;
+            return `<div class="paper-row"><div><b>${escapeHtml(t.symbol.replace('USDT', ''))} ${side}</b> <span class="paper-reason">${t.skipped ? escapeHtml(t.skipReason || '') : t.open ? '' : escapeHtml(t.reason || '')}${t.revised ? ' · rivisto' : ''}</span><br>
+                <small>${t.skipped ? '' : `${dt(t.t_entry)} → ${t.open ? 'oggi' : dt(t.t_exit)} · ${px(t.entry)} → ${t.open ? 'stop ' + px(t.stop) : px(t.exit)}`}</small></div><div>${res}</div></div>`;
         }).join('')
         : '<div class="empty-hint">Ancora nessun trade: la strategia apre solo quando arriva un segnale.</div>');
     $('autoTradesModal').classList.add('active');

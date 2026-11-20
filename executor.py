@@ -100,6 +100,50 @@ def public_prices(symbols):
     return out
 
 
+def public_funding(symbols):
+    """Tasso di funding attuale per coin (API pubblica Bitget), per addebitare il funding al conto simulato. Errore: {} (niente funding)."""
+    out = {}
+    for s in sorted(set(symbols)):
+        try:
+            r = requests.get("https://api.bitget.com/api/v2/mix/market/current-fund-rate", params={"symbol": s, "productType": "USDT-FUTURES"}, timeout=10)
+            out[s] = float(r.json()["data"][0]["fundingRate"])
+        except Exception:
+            continue
+    return out
+
+
+FUNDING_SECONDS = 8 * 3600          # Bitget regola il funding alle 00:00, 08:00 e 16:00 UTC
+
+
+def sim_strategy_stats(state, ledger_unused=None):
+    """Statistiche per strategia dei trade che il conto simulato (cioè il reale) ha davvero aperto, e confronto con lo storico.
+    Rendimento per trade in % del nominale (commissioni e funding compresi): lo stesso modo del laboratorio."""
+    import paper
+    by = {}
+    for p in (state.get("positions") or {}).values():
+        row = by.setdefault(p.get("key"), {"nets": [], "open": 0, "skipped": 0})
+        if p.get("status") == "open":
+            row["open"] += 1
+        elif p.get("status") == "skipped":
+            row["skipped"] += 1
+        elif p.get("status") == "closed" and p.get("net") is not None and p.get("size") and p.get("entry"):
+            row["nets"].append(p["net"] / (p["size"] * p["entry"]) * 100)
+    out = {}
+    for key, row in by.items():
+        nets, n = row["nets"], len(row["nets"])
+        entry = {"n": n, "open": row["open"], "skipped": row["skipped"]}
+        if n:
+            entry.update(win_rate=round(sum(1 for v in nets if v > 0) / n * 100, 1), avg_net_pct=round(sum(nets) / n, 3), total_net_pct=round(sum(nets), 2))
+        try:
+            cmp = paper.vs_backtest(nets, paper.lab_result(key))
+        except Exception:       # noqa: BLE001 — il confronto e' facoltativo
+            cmp = None
+        if cmp:
+            entry["vs_backtest"] = cmp
+        out[key] = entry
+    return out
+
+
 def size_position(equity, entry, stop, risk, open_notional, specs):
     """Quantità (in coin) da aprire, o (0, motivo) se un limite lo impedisce.
     Quantità = rischio ammesso / distanza dello stop, poi tagliata da leva ed esposizione totale."""
@@ -150,7 +194,7 @@ def make_client(cfg):
 
 
 def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=None, notify=None, specs_fn=contract_specs,
-        guard_path=None, prices_fn=public_prices, epoch_path=None):
+        guard_path=None, prices_fn=public_prices, epoch_path=None, funding_fn=public_funding):
     """Un giro dell'esecutore. Ritorna True se lo stato è cambiato."""
     now = now or datetime.now(timezone.utc)
     now_ts, today = int(now.timestamp()), now.strftime("%Y-%m-%d")
@@ -210,6 +254,27 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
         try:
             client.set_marks(prices_fn([s for s in client._positions]))
         except Exception:       # noqa: BLE001 — senza prezzi il guadagno non realizzato resta a zero
+            pass
+
+    # --- funding: ogni 8 ore le posizioni aperte pagano o incassano il funding, come sul conto vero ---
+    if isinstance(client, DryRunClient) and client._positions:
+        try:
+            due = {}
+            for s, pos in client._positions.items():
+                if not pos.get("funded_to"):
+                    pos["funded_to"] = now_ts           # posizioni di prima del funding: si parte da adesso
+                last = pos["funded_to"]
+                k = now_ts // FUNDING_SECONDS - int(last) // FUNDING_SECONDS
+                if k > 0 and pos.get("entry"):
+                    due[s] = k
+            rates = funding_fn(list(due)) if due else {}
+            for s, k in due.items():
+                pos = client._positions[s]
+                mark = client._marks.get(s) or pos["entry"]
+                if s in rates:
+                    client.charge_funding(s, k * pos["size"] * mark * rates[s] * client._dir(pos["side"]))
+                    pos["funded_to"] = now_ts
+        except Exception:       # noqa: BLE001 — senza tassi il funding non si addebita e si riprova al giro dopo
             pass
 
     # --- riconciliazione: Bitget deve avere esattamente le posizioni aperte dall'esecutore ---
@@ -293,8 +358,11 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
             exit_px = exits.get(tid)
             if isinstance(client, DryRunClient):
                 before_cash = client._equity
+                funding = (client._positions.get(p["symbol"]) or {}).get("funding", 0.0)
                 client.close_position(p["symbol"], p["side"], price=exit_px)
-                p["net"] = round(client._equity - before_cash - (p.get("size") or 0) * (p.get("entry") or 0) * client.fee_pct / 100, 4)      # netto del trade intero: anche la commissione d'ingresso
+                # netto del trade intero: anche la commissione d'ingresso e il funding pagato durante la posizione
+                p["net"] = round(client._equity - before_cash - (p.get("size") or 0) * (p.get("entry") or 0) * client.fee_pct / 100 - funding, 4)
+                p["funding"] = round(funding, 4)
                 p["exit"] = exit_px
             else:
                 client.close_position(p["symbol"], p["side"])
@@ -355,6 +423,8 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
             log("error", id=tid, error=str(e))
             say(f"Apertura di {t['symbol']} FALLITA ({e}).")
             continue
+        if isinstance(client, DryRunClient) and t["symbol"] in client._positions:
+            client._positions[t["symbol"]]["funded_to"] = now_ts
         p = {"key": t["key"], "symbol": t["symbol"], "side": side, "size": size, "entry": t["entry"], "stop": stop,
              "status": "open", "opened_at": now.isoformat(timespec="seconds"), "equity_at_open": round(equity, 2)}
         state["positions"][tid] = p
@@ -375,6 +445,7 @@ def _finish(state, before, path, client, mode):
         sim["equity"] = round(client.equity(), 6)                   # patrimonio ai prezzi di adesso
         sim["unrealized"] = round(client.unrealized(), 6)
         sim["marks"] = {s: v for s, v in client._marks.items() if s in sim["positions"]}
+        state["strategy_stats"] = sim_strategy_stats(state)
     changed = json.dumps(state, sort_keys=True) != before
     if changed:
         _save(state, path)
