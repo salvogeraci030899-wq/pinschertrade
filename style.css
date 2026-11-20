@@ -220,25 +220,19 @@ main {
 
 /* Schermo intero (Grafici e Home, stessa grafica): barra in alto con chiudi, coin e timeframe,
    grafico sotto a tutta altezza; rispetta le aree sicure anche in orizzontale */
-.chart-container.fullscreen,
-.home-chart-item.fullscreen { position: fixed; inset: 0; width: auto; height: auto; max-width: none; z-index: 3000; border-radius: 0; border: none; margin: 0;
+.chart-container.fullscreen { position: fixed; inset: 0; width: auto; height: auto; max-width: none; z-index: 3000; border-radius: 0; border: none; margin: 0;
     padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
     box-sizing: border-box; background: var(--surface); display: flex; flex-direction: column; }
-.chart-container.fullscreen .chart-fs-header,
-.home-chart-item.fullscreen .home-chart-header { display: flex; position: static; align-items: center; justify-content: flex-start; gap: 10px; padding: 10px 12px; margin: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.chart-container.fullscreen .home-chart-symbol,
-.home-chart-item.fullscreen .home-chart-symbol { display: block !important; flex: 1; font-size: 15px; }
-.chart-container.fullscreen .home-chart-tf-bar,
-.home-chart-item.fullscreen .home-chart-tf-bar { display: flex !important; }
-.chart-container.fullscreen #chart,
-.home-chart-item.fullscreen .home-chart-canvas { flex: 1; width: 100%; height: auto; min-height: 0; }
+.chart-container.fullscreen .chart-fs-header { display: flex; position: static; align-items: center; justify-content: flex-start; gap: 10px; padding: 10px 12px; margin: 0; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.chart-container.fullscreen .home-chart-symbol { display: block !important; flex: 1; font-size: 15px; }
+.chart-container.fullscreen .home-chart-tf-bar { display: flex !important; }
+.chart-container.fullscreen #chart { flex: 1; width: 100%; height: auto; min-height: 0; }
 .chart-container.fullscreen .btn-fullscreen { display: none; }
 
 body.chart-fullscreen .header-row, body.chart-fullscreen .page-tabs, body.chart-fullscreen .mkt-row, body.chart-fullscreen .last-update-bar, body.chart-fullscreen .dashboard-carousel-container, body.chart-fullscreen .controls-row, body.chart-fullscreen .nav-wrap { display: none !important; }
 /* Avviso e Condividi: solo a schermo intero, in basso a sinistra (Segnali e Home) */
 .chart-fs-tools { display: none; }
-.chart-container.fullscreen .chart-fs-tools,
-.home-chart-item.fullscreen .chart-fs-tools { display: flex; gap: 8px; position: absolute; z-index: 10; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); left: calc(env(safe-area-inset-left, 0px) + 10px); }
+.chart-container.fullscreen .chart-fs-tools { display: flex; gap: 8px; position: absolute; z-index: 10; bottom: calc(env(safe-area-inset-bottom, 0px) + 30px); left: calc(env(safe-area-inset-left, 0px) + 10px); }
 .chart-tool { background: var(--overlay); border: 1px solid var(--border); color: var(--text-secondary); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 0; }
 .chart-tool:active { background: var(--overlay-strong); color: var(--text); }
 .chart-tool:disabled { opacity: 0.5; }
@@ -633,15 +627,22 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .home-line .sc-badge { font-size: 10px; font-weight: 800; padding: 3px 6px; border-radius: 5px; letter-spacing: 0.3px; }
 .home-version { font-family: var(--mono); text-transform: none; letter-spacing: 0; color: var(--text-secondary); }
 .home-line.home-sub { min-height: 16px; margin-top: -4px; }
+/* Ultime operazioni chiuse: occupa lo spazio che resta sotto le altre schede; le righe che non entrano si nascondono */
+.home-recent { flex: 1 1 auto; min-height: 64px; overflow: hidden; }
+.home-recent-list { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; position: relative; gap: 2px; }
+.home-recent-list .home-line[hidden] { display: none; }
+.home-recent-list .home-line > span small { color: var(--text-muted); font-size: 11px; margin-left: 4px; }
+.home-recent-list .home-line > b.safe { color: var(--accent); }
+.home-recent-list .home-line > b.danger { color: var(--danger); }
+.home-recent-list .home-empty > span { color: var(--text-secondary); font-size: 12px; }
 .home-line.home-sub > b { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
 .home-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-secondary); display: inline-block; flex-shrink: 0; }
 .home-dot.good { background: var(--accent); }
 .home-dot.warn { background: var(--warning); }
 .home-dot.bad { background: var(--danger); }
 
-.home-charts-section { flex: 1; display: flex; flex-direction: column; min-height: 170px; }
 
-/* Schermi bassi (iPhone SE, Safari con la barra): schede più compatte, così il grafico resta leggibile */
+/* Schermi bassi (iPhone SE, Safari con la barra): schede più compatte */
 @media (max-height: 720px) {
     .home-container { gap: 6px; }
     .home-tile { padding: 6px 8px; }
@@ -650,32 +651,21 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
     .home-kpi-value { font-size: 15px; }
     .home-line { font-size: 12px; min-height: 20px; }
 }
-.home-charts-carousel-wrapper { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
-.home-charts-list { flex: 1; min-height: 0; display: flex; flex-direction: row; gap: 10px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 2px; }
-.home-charts-list::-webkit-scrollbar { display: none; }
 
-.home-chart-item { flex: 0 0 100%; min-width: 0; max-width: 100%; scroll-snap-align: start; scroll-snap-stop: always; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: 12px; display: flex; flex-direction: column; position: relative; }
+
 .home-chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-shrink: 0; gap: 8px; }
 .home-chart-symbol { font-size: 13px; font-weight: 800; color: var(--text); letter-spacing: 0.5px; flex: 1; }
 .home-chart-tf-bar { display: flex; gap: 4px; flex-shrink: 0; }
 .home-tf-btn { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); border-radius: 12px; padding: 6px 10px; min-height: 32px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.15s; }
 .home-tf-btn.active { background: var(--ui); color: var(--on-ui); border-color: var(--ui); }
-
-.home-chart-canvas { flex: 1; width: 100%; min-height: 0; min-width: 0; position: relative; overflow: hidden; }
 .home-chart-fullscreen { position: static; background: var(--overlay); border: 1px solid var(--border); width: var(--touch-min); height: var(--touch-min); border-radius: 12px; color: var(--text-secondary); cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); flex-shrink: 0; }
 .home-chart-fullscreen:active { background: var(--overlay-strong); color: var(--text); }
 
-.home-chart-dots { flex-shrink: 0; display: flex; justify-content: center; gap: 6px; padding: 4px 0 0 0; }
-.home-chart-dots .info-dot { width: 6px; height: 6px; }
-.home-chart-dots .info-dot.active { width: 16px; border-radius: 3px; }
 
 body.chart-fullscreen #page-home > .header-row,
 body.chart-fullscreen .home-container > .home-card,
 body.chart-fullscreen .home-market,
-body.chart-fullscreen .home-charts-section > .section-title,
-body.chart-fullscreen .home-chart-dots,
-body.chart-fullscreen .home-chart-item:not(.fullscreen),
 body.chart-fullscreen .nav-wrap { display: none !important; }
 
 /* Spazio sotto la navbar. In Safari resta la safe area intera.
@@ -1256,7 +1246,7 @@ html.glass-anim[data-theme="light"] .wall-anim i:nth-child(3) { --c: rgba(191, 9
 @keyframes pt-wall-c { 0% { transform: translate3d(-18vw, 30vh, 0); } 50% { transform: translate3d(8vw, 22vh, 0) scale(1.1); } 100% { transform: translate3d(-4vw, 34vh, 0) scale(0.95); } }
 @keyframes pt-wall-fade { 0% { opacity: 0.75; } 50% { opacity: 1; } 100% { opacity: 0.85; } }
 @media (prefers-reduced-motion: reduce) { .wall-anim i { animation: none; } }
-html.glass .card-box, html.glass .home-card, html.glass .home-tile, html.glass .home-chart-item, html.glass .chart-container,
+html.glass .card-box, html.glass .home-card, html.glass .home-tile, html.glass .chart-container,
 html.glass .set-group, html.glass .active-trade-card, html.glass .log-item, html.glass .calc-card,
 html.glass .signal-history-item, html.glass #tech-panel, html.glass #tr-panel, html.glass #val-panel, html.glass #fut-panel, html.glass #ai-panel {
     -webkit-backdrop-filter: blur(18px) saturate(170%); backdrop-filter: blur(18px) saturate(170%); box-shadow: var(--glass-light); }
@@ -1265,7 +1255,7 @@ html.glass .signal-info-bar, html.glass .signal-legend, html.glass .assist-ctx d
 .btn-link-secondary.on { color: var(--ui); }
 /* vetro chiaro: un'ombra leggera stacca le schede dallo sfondo chiaro */
 html.glass[data-theme="light"] .card-box, html.glass[data-theme="light"] .home-card, html.glass[data-theme="light"] .home-tile,
-html.glass[data-theme="light"] .home-chart-item, html.glass[data-theme="light"] .chart-container, html.glass[data-theme="light"] .set-group,
+html.glass[data-theme="light"] .chart-container, html.glass[data-theme="light"] .set-group,
 html.glass[data-theme="light"] .active-trade-card, html.glass[data-theme="light"] .signal-history-item, html.glass[data-theme="light"] .res-kpis div,
 html.glass[data-theme="light"] .signal-cell, html.glass[data-theme="light"] .auto-item { box-shadow: var(--glass-light), 0 2px 10px rgba(30, 40, 80, 0.07); }
 /* Mercato: coin e timeframe su una riga (le coin scorrono di lato, il bordo destro sfuma) */

@@ -9,7 +9,6 @@ import * as BacktestUI from './ui/backtest.js';
 import * as HomeUI from './ui/home.js';
 import * as AI from './ui/ai.js';
 import * as Assist from './ui/assistant.js';
-import * as HomeCharts from './ui/home-charts.js';
 import * as Backup from './core/backup.js';
 import * as LabUI from './ui/lab.js';
 import * as AutoUI from './ui/automation.js';
@@ -229,14 +228,10 @@ window.sendAssist = Assist.sendAssist;
 window.toggleRecording = Assist.toggleRecording;
 window.toggleAssistSpeak = Assist.toggleAssistSpeak;
 // dalla Home: Agente → Strategie in un tocco
+window.openHomeCoin = HomeUI.openHomeCoin;
 window.openAutomation = () => { window.switchTab('signals'); AutoUI.setSignalsView('auto'); };   // Home → Automazione: Agente → Strategie
 
 // Home Live Charts
-window.initHomeCharts = HomeCharts.initHomeCharts;
-window.refreshHomeCharts = HomeCharts.refresh;
-window.toggleHomeChartFullscreen = HomeCharts.toggleFullscreen;
-window.goToHomeChart = HomeCharts.goToHomeChart;
-window.updateHomeChartDots = HomeCharts.updateHomeChartDots;
 
 // Backup
 window.exportBackup = Backup.exportBackup;
@@ -298,9 +293,7 @@ window.switchTab = (tabId) => {
     if (tabId === 'journal') Results.autoResultsSource();
     if (tabId === 'home') {
         HomeUI.updateHome();
-        if (typeof HomeCharts.refresh === 'function') {
-            setTimeout(() => HomeCharts.refresh(), 60);
-        }
+        setTimeout(HomeUI.updateHome, 60);          // dopo l'assestamento del layout: le righe delle ultime chiuse si adattano allo spazio
     } else if (tabId === 'terminal') {
         // il grafico va ridimensionato (e inquadrato) quando la pagina ha la misura definitiva:
         // su iOS il layout si assesta più tardi, quindi ripeto dopo che si è stabilizzato
@@ -356,12 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initManual();
     initPageFit();
-
-    try {
-        HomeCharts.initHomeCharts();
-    } catch (e) {
-        Logger.log('ERROR', 'HOME_CHARTS', `Init fallita: ${e.message}`);
-    }
 
     CalculatorUI.setMarket('SPOT');
     CalculatorUI.setCtxLabel();
@@ -427,8 +414,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addEventListener('resize', () => {
         clearTimeout(window._resizeTimer);
-        window._resizeTimer = setTimeout(() => {
-            if (typeof HomeCharts.refresh === 'function') HomeCharts.refresh();
-        }, 200);
+        window._resizeTimer = setTimeout(() => HomeUI.updateHome(), 200);
     });
 });
