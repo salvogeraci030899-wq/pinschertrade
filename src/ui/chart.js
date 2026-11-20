@@ -32,7 +32,8 @@ const DEFAULTS = {
     upColor: '#30d158',
     downColor: '#ff453a',
     showVolume: false,
-    interactive: true
+    interactive: true,
+    horzTouchDrag: true      // false: il trascinamento orizzontale col dito lascia scorrere la pagina (Mercato)
 };
 
 /**
@@ -78,7 +79,7 @@ export function createChart(el, opts = {}) {
             secondsVisible: false
         },
         handleScroll: cfg.interactive
-            ? { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: true }
+            ? { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: cfg.horzTouchDrag, vertTouchDrag: true }
             : { mouseWheel: false, pressedMouseMove: false, horzTouchDrag: false, vertTouchDrag: false },
         handleScale: cfg.interactive
             ? { axisPressedMouseMove: true, mouseWheel: true, pinch: true }

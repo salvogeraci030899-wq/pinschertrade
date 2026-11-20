@@ -89,6 +89,31 @@ try {
             return { fuori: kids.filter(e => e.getBoundingClientRect().bottom > top + 1).length, vuoto: Math.round(top - last.bottom), tagliate: clipped, rows: list.children.length, noChart: !document.getElementById('homeChartsList') };
         });
         if (home.fuori || home.tagliate || !home.noChart) problems.push(`${dev.n}, ${tag}: Home fuori posto ${JSON.stringify(home)}`);
+        // Mercato: grafico grande, pannelli a scorrimento orizzontale (Grafico, Verifica strategia, Futures, Livelli, Carta),
+        // in basso solo i pallini e il tasto dell'analisi; niente contenuto tagliato nei pannelli
+        await page.evaluate(() => { window.switchTab('terminal'); window.setMarketView('chart'); });
+        await page.waitForTimeout(800);
+        const mk = await page.evaluate(() => {
+            const nav = document.querySelector('.nav-wrap').getBoundingClientRect().top, car = document.getElementById('dashboardCarousel');
+            const chart = document.getElementById('mainChartContainer').getBoundingClientRect(), btn = document.getElementById('btn-live-analysis').getBoundingClientRect();
+            return { chartH: Math.round(chart.height), vh: innerHeight, btnOk: btn.height >= 40 && btn.bottom <= nav + 1, slides: car.children.length,
+                dots: document.querySelectorAll('#dashboardDots .info-dot').length, oldPanel: !!document.getElementById('ai-panel') };
+        });
+        if (mk.slides !== 5 || mk.dots !== 5 || !mk.btnOk || mk.oldPanel || mk.chartH < mk.vh * 0.3) problems.push(`${dev.n}, ${tag}: Mercato fuori posto ${JSON.stringify(mk)}`);
+        for (let i = 1; i < 5; i++) {
+            await page.evaluate(n => window.goToDashboardSlide(n), i);
+            await page.waitForTimeout(600);
+            const clip = await page.evaluate(i => {
+                const car = document.getElementById('dashboardCarousel'), panel = car.children[i].querySelector('.mkt-panel'), pb = panel.getBoundingClientRect();
+                const bad = [...panel.querySelectorAll('.filter-item, .tr-foot, .paper-row:not([hidden]), .tech-header, .option-toggle')]
+                    .filter(e => e.getClientRects().length && (e.getBoundingClientRect().bottom > pb.bottom + 1 || e.scrollHeight > e.clientHeight + 2)).map(e => e.className.split(' ')[0] + ':' + Math.round(e.scrollHeight - e.clientHeight));
+                const active = document.querySelector('#dashboardDots .info-dot.active'), idx = [...document.querySelectorAll('#dashboardDots .info-dot')].indexOf(active);
+                return { bad, idx, vis: Math.abs(car.children[i].offsetLeft - car.scrollLeft) < 4 };
+            }, i);
+            if (clip.bad.length || clip.idx !== i || !clip.vis) problems.push(`${dev.n}, ${tag}: Mercato, pannello ${i}: ${JSON.stringify(clip)}`);
+        }
+        await page.evaluate(() => window.goToDashboardSlide(0));
+        await page.waitForTimeout(400);
         // identificativi doppi: il codice troverebbe l'elemento sbagliato
         const dup = await page.evaluate(() => { const c = {}; document.querySelectorAll('[id]').forEach(e => { c[e.id] = (c[e.id] || 0) + 1; }); return Object.keys(c).filter(k => c[k] > 1); });
         if (dup.length) problems.push(`${dev.n}, ${tag}: identificativi doppi: ${dup.join(', ')}`);
