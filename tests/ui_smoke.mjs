@@ -15,7 +15,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = 8800 + Math.floor(Math.random() * 100);
-const DEVICES = [{ n: 'iPhone 15 Safari', w: 393, h: 659 }, { n: 'iPhone 17 Pro app', w: 402, h: 874, pwa: true }];
+const DEVICES = [{ n: 'iPhone SE', w: 375, h: 667 }, { n: 'iPhone 15 Safari', w: 393, h: 659 }, { n: 'iPhone 17 Pro app', w: 402, h: 874, pwa: true }];
 const VIEWS = { log: [['setLogFilter', 'all'], ['setLogFilter', 'agente']], journal: [['setResultsSource', 'real'], ['setResultsSource', 'sim'], ['setResultsSource', 'paper'], ['setResultsPeriod', 'all'], ['setResultsPeriod', 'day']], terminal: [['setMarketView', 'chart'], ['setMarketView', 'sig'], ['setMarketView', 'alerts']], trade: [['setPosView', 'open'], ['setPosView', 'orders']], signals: [['setSignalsView', 'agent'], ['setSignalsView', 'auto'], ['setSignalsView', 'lab'], ['setTestView', 'bt'], ['setSignalsView', 'risk']] };
 
 const now = Date.now();
@@ -26,6 +26,7 @@ const candles = (n = 200) => Array.from({ length: n }, (_, i) => {
 
 const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'], { cwd: ROOT, stdio: 'ignore' });
 const problems = [];
+const seenClip = new Set();      // ogni testo troppo lungo si segnala una volta sola per dispositivo (alla prima pagina dove compare)
 try {
     for (let i = 0; i < 50; i++) {
         const up = await new Promise(res => { const c = net.connect(PORT, '127.0.0.1', () => { c.end(); res(true); }); c.on('error', () => res(false)); });
@@ -38,13 +39,15 @@ try {
     for (const { dev, mode, glass } of RUNS) {
         const tag = (mode === 'real' ? 'Reale' : 'Simulato') + (glass ? ', vetro dinamico chiaro' : '');
         const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, isMobile: true, hasTouch: true, colorScheme: glass ? 'light' : 'dark' });
-        await ctx.addInitScript(([pwa, glass]) => {
+        await ctx.addInitScript(([pwa, glass, wide]) => {
             try {
                 localStorage.setItem('pt_gh_token', 'github_pat_' + 'x'.repeat(30));
             } catch (e) {}
+            // telefono più stretto: lettere un po' più larghe, per simulare i caratteri dell'iPhone e lasciare margine ai testi
+            if (wide) document.addEventListener('DOMContentLoaded', () => { const st = document.createElement('style'); st.textContent = '* { letter-spacing: 0.02em !important; }'; document.head.appendChild(st); });
             if (pwa) Object.defineProperty(navigator, 'standalone', { get: () => true });
             if (glass) try { localStorage.setItem('pt_glass', 'anim'); localStorage.setItem('pt_theme', 'light'); } catch (e) {}
-        }, [!!dev.pwa, !!glass]);
+        }, [!!dev.pwa, !!glass, dev.n === 'iPhone SE']);
         const page = await ctx.newPage();
         const errors = [];
         page.on('pageerror', e => errors.push(e.message));
@@ -131,6 +134,41 @@ try {
             if (r.over < 0) problems.push(`${where}: pagina non trovata`);
             if (r.wide > 1) problems.push(`${where}: più larga dello schermo di ${r.wide}px`);
             if (r.emoji) problems.push(`${where}: emoji nella pagina (${r.emoji}); nell'app non ce ne devono essere`);
+            // Testi troppo lunghi: tagliati (con o senza puntini), fuori dallo schermo, o su più righe dentro un tasto.
+            // Le liste che scorrono di lato (coin, schede, navbar a due pagine) sono fatte per uscire dallo schermo e non contano.
+            const clipped = await page.evaluate(W => {
+                const out = [], seen = new Set();
+                const roots = [document.querySelector('section.page.active'), document.querySelector('.nav-wrap')].filter(Boolean);
+                const scrollable = el => { for (let e = el.parentElement; e; e = e.parentElement) { if (e.classList && e.classList.contains('nav-scroll')) return true; const o = getComputedStyle(e).overflowX; if ((o === 'auto' || o === 'scroll') && e.scrollWidth > e.clientWidth + 1) return true; } return false; };
+                for (const root of roots) for (const el of root.querySelectorAll('*')) {
+                    if (!el.getClientRects().length || getComputedStyle(el).visibility === 'hidden') continue;
+                    const nodes = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
+                    const txt = nodes.map(n => n.textContent).join(' ').replace(/\s+/g, ' ').trim();
+                    if (!txt) continue;
+                    const cs = getComputedStyle(el), r = el.getBoundingClientRect();
+                    if (!r.width || !r.height) continue;
+                    let why = null;
+                    // la riga di testo più larga contro lo spazio utile dell'elemento (anche se il testo sborda senza essere nascosto)
+                    let tw = 0;
+                    for (const n of nodes) { const range = document.createRange(); range.selectNodeContents(n); for (const x of range.getClientRects()) tw = Math.max(tw, x.width); }
+                    const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+                    if (el.clientWidth > 0 && tw > room + 1 && cs.display !== 'inline' && !scrollable(el)) why = 'sborda';
+                    else if (el.scrollWidth > el.clientWidth + 1 && (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') && !scrollable(el)) why = 'tagliato';
+                    else if ((r.right > W + 1 || r.left < -1) && !scrollable(el)) why = 'fuori schermo';
+                    else if (el.matches('button, .pill-btn, .nav-item, .set-label, label, .home-card-header span, .tech-title, .tech-trend-label')) {
+                        const tops = new Set();
+                        for (const n of nodes) { const range = document.createRange(); range.selectNodeContents(n); for (const x of range.getClientRects()) if (x.width > 0) tops.add(Math.round(x.top / 4)); }
+                        if (tops.size > 1) why = 'va a capo';
+                    }
+                    if (!why) continue;
+                    const key = why + txt;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    out.push(`"${txt.slice(0, 46)}" ${why} <${el.tagName.toLowerCase()}${el.className && typeof el.className === 'string' ? '.' + el.className.trim().split(/\s+/)[0] : ''}>`);
+                }
+                return out;
+            }, dev.w);
+            for (const c of clipped) { const k = `${dev.n}|${c}`; if (!seenClip.has(k)) { seenClip.add(k); problems.push(`${where}: testo troppo lungo: ${c}`); } }
         }
         // Regole fisse: ogni finestra a schermo intero, intestazione nello stesso punto della Home, niente scroll verticale
         await page.evaluate(() => window.switchTab('home'));

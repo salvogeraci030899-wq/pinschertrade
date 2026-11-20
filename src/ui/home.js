@@ -142,7 +142,10 @@ function renderMarket() {
 }
 
 // ---------- Conto simulato ----------
-const signed = v => (v > 0 ? '+' : '') + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// numeri grandi in forma breve (35,2k), così entrano nelle tessere anche sugli schermi stretti
+const signed = v => (v > 0 ? '+' : '') + (Math.abs(v) >= 10000
+    ? Number(v / 1000).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k'
+    : Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const tone = v => (v > 0 ? ' safe' : v < 0 ? ' danger' : '');
 
 // In modalità Reale la scheda mostra il conto Bitget (letto dal bot ogni 15 minuti), in Simulato
