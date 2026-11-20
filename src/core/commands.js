@@ -170,12 +170,11 @@ export async function command(body, env, fetchFn) {
     }
 }
 
-// Coin delle strategie (stessa lista di kronos_core.TRADE_ASSETS): posizioni, avvisi, analisi AI e assistente
+// Coin delle strategie (stessa lista di TRADE_ASSETS nel bot): posizioni, avvisi, analisi AI e assistente
 export const TRADE_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'BNBUSDT', 'ADAUSDT', 'LINKUSDT'];
 const ANALYZE_SYMBOLS = TRADE_SYMBOLS;
 const SYMBOL_CHOICES = TRADE_SYMBOLS.map(s => `"${s}"`).join('|');
 const ANALYZE_TFS = ['1d', '4h', '1h'];
-const BIASES = ['LONG', 'SHORT', 'NEUTRO'];
 const CONSENSUS = ['LONG', 'SHORT', 'NEUTRAL'];
 // Solo numeri finiti finiscono nel prompt: niente testo libero dal client al posto dei prezzi
 const num = v => (v !== null && v !== '' && v !== undefined && Number.isFinite(Number(v)) ? Number(v) : null);
@@ -242,7 +241,6 @@ function tfLine(tf, s) {
 }
 
 export function buildAnalysisPrompt(b) {
-    const plan = b.ai_plan && typeof b.ai_plan === 'object' ? b.ai_plan : {};
     const f = b.futures && typeof b.futures === 'object' ? b.futures : {};
     const cons = b.consensus && typeof b.consensus === 'object' ? b.consensus : {};
     const candles = b.candles && typeof b.candles === 'object' ? b.candles : {};
@@ -256,13 +254,12 @@ export function buildAnalysisPrompt(b) {
               + `leva ${show(num(b.leverage))}x, PnL netto attuale ${show(num(b.pnl))} USDT, aperta da ${show(num(b.hours_open))} ore.`)
         : `NESSUNA POSIZIONE: analisi di mercato su ${b.symbol}, timeframe di riferimento ${b.timeframe}.`;
     const consensus = CONSENSUS.includes(cons.direction) ? `${cons.direction} (${show(num(cons.agreement))}/4 strategie d'accordo)` : 'N/D';
-    const bias = BIASES.includes(plan.bias) ? plan.bias : 'N/D';
     return `Dati di mercato in tempo reale (${new Date().toISOString().slice(0, 16)} UTC), ${b.symbol}:
 Prezzo live: ${show(num(b.currentPrice))}
 ${tfs}
 Futures Bitget: funding ${show(num(f.funding_rate_pct))}% per periodo, open interest 24h ${show(num(f.oi_change_24h_pct))}%, posizioni long ${show(num(f.long_positions_pct))}%.
-Consenso delle regole tecniche dell'app: ${consensus}. Modello Kronos: ${bias}, probabilità di rialzo ${show(num(plan.prob_up))}%.
-Nota di onestà: né le regole tecniche né Kronos hanno un vantaggio dimostrato nei test fuori campione; non trattarli come prove.
+Consenso delle regole tecniche dell'app: ${consensus}.
+Nota di onestà: le regole tecniche non hanno un vantaggio dimostrato nei test fuori campione; non trattarle come prove.
 ${trade}`;
 }
 

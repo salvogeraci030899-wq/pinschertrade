@@ -24,7 +24,7 @@ function overshoot(page) {
     if (!main) return 0;
     const pageBottom = main.getBoundingClientRect().top - main.scrollTop + page.offsetTop - main.offsetTop + page.offsetHeight;
     let limit = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    const nav = document.querySelector('.nav-bar');
+    const nav = document.querySelector('.nav-wrap');
     if (nav && nav.getClientRects().length > 0) limit = Math.min(limit, nav.getBoundingClientRect().top);
     return Math.max(0, Math.ceil(pageBottom - limit));
 }

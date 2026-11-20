@@ -99,7 +99,6 @@ window.openTradeFromCalculator = CalculatorUI.openTradeFromCalculator;
 window.closeForceTradeModal = CalculatorUI.closeForceTradeModal;
 window.confirmForceTrade = CalculatorUI.confirmForceTrade;
 window.setCtxLabel = CalculatorUI.setCtxLabel;
-window.sendToCalculator = CalculatorUI.sendToCalculator;
 window.setCalcDirection = CalculatorUI.setCalcDirection;
 window.onFuturesData = CalculatorUI.onFuturesData;
 
@@ -141,7 +140,6 @@ window.executeReset = JournalUI.executeReset;
 window.scanAllSignals = SignalsUI.scanAllSignals;
 window.goToSignalPage = SignalsUI.goToSignalPage;
 window.updateSignalDots = SignalsUI.updateSignalDots;
-window.refreshKronosSignalsInMatrix = SignalsUI.refreshKronosSignalsInMatrix;
 window.openSignalDetail = SignalsUI.openSignalDetail;
 window.closeSignalDetailModal = SignalsUI.closeSignalDetailModal;
 window.clearSignalHistory = SignalsUI.clearSignalHistory;

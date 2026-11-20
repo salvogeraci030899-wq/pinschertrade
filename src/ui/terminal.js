@@ -2,8 +2,8 @@ import { State } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
 import { Logger } from '../core/logger.js';
 import { journalTrades, isRealMode } from './history.js';
-import { $, SYM, fetchT, apiPost, fmtUsd, cleanData, analyzeTrend, buildRiskData, calcEMA, parseBitgetCandles, fetchData, markChosen } from '../utils/helpers.js';
-import { createChart, setCandles, setForecast, setBands, setMarkers, setPriceLines, relayout } from './chart.js';
+import { $, SYM, fetchT, apiPost, fmtUsd, analyzeTrend, buildRiskData, calcEMA, parseBitgetCandles, fetchData, markChosen } from '../utils/helpers.js';
+import { createChart, setCandles, setMarkers, setPriceLines, relayout } from './chart.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 
 const chartContainer = document.getElementById('chart');
@@ -31,8 +31,6 @@ export function initTerminal() {
 function initChart() {
     if (chartHandle) chartHandle.destroy();
     chartHandle = createChart(chartContainer, {
-        showForecast: true,
-        showBands: true,
         interactive: true
     });
     // Il grafico segue sempre la misura reale del contenitore (cambio tab, barra di Safari,
@@ -90,7 +88,7 @@ export async function takeSnapshot(btn, target = null, label = null) {
             try {
                 await navigator.share({
                     files: [file],
-                    title: 'Kronos Grafici',
+                    title: 'Grafici',
                     text: label || `${State.currentAsset.replace('USDT','')} · ${getTFLabel(State.currentTF)}`
                 });
                 return;
@@ -110,111 +108,10 @@ export async function takeSnapshot(btn, target = null, label = null) {
 }
 
 export function chartAlertSignals() {
-    const d = State.allData && State.allData[`${State.currentAsset}_${State.currentTF}`];
-    window.openChartAlert(State.currentAsset, State.livePx[State.currentAsset] || (d && d.current_price));
+    window.openChartAlert(State.currentAsset, State.livePx[State.currentAsset]);
 }
 
 // --- DATA FETCHING ---
-// --- TRACK RECORD (affidabilità di Kronos, da track_record_summary.json scritto dal bot) ---
-let trSummary = null;
-
-async function loadTrackRecord() {
-    try {
-        const r = await fetchData('track_record_summary.json');
-        trSummary = r.ok ? await r.json() : null;
-    } catch (e) { trSummary = null; }
-    renderTrackRecord();
-}
-
-const TF_HOURS = { '1h': 1, '4h': 4, '1d': 24 };
-const MIN_SAMPLE = 30; // sotto questa soglia le statistiche non dicono nulla
-const fmtSigned = (v, d = 2) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
-
-function trItem(label, value, cls) {
-    return `<div class="filter-item ${cls}"><span class="f-label">${label}</span><span class="f-val">${value}</span></div>`;
-}
-
-// Mostra, per la coppia selezionata, quanto sono state affidabili le previsioni già verificate.
-// Finché non ci sono previsioni chiuse lo dice chiaramente: nessun numero inventato.
-export function renderTrackRecord() {
-    const grid = document.getElementById('trGrid'), foot = document.getElementById('trFoot'), badge = document.getElementById('tr-badge');
-    if (!grid || !foot || !badge) return;
-    const key = `${State.currentAsset}_${State.currentTF}`;
-    const pair = trSummary && trSummary.by_pair && trSummary.by_pair[key];
-    const pred = pair && pair.predictions;
-    const open = pair ? pair.open || 0 : 0;
-    const horizonH = (trSummary ? trSummary.horizon_candles : 7) * (TF_HOURS[State.currentTF] || 1);
-    if (!pred || !pred.n) {
-        badge.textContent = 'In raccolta';
-        grid.innerHTML = '';
-        foot.textContent = trSummary
-            ? `Nessuna previsione ${SYM(State.currentAsset)} ${State.currentTF.toUpperCase()} ancora verificata (${open} in attesa). Ogni previsione si verifica dopo ${horizonH >= 24 ? Math.round(horizonH / 24) + ' giorni' : horizonH + ' ore'}.`
-            : 'Track record non ancora disponibile: verrà creato dal bot alle prossime esecuzioni.';
-        return;
-    }
-    badge.textContent = `${pred.n} ${pred.n === 1 ? 'verificata' : 'verificate'}`;
-    const trd = pair.tradeable_signals || { n: 0 };
-    const hit = pred.direction_hit_rate;
-    const brierOk = pred.brier < pred.brier_baseline;
-    grid.innerHTML =
-        trItem('Direzione', hit == null ? '—' : `${hit.toFixed(0)}%`, hit == null ? 'neutral' : (hit > 50 ? 'pass' : 'fail')) +
-        trItem('Prob. vs caso', brierOk ? 'Meglio' : 'Peggio', brierOk ? 'pass' : 'fail') +
-        trItem('Operativi', trd.n ? `${trd.n} · WR ${trd.win_rate.toFixed(0)}%` : '0', 'neutral') +
-        trItem('Netto medio', trd.n ? fmtSigned(trd.avg_net_pct) : '—', !trd.n ? 'neutral' : (trd.avg_net_pct > 0 ? 'pass' : 'fail'));
-    const since = trSummary.since ? new Date(trSummary.since).toLocaleDateString('it-IT') : '—';
-    const small = pred.n < MIN_SAMPLE ? `Campione ancora piccolo (${pred.n}/${MIN_SAMPLE}): numeri non affidabili. ` : '';
-    foot.textContent = `${small}Dal ${since} · ${open} in attesa · netto di commissioni e slippage, tasse escluse · Brier ${pred.brier.toFixed(3)} (caso ${pred.brier_baseline.toFixed(3)})`;
-    foot.classList.toggle('text-warning', !!small);
-}
-
-// --- VALIDAZIONE STORICA (validation_summary.json, scritto dal workflow "Validazione Kronos") ---
-// Stesse misure del track record, ma su mesi di storico fuori campione e con intervalli di
-// confidenza: un vantaggio è "dimostrato" solo se l'intero intervallo sta dalla parte giusta.
-let valSummary = null;
-let valLoaded = false;
-
-async function loadValidation() {
-    try {
-        const r = await fetchData('validation_summary.json');
-        valSummary = r.ok ? await r.json() : null;
-    } catch (e) { valSummary = null; }
-    valLoaded = true;
-    renderValidation();
-}
-
-const VERDICT_LABEL = { positivo: 'Vantaggio dimostrato', negativo: 'Svantaggio dimostrato', non_dimostrato: 'Vantaggio non dimostrato', campione_insufficiente: 'Campione insufficiente' };
-const VERDICT_CLASS = { positivo: 'pass', negativo: 'fail', non_dimostrato: 'neutral', campione_insufficiente: 'neutral' };
-
-export function renderValidation() {
-    const grid = document.getElementById('valGrid'), foot = document.getElementById('valFoot'), badge = document.getElementById('val-badge');
-    if (!grid || !foot || !badge) return;
-    const pair = valSummary && valSummary.by_pair && valSummary.by_pair[`${State.currentAsset}_${State.currentTF}`];
-    foot.classList.remove('text-warning');
-    // Il piano di Kronos è presentato come valido solo se la validazione storica lo ha dimostrato per questa coppia
-    const planTitle = document.querySelector('#ai-panel .ai-title');
-    // titolo corto (la riga ha anche il tasto e la direzione): "non validato" resta nel suggerimento e nella nota sotto
-    if (planTitle) { planTitle.textContent = 'Piano IA'; planTitle.title = pair && pair.verdict === 'positivo' ? 'Validato sullo storico' : 'Non validato sullo storico'; }
-    if (!pair || !pair.n) {
-        badge.textContent = '—';
-        grid.innerHTML = '';
-        foot.textContent = !valLoaded ? 'Validazione in caricamento…'
-            : `Validazione storica ${SYM(State.currentAsset)} ${State.currentTF.toUpperCase()} non ancora disponibile: va calcolata con il workflow "Validazione Kronos".`;
-        return;
-    }
-    const d = pair.direction, plan = pair.strategies.kronos_plan;
-    badge.textContent = `${pair.n} previsioni`;
-    const range = ci => ci ? `${ci[0].toFixed(2)} / ${ci[1].toFixed(2)}%` : 'n/d';
-    grid.innerHTML =
-        trItem('Direzione', d.hit_rate == null ? '—' : `${d.hit_rate.toFixed(0)}%`, VERDICT_CLASS[d.verdict_direction]) +
-        trItem('Prob. vs caso', { positivo: 'Meglio', negativo: 'Peggio' }[d.verdict_probability] || 'Incerto', VERDICT_CLASS[d.verdict_probability]) +
-        trItem('Operativi', plan.n ? `${plan.n} · WR ${plan.win_rate.toFixed(0)}%` : '0', 'neutral') +
-        trItem('Netto medio', plan.n ? fmtSigned(plan.avg_net_pct) : '—', VERDICT_CLASS[plan.verdict]);
-    const from = new Date(pair.from * 1000).toLocaleDateString('it-IT');
-    const mom = d.momentum_hit_rate == null ? '' : ` · momentum ${d.momentum_hit_rate.toFixed(0)}%`;
-    foot.textContent = `${VERDICT_LABEL[pair.verdict]} · dal ${from}${mom} · netto dei costi, intervallo 95%: ${plan.n ? range(plan.avg_net_ci) : 'n/d'}`;
-    foot.classList.toggle('text-warning', pair.verdict !== 'positivo');
-}
-
 // --- FUTURES (futures_data.json, scritto dal bot una volta per ora) ---
 // Funding, open interest, long/short e premio dei futures USDT di Bitget per la coin selezionata.
 // Solo informativi: non entrano ancora nei segnali, quindi nessun colore verde/rosso.
@@ -233,6 +130,12 @@ async function loadFutures() {
 
 // Dati futures di una coin (o null): usati anche dal calcolatore Rischio
 export const getFutures = symbol => (futData && futData.symbols && futData.symbols[symbol]) || null;
+
+const fmtSigned = (v, d = 2) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
+
+function trItem(label, value, cls) {
+    return `<div class="filter-item ${cls}"><span class="f-label">${label}</span><span class="f-val">${value}</span></div>`;
+}
 
 function fmtUsdCompact(v) {
     if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
@@ -268,97 +171,20 @@ export function renderFutures() {
 let lastDataAt = 0;
 export async function loadData() {
     lastDataAt = Date.now();
-    try {
-        const res = await fetchData('dashboard.json');
-        State.allData = await res.json();
-        updateChart();
-        loadTrackRecord();
-        loadValidation();
-        loadFutures();
-        if (window.refreshKronosSignalsInMatrix) window.refreshKronosSignalsInMatrix();
-    } catch (e) {
-        State.lastHeaderPrice = null;
-        document.getElementById('live-price').textContent = "Err";
-        document.getElementById('last-update-footer').textContent = "Ultimo agg: Errore di rete";
-    }
+    loadFutures();
+    liveChart();
 }
 
+// Grafico: candele vere di Bitget per ogni coin (nessuna previsione: Kronos è stato tolto il 2026-11-20)
 export function updateChart() {
-    renderTrackRecord();
-    renderValidation();
     renderFutures();
-    if (!State.allData) return;
-    const data = State.allData[`${State.currentAsset}_${State.currentTF}`];
-    if (!data && !KRONOS_ASSETS.includes(State.currentAsset)) { liveChart(); return; }
-    if (!data) {
-        State.lastHeaderPrice = null;
-        $('live-price').textContent = "N/D";
-        $('ai-panel').style.display = 'none';
-        State.currentAIPlan = null;
-        $('last-update-footer').textContent = "Ultimo agg: N/D";
-        if (chartHandle) {
-            setCandles(chartHandle, []);
-            setForecast(chartHandle, []);
-            setBands(chartHandle, [], []);
-        }
-        State.candleTimes = [];
-        updateCalcBtnUI();
-        updatePriceLines();
-        return;
-    }
-
-    setHeaderPrice(State.livePx[State.currentAsset] || data.current_price);
-    if (data.last_update) {
-        const d = new Date(data.last_update);
-        $('last-update-footer').textContent = `Ultimo agg: ${d.toLocaleDateString('it-IT')} - ${d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}`;
-        const refreshTs = parseInt(localStorage.getItem('pt_refresh_start_ts') || '0', 10);
-        if (refreshTs > 0 && d.getTime() > refreshTs) refreshDone('Aggiornato');
-    }
-
-    if (data.ai_plan && !data.ai_plan.error) {
-        $('ai-panel').style.display = 'block';
-        State.currentAIPlan = data.ai_plan;
-        const aiBias = $('ai-bias');
-        aiBias.textContent = (State.currentAIPlan.bias !== 'NEUTRO' && State.currentAIPlan.tradeable === false) ? `${State.currentAIPlan.bias} · R/R basso` : State.currentAIPlan.bias;
-        aiBias.style.color = State.currentAIPlan.bias === 'LONG' ? 'var(--accent)' : (State.currentAIPlan.bias === 'SHORT' ? 'var(--danger)' : 'var(--warning)');
-        $('ai-entry').textContent = State.currentAIPlan.entry ? fmtUsd(State.currentAIPlan.entry) : '-';
-        $('ai-sl').textContent = State.currentAIPlan.stop_loss ? fmtUsd(State.currentAIPlan.stop_loss) : '-';
-        $('ai-tp').textContent = State.currentAIPlan.take_profit ? fmtUsd(State.currentAIPlan.take_profit) : '-';
-        $('ai-reason').textContent = State.currentAIPlan.reasoning || '-';
-        if (State.currentAIPlan.min_rr) document.querySelectorAll('.min-rr').forEach(n => { n.textContent = State.currentAIPlan.min_rr; });
-    } else {
-        $('ai-panel').style.display = 'none';
-        State.currentAIPlan = null;
-    }
-
-    updateCalcBtnUI();
-
-    if (chartHandle) {
-        const hist = cleanData(data.historical);
-        setCandles(chartHandle, hist);
-        setBands(chartHandle, cleanData(data.band_upper), cleanData(data.band_lower));
-        setForecast(chartHandle, cleanData(data.forecast));
-        State.candleTimes = hist.map(d => d.time);
-        applyDefaultViewIfNeeded();
-    }
-    refreshMarkers();
-    updatePriceLines();
+    liveChart();
 }
 
-// Coin senza Kronos (quelle delle sole strategie): candele vere di Bitget, niente previsione né Piano IA
-const KRONOS_ASSETS = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'];
 let liveSeq = 0;
 async function liveChart() {
     const asset = State.currentAsset, tf = State.currentTF, seq = ++liveSeq;
-    // al posto del Piano IA (Kronos): cosa manca e come avere un'analisi di questa coin
-    $('ai-panel').style.display = 'block';
-    State.currentAIPlan = null;
-    $('ai-bias').textContent = '—';
-    $('ai-bias').style.color = 'var(--text-secondary)';
-    ['ai-entry', 'ai-sl', 'ai-tp'].forEach(id => { $(id).textContent = '—'; });
-    $('ai-reason').textContent = `La previsione di Kronos gira solo su BTC, ETH e SOL. Per ${asset.replace('USDT', '')} premi Analisi AI live: prezzo, candele, funding e livelli del momento.`;
-    updateCalcBtnUI();
-    $('last-update-footer').textContent = 'Prezzi dal vivo da Bitget · previsione Kronos solo su BTC, ETH e SOL';
+    $('last-update-footer').textContent = 'Prezzi dal vivo da Bitget';
     if (State.livePx[asset]) setHeaderPrice(State.livePx[asset]);
     else { State.lastHeaderPrice = null; $('live-price').textContent = '…'; }
     try {
@@ -369,11 +195,9 @@ async function liveChart() {
         const hist = parseBitgetCandles(j.data || []).map(c => ({ time: Math.floor(c.ts / 1000), open: c.open, high: c.high, low: c.low, close: c.close }));
         if (chartHandle) {
             setCandles(chartHandle, hist);
-            setForecast(chartHandle, []);
-            setBands(chartHandle, [], []);
-            chartHandle.chart.timeScale().fitContent();
-        }
-        State.candleTimes = hist.map(d => d.time);
+            State.candleTimes = hist.map(d => d.time);
+            applyDefaultViewIfNeeded();
+        } else State.candleTimes = hist.map(d => d.time);
         if (!State.livePx[asset] && hist.length) setHeaderPrice(hist[hist.length - 1].close);
         refreshMarkers();
         updatePriceLines();
@@ -411,30 +235,8 @@ export function updatePriceLines() {
         lines.push({ price: activeTrade.entryPrice, color: 'rgba(142,142,147,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'ENTRY' });
         lines.push({ price: activeTrade.slPrice, color: 'rgba(255,69,58,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'SL' });
         lines.push({ price: activeTrade.tpPrice, color: 'rgba(48,209,88,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'TP' });
-    } else if (State.currentAIPlan && State.currentAIPlan.entry > 0 && State.currentAIPlan.stop_loss > 0 && State.currentAIPlan.take_profit > 0) {
-        const isT = State.currentAIPlan.tradeable !== false;
-        lines.push({ price: State.currentAIPlan.entry, color: isT ? 'rgba(10,132,255,0.9)' : 'rgba(10,132,255,0.3)', lineWidth: 1, lineStyle: isT ? LightweightCharts.LineStyle.Dashed : LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'ENTRY' });
-        lines.push({ price: State.currentAIPlan.stop_loss, color: isT ? 'rgba(255,69,58,0.9)' : 'rgba(255,69,58,0.3)', lineWidth: 1, lineStyle: isT ? LightweightCharts.LineStyle.Dashed : LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'SL' });
-        lines.push({ price: State.currentAIPlan.take_profit, color: isT ? 'rgba(48,209,88,0.9)' : 'rgba(48,209,88,0.3)', lineWidth: 1, lineStyle: isT ? LightweightCharts.LineStyle.Dashed : LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'TP' });
     }
     setPriceLines(chartHandle, lines);
-}
-
-export function updateCalcBtnUI() {
-    const btnCalc = $('btn-calc');
-    if (!State.currentAIPlan) {
-        btnCalc.disabled = true; btnCalc.style.background = ''; btnCalc.style.color = '';
-        btnCalc.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Analizza Setup`;
-        return;
-    }
-    btnCalc.disabled = false;
-    if (State.currentAIPlan.tradeable === false) {
-        btnCalc.style.background = 'var(--warning)'; btnCalc.style.color = 'var(--on-accent)';
-        btnCalc.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Analizza (R/R Basso)`;
-    } else {
-        btnCalc.style.background = ''; btnCalc.style.color = '';
-        btnCalc.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg> Analizza Setup`;
-    }
 }
 
 // --- PRICE POLLING ---
@@ -603,8 +405,6 @@ function refreshLabel(text, busy) {
     if (lbl) lbl.textContent = text;
     if (btn) btn.disabled = !!busy;
 }
-const latestUpdate = d => Object.values(d || {}).reduce((m, v) => (v && v.last_update && v.last_update > m ? v.last_update : m), '');
-
 export function startRefreshCountdown(remainingSeconds) {
     if (State.refreshTimerInterval) clearInterval(State.refreshTimerInterval);
     let left = remainingSeconds;
@@ -642,43 +442,16 @@ export async function triggerRefresh() {
     if (btn && btn.disabled) return;
     localStorage.setItem('pt_refresh_start_ts', Date.now());
     startRefreshCountdown(CONFIG.REFRESH_MAX_WAIT);
-    const before = latestUpdate(State.allData);
     try {
         const r = await apiPost('/api/trigger', { symbol: 'ALL', timeframe: 'ALL' });
         if (!r.ok) throw new Error('HTTP ' + r.status);
-        const poll = setInterval(async () => {
-            if (!localStorage.getItem('pt_refresh_start_ts')) { clearInterval(poll); return; }
-            try {
-                const nd = await (await fetchData('dashboard.json')).json();
-                if (latestUpdate(nd) > before) {
-                    clearInterval(poll);
-                    State.allData = nd;
-                    updateChart();
-                    if (window.refreshKronosSignalsInMatrix) window.refreshKronosSignalsInMatrix();
-                    refreshDone('Aggiornato');
-                }
-            } catch (e) {}
-        }, 10000);
+        // il giro dura pochi secondi: dopo un minuto si rileggono i dati pubblicati
+        refreshDone('Avviato');
+        setTimeout(() => { loadData(); }, 60000);
     } catch (e) {
         refreshDone('Non avviato');
         if (window.showAlert) window.showAlert('Errore', "Impossibile avviare il giro del bot. Controlla Impostazioni → Altro → Connessioni.");
     }
-}
-
-export function sendToCalculator() {
-    if (!State.currentAIPlan) return;
-    if (State.currentAIPlan.bias === 'NEUTRO' && !State.currentAIPlan.direction) {
-        if (window.showAlert) window.showAlert('Piano neutro', 'Nessun setup direzionale.');
-        return;
-    }
-    State.calcContext = { asset: State.currentAsset, tf: State.currentTF };
-    window.setCalcDirection(State.currentAIPlan.direction || (State.currentAIPlan.bias === 'SHORT' ? 'SHORT' : 'LONG'));
-    $('calcEntry').value = State.currentAIPlan.entry;
-    $('calcStop').value = State.currentAIPlan.stop_loss;
-    $('calcTarget').value = State.currentAIPlan.take_profit;
-    if (window.setCtxLabel) window.setCtxLabel();
-    if (window.switchTab) window.switchTab('calculator');
-    if (window.calc) window.calc();
 }
 
 // Inquadratura iniziale (ultime 60 candele) per l'asset/timeframe corrente. Va applicata solo quando

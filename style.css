@@ -70,7 +70,7 @@ main {
     width: 100%; height: 100%;
     overflow-y: auto; overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
-    padding-bottom: calc(56px + 18px + var(--nav-safe-bottom));
+    padding-bottom: calc(56px + 18px + 11px + var(--nav-safe-bottom));
     box-sizing: border-box;
 }
 
@@ -234,7 +234,7 @@ main {
 .home-chart-item.fullscreen .home-chart-canvas { flex: 1; width: 100%; height: auto; min-height: 0; }
 .chart-container.fullscreen .btn-fullscreen { display: none; }
 
-body.chart-fullscreen .header-row, body.chart-fullscreen .page-tabs, body.chart-fullscreen .mkt-row, body.chart-fullscreen .last-update-bar, body.chart-fullscreen .dashboard-carousel-container, body.chart-fullscreen .controls-row, body.chart-fullscreen .nav-bar { display: none !important; }
+body.chart-fullscreen .header-row, body.chart-fullscreen .page-tabs, body.chart-fullscreen .mkt-row, body.chart-fullscreen .last-update-bar, body.chart-fullscreen .dashboard-carousel-container, body.chart-fullscreen .controls-row, body.chart-fullscreen .nav-wrap { display: none !important; }
 /* Avviso e Condividi: solo a schermo intero, in basso a sinistra (Segnali e Home) */
 .chart-fs-tools { display: none; }
 .chart-container.fullscreen .chart-fs-tools,
@@ -685,7 +685,7 @@ body.chart-fullscreen .home-market,
 body.chart-fullscreen .home-charts-section > .section-title,
 body.chart-fullscreen .home-chart-dots,
 body.chart-fullscreen .home-chart-item:not(.fullscreen),
-body.chart-fullscreen .nav-bar { display: none !important; }
+body.chart-fullscreen .nav-wrap { display: none !important; }
 
 /* Spazio sotto la navbar. In Safari resta la safe area intera.
    Da PWA (classe pwa-mode, messa da index.html) la riduco al 40%: la barra home dell'iPhone
@@ -710,19 +710,25 @@ html.pwa-mode body,
 html.pwa-mode #app { height: 100vh; height: 100lvh; }
 html.pwa-mode #app { display: flex; flex-direction: column; }
 html.pwa-mode main { flex: 1 1 auto; min-height: 0; height: auto; padding-bottom: 0; }
-html.pwa-mode .nav-bar { position: relative; flex: 0 0 auto; }
+html.pwa-mode .nav-wrap { position: relative; flex: 0 0 auto; }
 html.pwa-mode .nav-scroll { overflow: hidden; touch-action: manipulation; -webkit-overflow-scrolling: auto; }
 
 /* --- NAV BAR --- */
-.nav-bar {
+/* Contenitore: i puntini di scorrimento stanno SOPRA la barra, fuori dalla capsula; la capsula contiene solo le voci */
+.nav-wrap {
     position: fixed;
     bottom: calc(var(--nav-safe-bottom) + 8px); left: var(--nav-inset); right: var(--nav-inset);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 9999;
+}
+.nav-bar {
     display: flex;
     flex-direction: column;
     background: var(--surface);
     border-top: 1px solid var(--border);
     padding-bottom: var(--nav-safe-bottom);
-    z-index: 9999;
 }
 .nav-dots { display: flex; justify-content: center; align-items: center; gap: 4px; height: 5px; padding: 0; box-sizing: border-box; }
 .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--surface-hover); transition: all 0.2s; cursor: pointer; -webkit-tap-highlight-color: transparent; flex-shrink: 0; }
@@ -1194,9 +1200,9 @@ html.app-locked .lock-screen, .lock-screen.active { display: flex; }
    Margine interno uguale sopra (fino ai puntini) e sotto (dalle voci): NAV_PAD. ===== */
 :root { --nav-pad: 6px; }
 .nav-bar { padding: var(--nav-pad) 6px var(--nav-pad);
-    border: 1px solid var(--border); border-radius: var(--r-pill); overflow: hidden; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); gap: 4px; }
+    border: 1px solid var(--border); border-radius: var(--r-pill); overflow: hidden; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); }
 /* in PWA la barra sta nel flusso della pagina: niente spostamenti (left/right/bottom la sposterebbero), solo margini */
-html.pwa-mode .nav-bar { left: auto; right: auto; bottom: auto; margin: 0 var(--nav-inset) var(--nav-inset); }
+html.pwa-mode .nav-wrap { left: auto; right: auto; bottom: auto; margin: 0 var(--nav-inset) var(--nav-inset); }
 .nav-dots { margin: 0; }
 .nav-item { border-radius: var(--r-pill); margin: 0 2px; }
 .nav-item.active { background: var(--surface-hover); }

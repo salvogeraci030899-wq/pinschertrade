@@ -21,27 +21,6 @@ async function fetchCandlesForSignal(asset, tf, limit = 300) {
     } catch(e) { return null; }
 }
 
-export function getKronosSignal(asset, tf) {
-    // Kronos è stato tolto (2026-11-20): le sue previsioni non battevano il caso. Il bot non scrive più previsioni;
-    // se un dashboard.json vecchio le contiene, qui non contano.
-    const d = null;
-    if (!d || !d.ai_plan || d.ai_plan.error) return { signal: 'NEUTRAL', strength: 0, reason: 'Kronos non più in uso' };
-    const bias = d.ai_plan.bias;
-    const prob = typeof d.prob_up === 'number' ? d.prob_up : null;
-    const tradeable = d.ai_plan.tradeable !== false;
-    let signal = 'NEUTRAL';
-    if (bias === 'LONG') signal = 'LONG';
-    else if (bias === 'SHORT') signal = 'SHORT';
-    if (signal !== 'NEUTRAL' && !tradeable) return { signal: 'NEUTRAL', strength: 0, reason: `Kronos ${bias} ma R/R basso`, rawBias: bias, prob };
-    let strength = 50;
-    if (prob != null) {
-        if (signal === 'LONG') strength = Math.max(50, Math.min(100, prob));
-        else if (signal === 'SHORT') strength = Math.max(50, Math.min(100, 100 - prob));
-    }
-    const reason = bias === 'NEUTRO' ? 'Kronos: neutro' : `Kronos ${bias}${prob != null ? ' · ' + prob + '%' : ''}`;
-    return { signal, strength: Math.round(strength), reason, rawBias: bias, prob, tradeable, reasoning: d.ai_plan.reasoning || '' };
-}
-
 function computeStrategySignal(candles, strategy, price) {
     if (!candles || candles.length < 210) return { signal: 'NEUTRAL', strength: 0, reason: 'Dati insufficienti' };
     const closed = candles.slice(0, -1);
@@ -97,15 +76,11 @@ export function aggregateCellSignals(asset, tf) {
         else if (r.signal === 'SHORT') { shorts++; totalShort += r.strength; }
         else neutral++;
     });
-    const k = matrix.kronos || { signal: 'NEUTRAL', strength: 0 };
-    if (k.signal === 'LONG') { longs++; totalLong += k.strength; }
-    else if (k.signal === 'SHORT') { shorts++; totalShort += k.strength; }
-    else neutral++;
     const maxSide = Math.max(longs, shorts);
     let consensus = 'NEUTRAL';
     if (maxSide >= 2) consensus = longs > shorts ? 'LONG' : 'SHORT';
     const avgStrength = maxSide > 0 ? Math.round((longs > shorts ? totalLong : totalShort) / maxSide) : 0;
-    return { consensus, agreement: maxSide, longs, shorts, neutral, avgStrength, alignedWithKronos: k.signal !== 'NEUTRAL' && k.signal === consensus };
+    return { consensus, agreement: maxSide, longs, shorts, neutral, avgStrength };
 }
 
 export async function scanAllSignals(manual = false) {
@@ -126,7 +101,6 @@ export async function scanAllSignals(manual = false) {
             const price = State.livePx[asset] || candles[candles.length - 1].close;
             const cellData = {};
             CONFIG.SIGNAL_STRATEGIES.forEach(strat => { cellData[strat] = computeStrategySignal(candles, strat, price); });
-            cellData.kronos = getKronosSignal(asset, tf);
             newMatrix[`${asset}_${tf}`] = cellData;
         }
     }
@@ -149,9 +123,6 @@ export async function scanAllSignals(manual = false) {
                 if (prevCell[s].signal === 'LONG') prevLong++;
                 else if (prevCell[s].signal === 'SHORT') prevShort++;
             });
-            const pk = prevCell.kronos || { signal: 'NEUTRAL' };
-            if (pk.signal === 'LONG') prevLong++;
-            else if (pk.signal === 'SHORT') prevShort++;
             const prevMax = Math.max(prevLong, prevShort);
             const prevConsensus = prevMax >= 2 ? (prevLong > prevShort ? 'LONG' : 'SHORT') : 'NEUTRAL';
             
@@ -159,9 +130,7 @@ export async function scanAllSignals(manual = false) {
                 const entry = {
                     timestamp: Date.now(), asset, tf,
                     consensus: newAgg.consensus, agreement: newAgg.agreement,
-                    alignedWithKronos: newAgg.alignedWithKronos,
                     sources: {
-                        kronos: newMatrix[key].kronos?.signal || 'NEUTRAL',
                         breakout: newMatrix[key].breakout?.signal || 'NEUTRAL',
                         mean_reversion: newMatrix[key].mean_reversion?.signal || 'NEUTRAL',
                         ma_crossover: newMatrix[key].ma_crossover?.signal || 'NEUTRAL'
@@ -190,18 +159,6 @@ export async function scanAllSignals(manual = false) {
     renderSignalGrid();
     renderSignalHistory();
     if (manual && fired.length === 0) window.showAlert('Scansione completata', 'Nessun nuovo segnale forte rilevato.');
-}
-
-export function refreshKronosSignalsInMatrix() {
-    let changed = false;
-    Object.keys(State.signalMatrix).forEach(key => {
-        const [asset, tf] = key.split('_');
-        const oldK = State.signalMatrix[key].kronos;
-        const newK = getKronosSignal(asset, tf);
-        if (!oldK || oldK.signal !== newK.signal) changed = true;
-        State.signalMatrix[key].kronos = newK;
-    });
-    if (changed) { State.saveSignalState(); renderSignalGrid(); }
 }
 
 export function startSignalAutoScan() {
@@ -255,22 +212,17 @@ function cells(asset) {
         }
         const cls = agg.consensus.toLowerCase();
         const m = State.signalMatrix[key];
-        const kSig = m.kronos?.signal || 'NEUTRAL';
-        const kDotCls = `kronos ${kSig !== 'NEUTRAL' ? 'on ' + kSig.toLowerCase() : ''}`;
         const sDots = CONFIG.SIGNAL_STRATEGIES.map(s => {
             const st = m[s];
             const on = st && st.signal !== 'NEUTRAL';
             const sideCls = st && st.signal === 'SHORT' ? 'short' : (st && st.signal === 'LONG' ? 'long' : '');
             return `<span class="sc-agree-dot ${on ? 'on ' + sideCls : ''}"></span>`;
         }).join('');
-        const kLabel = kSig === 'NEUTRAL' ? 'K:—' : (kSig === 'LONG' ? 'K:LONG' : 'K:SHORT');
-        const kLabelColor = kSig === 'LONG' ? 'var(--accent)' : (kSig === 'SHORT' ? 'var(--danger)' : 'var(--text-secondary)');
         html += `<div class="signal-cell ${cls}" onclick="openSignalDetail('${asset}','${tf}')">
             <div class="sc-head"><span class="sc-asset">${SYM(asset)}</span><span class="sc-tf">${tf}</span></div>
-            <div class="sc-badge ${cls}">${agg.consensus === 'NEUTRAL' ? '—' : agg.consensus + ' ' + agg.agreement + '/4'}</div>
+            <div class="sc-badge ${cls}">${agg.consensus === 'NEUTRAL' ? '—' : agg.consensus + ' ' + agg.agreement + '/3'}</div>
             <div class="sc-foot">
-                <div class="sc-agree"><span class="sc-agree-dot ${kDotCls}"></span>${sDots}</div>
-                <span class="sc-kronos-label" style="color:${kLabelColor};">${kLabel}</span>
+                <div class="sc-agree">${sDots}</div>
             </div>
         </div>`;
     }
@@ -290,7 +242,6 @@ export function renderSignalHistory() {
         const cls = s.consensus.toLowerCase();
         const src = s.sources || s.strategies || {};
         const stratTags = [];
-        if (src.kronos && src.kronos !== 'NEUTRAL') stratTags.push(`<span class="shi-strat-tag kronos">Kronos ${src.kronos}</span>`);
         CONFIG.SIGNAL_STRATEGIES.forEach(k => {
             const sig = src[k];
             if (!sig || sig === 'NEUTRAL') return;
@@ -301,9 +252,9 @@ export function renderSignalHistory() {
             <div class="signal-history-item">
                 <div class="shi-row1">
                     <div><span class="shi-coin">${SYM(s.asset)}</span> <span style="color:var(--text-secondary); font-size:11px;">${s.tf}</span></div>
-                    <span class="shi-badge ${cls}">${s.consensus} ${s.agreement}/4</span>
+                    <span class="shi-badge ${cls}">${s.consensus} ${s.agreement}/3</span>
                 </div>
-                <div class="shi-meta">${fmtDateTime(s.timestamp)} · Strength ${s.strength}%${s.alignedWithKronos ? ' · ✓ Kronos' : ''}</div>
+                <div class="shi-meta">${fmtDateTime(s.timestamp)} · Strength ${s.strength}%</div>
                 <div class="shi-strategies">${stratTags.join('')}</div>
             </div>
         </div>`;
@@ -363,16 +314,6 @@ export function openSignalDetail(asset, tf) {
     const agg = aggregateCellSignals(asset, tf);
     $('signalDetailTitle').textContent = `${SYM(asset)} · ${tf}`;
     const body = $('signalDetailBody');
-    const k = matrix.kronos || { signal: 'NEUTRAL', strength: 0, reason: '—' };
-    const kCls = k.signal.toLowerCase();
-    const kBadge = kCls === 'long' ? 'long' : (kCls === 'short' ? 'short' : 'neutral');
-    const kHtml = `<div style="border:1px solid rgba(10,132,255,0.4); background:rgba(10,132,255,0.05); border-radius:10px; padding:10px; margin-bottom:10px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <b style="color:var(--blue); font-size:12px;">KRONOS AI</b>
-            <span class="sc-badge ${kBadge}">${k.signal}${k.strength ? ' · ' + k.strength + '%' : ''}</span>
-        </div>
-        <div style="font-size:11px; color:var(--text-secondary);">${k.reason || '—'}</div>
-    </div>`;
     const rows = CONFIG.SIGNAL_STRATEGIES.map(s => {
         const m = matrix[s] || { signal: 'NEUTRAL', strength: 0, reason: '—' };
         const cls = m.signal.toLowerCase();
@@ -387,11 +328,10 @@ export function openSignalDetail(asset, tf) {
     }).join('');
     const consensusRow = agg ? `<div style="text-align:center; margin-top:14px; padding-top:10px; border-top:1px solid var(--border);">
         <div style="font-size:10px; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Consensus Finale</div>
-        <span class="sc-badge ${agg.consensus.toLowerCase()}" style="font-size:14px; padding:6px 12px;">${agg.consensus} (${agg.agreement}/4)</span>
-        ${agg.alignedWithKronos ? '<div style="font-size:10px; color:var(--blue); margin-top:8px;">Kronos allineato</div>' : ''}
+        <span class="sc-badge ${agg.consensus.toLowerCase()}" style="font-size:14px; padding:6px 12px;">${agg.consensus} (${agg.agreement}/3)</span>
     </div>
     <button class="btn-generic" style="margin-top:14px; background:var(--blue); color:#fff;" onclick="closeSignalDetailModal(); switchTab('terminal'); setAsset('${asset}'); setTF('${tf}');">Apri sul Terminal</button>` : '';
-    body.innerHTML = kHtml + rows + consensusRow;
+    body.innerHTML = rows + consensusRow;
     $('signalDetailModal').classList.add('active');
 }
 
@@ -467,7 +407,7 @@ export function testTelegramNotification() {
     const savedChat = State.signalSettings.telegramChatId;
     State.signalSettings.telegramBotToken = token;
     State.signalSettings.telegramChatId = chatId;
-    const ok = sendTelegramMessage('🧪 <b>Kronos Test</b>\nNotifiche Telegram configurate.\n' + new Date().toLocaleString('it-IT'));
+    const ok = sendTelegramMessage('🧪 <b>PinscherTrade Test</b>\nNotifiche Telegram configurate.\n' + new Date().toLocaleString('it-IT'));
     State.signalSettings.telegramBotToken = savedToken;
     State.signalSettings.telegramChatId = savedChat;
     if (ok) window.showAlert('Telegram', 'Test inviato. Controlla Telegram.\n\nSe non arriva: verifica token/chatId e avvia il bot con /start.');
@@ -475,13 +415,12 @@ export function testTelegramNotification() {
 }
 
 function fireSignalNotifications(sig) {
-    const title = `Kronos · ${SYM(sig.asset)} ${sig.tf} · ${sig.consensus}`;
-    const body = `${sig.agreement}/4 sorgenti · Strength ${sig.strength}%${sig.alignedWithKronos ? ' · Kronos ✓' : ''}`;
+    const title = `Segnale · ${SYM(sig.asset)} ${sig.tf} · ${sig.consensus}`;
+    const body = `${sig.agreement}/3 strategie · Strength ${sig.strength}%`;
 
     if (State.signalSettings.telegramBotToken && State.signalSettings.telegramChatId) {
         const lines = [
             `🚨 <b>${title}</b>`, '', body, '',
-            `Kronos: ${sig.sources?.kronos || '—'}`,
             `Breakout: ${sig.sources?.breakout || '—'}`,
             `Mean Rev: ${sig.sources?.mean_reversion || '—'}`,
             `MA Cross: ${sig.sources?.ma_crossover || '—'}`,
@@ -498,8 +437,8 @@ function fireSignalNotifications(sig) {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    event: 'kronos_signal', timestamp: sig.timestamp, asset: sig.asset, timeframe: sig.tf,
-                    consensus: sig.consensus, agreement: sig.agreement, aligned_with_kronos: sig.alignedWithKronos,
+                    event: 'signal', timestamp: sig.timestamp, asset: sig.asset, timeframe: sig.tf,
+                    consensus: sig.consensus, agreement: sig.agreement,
                     strength: sig.strength, sources: sig.sources, price: sig.price
                 })
             }).catch(() => {});

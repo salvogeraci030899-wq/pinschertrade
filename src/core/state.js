@@ -7,7 +7,6 @@ export const State = {
     signalMatrix: {},
     signalPrevMatrix: {},
     allData: null,
-    currentAIPlan: null,
     currentAsset: 'BTCUSDT',
     currentTF: '1d',
     currentMarket: 'SPOT',
