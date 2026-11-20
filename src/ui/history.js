@@ -1,11 +1,9 @@
-import { State } from '../core/state.js';
 import { tradingMode } from './account.js';
 import { getAutoState } from './automation.js';
 
 // --- Trade chiusi della modalità attiva ---
-// Simulato: lo storico dell'app (State.simState.history). Reale: le posizioni chiuse su Bitget, lette dal bot
-// (live_trades.json → account.history), nello stesso formato. Le due liste non si mescolano mai: Diario,
-// break-even e segni sul grafico usano sempre e solo questa funzione.
+// Reale: le posizioni chiuse su Bitget, lette dal bot (live_trades.json → account.history). In Simulato non ci sono
+// trade a mano: la carta ha i suoi risultati in Risultati. Break-even e segni sul grafico usano questa funzione.
 export const isRealMode = () => tradingMode().mode === 'on';
 
 export function realAccount() {
@@ -27,7 +25,7 @@ export function realHistory() {
     });
 }
 
-export const journalTrades = () => (isRealMode() ? realHistory() : State.simState.history);
+export const journalTrades = () => (isRealMode() ? realHistory() : []);
 
 // --- Posizioni reali della modalità Reale: futures (account.positions_detail) e coin spot (account.spot_detail) ---
 // Stesso formato per entrambe, così pagina Posizioni, Home e assistente le trattano allo stesso modo.

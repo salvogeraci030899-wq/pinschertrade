@@ -1,7 +1,7 @@
 import { State } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
 import { Logger } from '../core/logger.js';
-import { journalTrades, isRealMode } from './history.js';
+import { journalTrades, realPositions } from './history.js';
 import { $, SYM, fetchT, apiPost, fmtUsd, analyzeTrend, buildRiskData, calcEMA, parseBitgetCandles, fetchData, markChosen } from '../utils/helpers.js';
 import { createChart, setCandles, setMarkers, setPriceLines, relayout } from './chart.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
@@ -220,9 +220,6 @@ export function refreshMarkers() {
         if (h.entryTime) add(h.entryTime, { position: 'belowBar', color: '#30d158', shape: 'arrowUp', text: 'In' });
         if (h.exitTime) add(h.exitTime, { position: 'aboveBar', color: '#ff453a', shape: 'circle', text: 'Out' });
     });
-    if (!isRealMode()) State.simState.activeTrades.filter(t => t.symbol === State.currentAsset).forEach(t => {
-        if (t.entryTime) add(t.entryTime, { position: 'belowBar', color: '#0a84ff', shape: 'arrowUp', text: 'Open' });
-    });
     out.sort((a, b) => a.time - b.time);
     setMarkers(chartHandle, out);
 }
@@ -230,13 +227,14 @@ export function refreshMarkers() {
 export function updatePriceLines() {
     if (!chartHandle) return;
     const lines = [];
-    const activeTrade = State.simState.activeTrades.find(t => t.symbol === State.currentAsset);
-    if (activeTrade) {
-        lines.push({ price: activeTrade.entryPrice, color: 'rgba(142,142,147,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'ENTRY' });
-        lines.push({ price: activeTrade.slPrice, color: 'rgba(255,69,58,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'SL' });
-        lines.push({ price: activeTrade.tpPrice, color: 'rgba(48,209,88,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'TP' });
+    // posizione vera su questa coin: entry, stop e target sul grafico
+    const pos = realPositions().find(p => p.symbol === State.currentAsset && p.market === 'futures') || realPositions().find(p => p.symbol === State.currentAsset);
+    if (pos) {
+        if (pos.entry) lines.push({ price: pos.entry, color: 'rgba(142,142,147,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'ENTRY' });
+        if (pos.sl) lines.push({ price: pos.sl, color: 'rgba(255,69,58,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'SL' });
+        if (pos.tp) lines.push({ price: pos.tp, color: 'rgba(48,209,88,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'TP' });
     }
-    setPriceLines(chartHandle, lines);
+        setPriceLines(chartHandle, lines);
 }
 
 // --- PRICE POLLING ---
@@ -260,7 +258,6 @@ export async function pollPrices() {
     State.pollInFlight = true;
     try {
         const symbols = new Set([State.currentAsset]);
-        State.simState.activeTrades.forEach(t => symbols.add(t.symbol));
         const results = await Promise.all([...symbols].map(async (sym) => {
             try {
                 const r = await fetchT(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${sym}`);
@@ -276,16 +273,7 @@ export async function pollPrices() {
             State.livePx[res.sym] = res.px;
             if (res.sym === State.currentAsset) setHeaderPrice(res.px);
         }
-        if (State.simState.activeTrades.length > 0) {
-            [...State.simState.activeTrades].forEach(t => {
-                if (State.livePx[t.symbol] != null) {
-                    t.currentPrice = State.livePx[t.symbol];
-                    if (window.checkAutoClose) window.checkAutoClose(t.id, State.livePx[t.symbol]);
-                }
-            });
-            if (window.renderActiveTrades) window.renderActiveTrades();
-        }
-    } finally { State.pollInFlight = false; }
+        } finally { State.pollInFlight = false; }
 }
 
 export function startPricePoll() {

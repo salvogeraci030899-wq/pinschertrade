@@ -4,7 +4,6 @@ import * as Helpers from './utils/helpers.js';
 import * as TerminalUI from './ui/terminal.js';
 import * as CalculatorUI from './ui/calculator.js';
 import * as TradeUI from './ui/trade.js';
-import * as JournalUI from './ui/journal.js';
 import * as SignalsUI from './ui/signals.js';
 import * as BacktestUI from './ui/backtest.js';
 import * as HomeUI from './ui/home.js';
@@ -25,7 +24,6 @@ import * as Market from './ui/market.js';
 import * as Results from './ui/results.js';
 import * as Log from './ui/log.js';
 
-State.loadState();
 State.loadSignalState();
 
 window.H = Helpers;
@@ -96,32 +94,17 @@ window.setMarket = CalculatorUI.setMarket;
 window.calc = CalculatorUI.calc;
 window.updateCalcHints = CalculatorUI.updateCalcHints;
 window.openTradeFromCalculator = CalculatorUI.openTradeFromCalculator;
-window.closeForceTradeModal = CalculatorUI.closeForceTradeModal;
-window.confirmForceTrade = CalculatorUI.confirmForceTrade;
 window.setCtxLabel = CalculatorUI.setCtxLabel;
 window.setCalcDirection = CalculatorUI.setCalcDirection;
 window.onFuturesData = CalculatorUI.onFuturesData;
 
 // Trade
-window.startTimer = TradeUI.startTimer;
-window.checkAutoClose = TradeUI.checkAutoClose;
 window.renderActiveTrades = TradeUI.renderActiveTrades;
 window.refreshCapitalUI = TradeUI.refreshCapitalUI;
-window.openCloseTradeModal = TradeUI.openCloseTradeModal;
-window.closeCloseTradeModal = TradeUI.closeCloseTradeModal;
-window.executeCloseTrade = TradeUI.executeCloseTrade;
-window.openCapitalModal = TradeUI.openCapitalModal;
-window.setCapitalSign = TradeUI.setCapitalSign;
-window.closeCapitalModal = TradeUI.closeCapitalModal;
-window.applyCapitalChange = TradeUI.applyCapitalChange;
-window.requestAIAnalysis = TradeUI.requestAIAnalysis;
 window.closeAIAnalysisModal = TradeUI.closeAIAnalysisModal;
 window.renderActiveTradeDots = TradeUI.renderActiveTradeDots;
 window.goToActiveTradePage = TradeUI.goToActiveTradePage;
-window.runCatchUp = TradeUI.runCatchUp;
-window.executeTradeOpen = TradeUI.executeTradeOpen;
 
-// Journal
 // trade chiusi o conto cambiati: si ridisegna la pagina Risultati (se è aperta)
 window.renderHistory = Results.renderResults;
 window.setResultsSource = Results.setResultsSource;
@@ -131,10 +114,6 @@ window.setResultsPeriod = Results.setResultsPeriod;
 window.setResultsWho = Results.setResultsWho;
 window.renderBreakEven = CalculatorUI.renderBreakEven;
 window.syncTradeMode = CalculatorUI.syncTradeMode;
-window.exportCSV = JournalUI.exportCSV;
-window.confirmReset = JournalUI.confirmReset;
-window.closeResetModal = JournalUI.closeResetModal;
-window.executeReset = JournalUI.executeReset;
 
 // Signals
 window.scanAllSignals = SignalsUI.scanAllSignals;
@@ -249,7 +228,6 @@ window.closeAssistant = Assist.closeAssistant;
 window.sendAssist = Assist.sendAssist;
 window.toggleRecording = Assist.toggleRecording;
 window.toggleAssistSpeak = Assist.toggleAssistSpeak;
-window.removeRule = TradeUI.removeRule;
 // dalla Home: Agente → Strategie in un tocco
 window.openAutomation = () => { window.switchTab('signals'); AutoUI.setSignalsView('auto'); };   // Home → Automazione: Agente → Strategie
 
@@ -389,11 +367,6 @@ document.addEventListener('DOMContentLoaded', () => {
     CalculatorUI.setCtxLabel();
     CalculatorUI.syncCapital();
     TradeUI.refreshCapitalUI();
-
-    if (State.simState.activeTrades.length > 0) {
-        TradeUI.startTimer();
-        TradeUI.runCatchUp();
-    }
 
     HomeUI.updateHome();
 

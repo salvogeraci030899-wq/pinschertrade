@@ -1,6 +1,6 @@
 import { State } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
-import { $, SYM, fetchT, calcPnl, escapeHtml, fmtIt, fmtPrice, fetchData, getGhToken } from '../utils/helpers.js';
+import { $, SYM, fetchT, escapeHtml, fmtIt, fmtPrice, fetchData, getGhToken } from '../utils/helpers.js';
 import { aggregateCellSignals } from './signals.js';
 import { bitgetAccountText, isRemovingAlert, paperPerformance, priceAlerts, getAutoState } from './automation.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
@@ -13,10 +13,9 @@ import { realPositions } from './history.js';
 // Ordine di lettura: mercato → conto simulato → automazione → stato → grafici.
 // Ogni blocco ha una sola fonte:
 //   mercato        ticker spot Bitget (ogni 10 s, solo con la Home aperta)
-//   conto simulato State.simState (posizioni aperte a mano dall'app)
 //   automazione    automation.json, paper_trades.json, live_trades.json pubblicati dal bot (ogni 30 s)
 //   stato          ultimo e prossimo giro di bot, controllo rapido e agente (API pubblica di GitHub, ogni 2 min;
-//                  di riserva l'ora del dashboard.json per il bot) e consenso tecnico della pagina Segnali
+//                  ) e consenso tecnico della pagina Segnali
 
 // Le 3 coin in alto (e nei grafici sotto) tra le 8 delle strategie, scelte ogni minuto: prima quelle con una
 // posizione aperta (vera, simulata o su carta), poi quelle con un avviso di prezzo vicino (entro il 3%), poi le
@@ -93,7 +92,6 @@ const putCls = (el, c) => { if (el && el.className !== c) el.className = c; };
 function openSymbols() {
     const out = new Set();
     for (const p of realPositions()) out.add(p.symbol);
-    for (const t of State.simState.activeTrades || []) out.add(t.symbol);
     const { ledger } = getAutoState();
     for (const e of Object.values((ledger && ledger.strategies) || {})) for (const t of e.trades || []) if (t.open) out.add(t.symbol);
     return out;
@@ -131,8 +129,7 @@ export function pickCoins() {
 function renderMarket() {
     document.querySelectorAll('#homeMarket .home-tile').forEach(tile => {
         const sym = tile.dataset.symbol;
-        const fallback = State.allData && State.allData[`${sym}_1d`];
-        const m = market[sym] || (fallback ? { px: fallback.current_price, chg: null } : null);
+        const m = market[sym] || null;
         const pxEl = tile.querySelector('.home-tile-px'), chgEl = tile.querySelector('.home-tile-chg');
         put(pxEl, m && isFinite(m.px) ? fmtPx(m.px) : '—');
         if (m && m.chg != null) {
@@ -150,7 +147,7 @@ const signed = v => (v > 0 ? '+' : '') + Number(v).toLocaleString('it-IT', { min
 const tone = v => (v > 0 ? ' safe' : v < 0 ? ' danger' : '');
 
 // In modalità Reale la scheda mostra il conto Bitget (letto dal bot ogni 15 minuti), in Simulato
-// le posizioni aperte a mano nell'app. Il titolo dice sempre quale dei due si sta guardando.
+// il conto della carta (l'esecutore simulato, live_trades.json). Il titolo dice sempre quale dei due si sta guardando.
 function renderAccount() {
     const set = (id, text, cls) => { const el = $(id); put(el, text); putCls(el, 'home-kpi-value' + (cls || '')); };
     const label = (id, text) => put($(id), text);
@@ -173,15 +170,15 @@ function renderAccount() {
         put(lbl, n && hasLiveMarks() ? 'PnL live' : 'PnL aperto');
         return;
     }
-    label('homeAccTitle', 'Conto simulato');
+    label('homeAccTitle', 'Conto simulato · carta');
     label('homeOpenPnlLabel', 'PnL aperto');
     label('homePnlLabel', 'PnL oggi');
-    const today = new Date().toLocaleDateString('it-IT');
-    const todayPnl = State.simState.history
-        .filter(h => h.closedAt && new Date(h.closedAt).toLocaleDateString('it-IT') === today)
-        .reduce((s, h) => s + h.pnl, 0);
-    const open = State.simState.activeTrades;
-    const floating = open.reduce((s, t) => s + calcPnl(t, t.currentPrice || t.entryPrice).net, 0);
+    const live = bot && bot.live, sim = live && live.simulated;
+    if (!sim || !Number.isFinite(Number(sim.equity))) { set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—'); return; }
+    const dayStart = Number(live.day && live.day.start_equity) || Number(sim.start) || Number(sim.equity);
+    const todayPnl = Number(sim.equity) - dayStart;
+    const open = Object.values(live.positions || {}).filter(p => p && p.status === 'open');
+    const floating = Number(sim.unrealized) || 0;
     set('homePnlToday', signed(todayPnl), tone(todayPnl));
     set('homeOpenCount', String(open.length));
     set('homeOpenPnl', open.length ? signed(floating) : '—', open.length ? tone(floating) : '');
@@ -249,16 +246,6 @@ function renderAutomationCard() {
 }
 
 // ---------- Stato ----------
-function lastBotUpdate() {
-    if (!State.allData) return null;
-    let last = 0;
-    for (const v of Object.values(State.allData)) {
-        const t = v && v.last_update ? Date.parse(v.last_update) : 0;
-        if (t > last) last = t;
-    }
-    return last || null;
-}
-
 function ago(minutes) {
     if (minutes < 1) return 'adesso';
     if (minutes < 60) return `${Math.round(minutes)} min fa`;
@@ -351,7 +338,7 @@ function renderJob(job, fallbackAt) {
 }
 
 function renderStatus() {
-    renderJob('bot', lastBotUpdate());
+    renderJob('bot', null);
     renderJob('quick', null);
     renderJob('agent', null);
 

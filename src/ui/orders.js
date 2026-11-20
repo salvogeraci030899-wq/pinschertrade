@@ -3,10 +3,9 @@
 // Bot su carta: i trade aperti dalle strategie del bot in prova su carta (paper_trades.json, nessun ordine reale),
 // con il risultato del momento ai prezzi Bitget. I chiusi stanno in Risultati → Strategie su carta.
 // Solo ciò che aspetta di scattare. Reale: stop e target in attesa su Bitget, futures e spot (con ✕).
-// Simulato: stop, target e regole dei trade simulati aperti.
 // Comandi inviati ed esiti stanno nel Registro; gli avvisi di prezzo in Mercato → Avvisi.
-// Gli ordini si creano dalla pagina Trade o con l'assistente; qui si vedono e si tolgono.
-import { State } from '../core/state.js';
+// Gli ordini veri si creano dalla pagina Trade o con l'assistente; qui si vedono e si tolgono.
+// In Simulato la pagina mostra solo il conto della carta (Bot su carta): niente trade simulati a mano.
 import { $, SYM, escapeHtml, fmtIt, fmtPrice, markChosen, fetchData, fetchT } from '../utils/helpers.js';
 import { isRealMode, realPositions } from './history.js';
 import { isRealOrderRemoving } from './automation.js';
@@ -18,7 +17,7 @@ try { const v = localStorage.getItem(VIEW_KEY); if (VIEWS.includes(v)) view = v;
 
 export function setPosView(v, manual = true) {
     if (manual) markChosen('posView');
-    view = VIEWS.includes(v) ? v : 'open';
+    view = !isRealMode() ? 'bot' : VIEWS.includes(v) ? v : 'open';
     try { localStorage.setItem(VIEW_KEY, view); } catch (e) {}
     applyView();
     if (view !== 'open') renderOrders();
@@ -26,18 +25,18 @@ export function setPosView(v, manual = true) {
     liveBot(view === 'bot');
 }
 
-// Vista scelta da sola all'apertura della pagina: le posizioni dell'app se ce ne sono (o in Reale),
-// altrimenti i trade del bot su carta se ce ne sono aperti.
+// Vista scelta da sola all'apertura della pagina: in Reale le posizioni vere, in Simulato il conto della carta.
 export async function autoPosView() {
-    if (isRealMode() || State.simState.activeTrades.length) { setPosView('open', false); return; }
-    setPosView(paperOpen().length || simOpen().length ? 'bot' : 'open', false);
+    if (isRealMode()) { setPosView('open', false); return; }
+    setPosView('bot', false);
     await loadPaper();
-    if (!isRealMode() && !State.simState.activeTrades.length && (paperOpen().length || simOpen().length) && view === 'open') setPosView('bot', false);
 }
 
 function applyView() {
-    const open = $('activeTradesList'), dots = $('activeTradeDots'), orders = $('ordersView');
+    const open = $('activeTradesList'), dots = $('activeTradeDots'), orders = $('ordersView'), tabs = document.querySelector('#page-trade .pos-views');
     if (!open || !orders) return;
+    if (!isRealMode()) view = 'bot';                                         // in Simulato c'è solo il conto della carta
+    if (tabs) tabs.style.display = isRealMode() ? '' : 'none';           // in Simulato c'è una vista sola
     open.style.display = view === 'open' ? '' : 'none';
     if (dots) dots.style.display = view === 'open' ? '' : 'none';
     orders.style.display = view === 'open' ? 'none' : '';
@@ -89,23 +88,6 @@ function realOrders(market) {
     }
     return rows;
 }
-
-function simOrders() {
-    const rows = [];
-    for (const t of State.simState.activeTrades) {
-        const name = `${SYM(t.symbol)} ${t.type} simulato`;
-        const short = t.type === 'SHORT';
-        if (t.slPrice) rows.push(row(`${name} · Stop ${short ? '≥' : '≤'} ${fmtPrice(t.slPrice)}`, 'chiusura simulata'));
-        if (t.tpPrice) rows.push(row(`${name} · Target ${short ? '≤' : '≥'} ${fmtPrice(t.tpPrice)}`, 'chiusura simulata'));
-        for (const r of t.rules || []) {
-            rows.push(row(`${name} · chiude a ${r.side === 'above' ? '≥' : '≤'} ${fmtPrice(r.price)}`, escapeHtml(r.label),
-                `<button type="button" class="ord-x" title="Togli la regola" onclick="removeRule('${t.id}','${r.id}')">✕</button>`));
-        }
-    }
-    return rows;
-}
-
-
 
 // --- Bot su carta ---
 // Importi in $: ogni trade dimensionato come farebbe l'esecutore con i soldi veri, cioè sul conto Bitget di oggi
@@ -276,7 +258,7 @@ export function renderOrders() {
         : real
         ? section('Futures · in attesa su Bitget', realOrders('futures'), 'Nessuno stop o target in attesa sui futures.')
           + section('Spot · in attesa su Bitget', realOrders('spot'), 'Nessun ordine spot in attesa.')
-        : section('Livelli dei trade simulati', simOrders(), 'Nessun trade simulato aperto.');
+        : '';
     // Viene chiamata a ogni aggiornamento dei prezzi: ridisegnare sempre riportava ogni lista al primo
     // elemento mentre la si scorreva. Si ridisegna solo se il contenuto cambia, e si tiene la posizione.
     if (html === lastHtml && box.childElementCount) return;

@@ -1,12 +1,10 @@
 import { CONFIG } from './config.js';
 
 export const State = {
-    simState: { initialAccountBalance: 2000, freeBalance: 2000, activeTrades: [], history: [] },
     signalSettings: { ...CONFIG.DEFAULT_SETTINGS },
     signalHistory: [],
     signalMatrix: {},
     signalPrevMatrix: {},
-    allData: null,
     currentAsset: 'BTCUSDT',
     currentTF: '1d',
     currentMarket: 'SPOT',
@@ -14,8 +12,6 @@ export const State = {
     lastBacktestData: null,
     
     // Stato runtime
-    catching: true,
-    cuRunning: false,
     capitalTouched: false,
     livePx: {},
     viewKey: '',
@@ -26,30 +22,11 @@ export const State = {
     pollInFlight: false,
     signalScanInFlight: false,
     calcContext: null,
-    tradeToCloseId: null,
     
     // Intervals
-    tradeTimerInterval: null,
     pricePollInterval: null,
     refreshTimerInterval: null,
     signalScanInterval: null,
-
-    saveState() {
-        try {
-            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(this.simState));
-        } catch (e) { console.warn('Errore salvataggio state', e); }
-    },
-
-    loadState() {
-        try {
-            const saved = localStorage.getItem(CONFIG.STORAGE_KEY);
-            if (!saved) return;
-            const s = JSON.parse(saved);
-            if (s && typeof s.freeBalance === 'number' && Array.isArray(s.history) && Array.isArray(s.activeTrades)) {
-                this.simState = s;
-            }
-        } catch (e) { console.warn('Errore caricamento state', e); }
-    },
 
     saveSignalState() {
         try {

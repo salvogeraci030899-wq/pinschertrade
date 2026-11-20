@@ -1,4 +1,4 @@
-// --- Backup dell'app: trade simulati, segnali e TUTTE le impostazioni di questo dispositivo ---
+// --- Backup dell'app: segnali e TUTTE le impostazioni di questo dispositivo ---
 // Serve soprattutto a passare da un'installazione all'altra: su iPhone ogni app aggiunta alla schermata Home ha la
 // sua memoria, che iOS cancella quando la togli. Le chiavi (token GitHub, chiave app, chiave dei dati) entrano nel
 // file solo se lo scegli tu; il blocco con codice e Face ID no: è legato all'installazione e va rifatto.
@@ -7,6 +7,11 @@ import { CONFIG } from './config.js';
 
 const SETTINGS = ['pt_theme', 'pt_statusbar', 'pt_glass', 'pt_pos_view', 'pt_api_base'];
 const SECRETS = ['pt_gh_token', 'pt_app_key', 'pt_data_key'];
+
+// Vecchio conto simulato a mano (tolto il 2026-11-20): se il telefono ne ha ancora i dati, restano leggibili qui e finiscono nel backup
+function readLegacySim() {
+    try { return JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY) || 'null'); } catch (e) { return null; }
+}
 
 function readKeys(keys) {
     const out = {};
@@ -26,7 +31,8 @@ export function doExportBackup(withKeys) {
         const payload = {
             _pinscher_backup_version: 2,
             timestamp: new Date().toISOString(),
-            simState: State.simState,
+            // storico del vecchio conto simulato a mano (tolto il 2026-11-20): resta nel file per chi vuole conservarlo
+            legacySimState: readLegacySim(),
             // il token del bot Telegram dei segnali dell'app non entra mai nel file
             signalSettings: { ...State.signalSettings, telegramBotToken: '' },
             signalHistory: State.signalHistory,
@@ -60,19 +66,14 @@ export function handleImportBackup(event) {
         try {
             const parsed = JSON.parse(e.target.result);
             // anche i backup fatti con il nome vecchio dell'app (versione 1)
-            if (!(parsed._pinscher_backup_version || parsed._kronos_backup_version) || !parsed.simState) {
+            if (!(parsed._pinscher_backup_version || parsed._kronos_backup_version)) {
                 throw new Error('Il file non sembra un backup di PinscherTrade.');
             }
-            if (typeof parsed.simState.freeBalance !== 'number' || !Array.isArray(parsed.simState.history)) {
-                throw new Error('La struttura dei dati del portafoglio è corrotta.');
-            }
-            State.simState = parsed.simState;
             const currentToken = State.signalSettings.telegramBotToken;
             State.signalSettings = { ...CONFIG.DEFAULT_SETTINGS, ...parsed.signalSettings };
             if (!State.signalSettings.telegramBotToken) State.signalSettings.telegramBotToken = currentToken || '';
             State.signalHistory = parsed.signalHistory || [];
             State.signalPrevMatrix = {};
-            State.saveState();
             State.saveSignalState();
             // impostazioni e, se presenti, chiavi: solo quelle conosciute
             const allowed = new Set([...SETTINGS, ...SECRETS]);
@@ -82,7 +83,7 @@ export function handleImportBackup(event) {
                 try { localStorage.setItem(k, v); if (SECRETS.includes(k)) keys++; } catch (err) {}
             }
             if (window.showAlert) {
-                window.showAlert('Ripristino completato', `Trade, segnali e impostazioni ripristinati${keys ? `, con ${keys} ${keys === 1 ? 'chiave' : 'chiavi'}` : ''}. `
+                window.showAlert('Ripristino completato', `Segnali e impostazioni ripristinati${keys ? `, con ${keys} ${keys === 1 ? 'chiave' : 'chiavi'}` : ''}. `
                     + 'Il blocco con codice e Face ID va riattivato in Impostazioni → Blocco app. L\'app si ricarica.');
             }
             setTimeout(() => window.location.reload(), 2500);

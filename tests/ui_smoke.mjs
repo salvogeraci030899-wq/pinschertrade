@@ -41,10 +41,6 @@ try {
         await ctx.addInitScript(([pwa, glass]) => {
             try {
                 localStorage.setItem('pt_gh_token', 'github_pat_' + 'x'.repeat(30));
-                // un trade simulato aperto, per provare la scheda e l'assistente (in Simulato)
-                localStorage.setItem('pt_state_v3', JSON.stringify({ initialAccountBalance: 2000, freeBalance: 1800, history: [], activeTrades: [
-                    { id: 'ui1', symbol: 'BTCUSDT', type: 'LONG', entryPrice: 70000, slPrice: 60000, tpPrice: 90000, capitalInvested: 200, margin: 200, size: 0.003,
-                      entryTime: Date.now() - 3600e3, timerSeconds: 86400 * 7, granularity: '1d', market: 'SPOT' }] }));
             } catch (e) {}
             if (pwa) Object.defineProperty(navigator, 'standalone', { get: () => true });
             if (glass) try { localStorage.setItem('pt_glass', 'anim'); localStorage.setItem('pt_theme', 'light'); } catch (e) {}
@@ -129,10 +125,15 @@ try {
         const where = `${dev.n}, ${tag}`;
         const step = async (name, fn) => { try { if (!(await fn())) problems.push(`${where}: ${name}`); } catch (e) { problems.push(`${where}: ${name} (${e.message.split('\n')[0]})`); } };
         if (mode === 'sim') {
-            await page.evaluate(() => { window.switchTab('trade'); window.setPosView('open'); });
+            // in Simulato la pagina Posizioni mostra solo il conto della carta, senza le schede Aperte e Ordini
+            await page.evaluate(() => window.switchTab('trade'));
             await page.waitForTimeout(500);
-            await step('assistente: non si apre dalla scheda', async () => { await page.click('.at-assist'); await page.waitForTimeout(400); return page.evaluate(() => document.getElementById('assistModal').classList.contains('active')); });
-            await step('assistente: la X non chiude', async () => { await page.click('.assist-head [title="Chiudi"]'); await page.waitForTimeout(300); return page.evaluate(() => !document.getElementById('assistModal').classList.contains('active')); });
+            await step('posizioni: in Simulato niente schede Aperte e Ordini', async () => page.evaluate(() => getComputedStyle(document.querySelector('#page-trade .pos-views')).display === 'none'));
+            // assistente generale, dall'icona in Home
+            await page.evaluate(() => window.switchTab('home'));
+            await page.waitForTimeout(400);
+            await step('assistente: si apre dall\'icona in Home', async () => { await page.click('.header-icon-btn[title="Assistente"]'); await page.waitForTimeout(400); return page.evaluate(() => document.getElementById('assistModal').classList.contains('active')); });
+            await step('assistente: la X chiude', async () => { await page.click('.assist-head [title="Chiudi"]'); await page.waitForTimeout(300); return page.evaluate(() => !document.getElementById('assistModal').classList.contains('active')); });
         }
         await page.evaluate(() => { window.switchTab('terminal'); window.setMarketView('chart'); });
         await page.waitForTimeout(600);
