@@ -160,6 +160,9 @@ window.openLabDetail = LabUI.openLabDetail;
 // Automazione (pagina Segnali, vista Auto) e server comandi (Opzioni)
 window.setSignalsView = AutoUI.setSignalsView;
 window.setAutoMode = AutoUI.setAutoMode;
+window.askAutoMode = AutoUI.askAutoMode;
+window.askRunLab = AutoUI.askRunLab;
+window.askRemovePriceAlert = AutoUI.askRemovePriceAlert;
 window.toggleEmergency = AutoUI.toggleEmergency;
 window.runAutoJob = AutoUI.runAutoJob;
 window.openAutoAdd = AutoUI.openAutoAdd;

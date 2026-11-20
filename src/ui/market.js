@@ -35,7 +35,7 @@ export function renderMarketAlerts() {
         const dist = px ? ` · ora ${fmtPrice(px)} (${((a.price / px - 1) * 100 >= 0 ? '+' : '')}${((a.price / px - 1) * 100).toLocaleString('it-IT', { maximumFractionDigits: 1 })}%)` : '';
         return `<div class="ord-row"><div class="ord-main"><b>${coin(a.symbol)} ${a.side === 'above' ? '≥' : '≤'} ${fmtPrice(a.price)}</b>`
             + `<small>${fired ? 'scattato: messaggio inviato su Telegram' : `${a.side === 'above' ? 'in salita' : 'in discesa'} · dal ${escapeHtml(day(a.created_at))}${dist}`}</small></div>`
-            + `<button type="button" class="ord-x" title="Togli" onclick="removePriceAlert('${escapeHtml(a.id)}')">✕</button></div>`;
+            + `<button type="button" class="ord-x" title="Togli" onclick="askRemovePriceAlert('${escapeHtml(a.id)}')">✕</button></div>`;
     };
     // i più vicini a scattare in cima (senza prezzo in fondo)
     const dist = a => (State.livePx[a.symbol] ? Math.abs(a.price / State.livePx[a.symbol] - 1) : Infinity);
