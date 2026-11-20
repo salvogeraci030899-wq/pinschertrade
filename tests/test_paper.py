@@ -59,7 +59,7 @@ def test_ciclo_completo():
         e = json.load(open(led))["strategies"][KEY]
         assert len(e["trades"]) == 1 and e["trades"][0]["open"] and e["trades"][0]["entry"] == 101.0 and e["stats"] == {"n": 0, "open": 1}
         assert e["trades"][0]["stop0"] < 101.0      # stop iniziale salvato (l'app ci dimensiona gli importi in $)
-        assert len(notes) == 1 and "PROVA SU CARTA" in notes[0] and "LONG" in notes[0] and "_" not in notes[0]
+        assert len(notes) == 1 and "PROVA SU CARTA" in notes[0] and "LONG" in notes[0] and "_" not in notes[0] and "Stato:" in notes[0]
         first_seen = e["trades"][0]["first_seen"]
         # stessa candela: nessun download, nessuna modifica
         n_calls = len(calls)
@@ -163,6 +163,7 @@ def test_ripartenza_da_zero_con_l_epoca():
         try:
             json.dump({"epoch": "uno"}, open(ep, "w"))
             calls, notes = [], []
+            assert run(cfg, led, 1, calls, notes) is True      # registro creato: la carta parte dall'ultima candela chiusa
             assert run(cfg, led, 3, calls, notes) is True
             ledger = json.load(open(led))
             assert ledger["epoch"] == "uno" and len(ledger["strategies"][KEY]["trades"]) == 1
