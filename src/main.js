@@ -298,18 +298,15 @@ window.switchTab = (tabId) => {
     if (tabId === 'journal') Results.autoResultsSource();
     if (tabId === 'home') {
         HomeUI.updateHome();
-        setTimeout(HomeUI.updateHome, 60);          // dopo l'assestamento del layout: le righe delle ultime chiuse si adattano allo spazio
+        requestAnimationFrame(() => requestAnimationFrame(HomeUI.updateHome));   // dopo l'assestamento del layout (due fotogrammi): le righe delle ultime chiuse si adattano allo spazio
     } else if (tabId === 'terminal') {
         // il grafico va ridimensionato (e inquadrato) quando la pagina ha la misura definitiva:
         // su iOS il layout si assesta più tardi, quindi ripeto dopo che si è stabilizzato
-        requestAnimationFrame(() => requestAnimationFrame(TerminalUI.resizeChart));
-        setTimeout(TerminalUI.resizeChart, 50);
-        setTimeout(TerminalUI.resizeChart, 350);
+        requestAnimationFrame(() => requestAnimationFrame(TerminalUI.resizeChart));   // se il layout cambia dopo, ci pensa il ResizeObserver del grafico
     } else if (tabId === 'trade') {
         TradeUI.refreshCapitalUI();
         TradeUI.renderActiveTrades();
         TradeUI.renderActiveTradeDots();
-        setTimeout(TradeUI.renderActiveTradeDots, 50);
     } else if (tabId === 'journal') {
         Results.renderResults();
     } else if (tabId === 'log') {
@@ -329,7 +326,7 @@ window.switchTab = (tabId) => {
         SignalsUI.renderSignalGrid();
         SignalsUI.renderSignalHistory();
         SignalsUI.updateSignalNotifStatus();
-        setTimeout(SignalsUI.updateSignalHistoryDots, 50);
+        SignalsUI.updateSignalHistoryDots();
     }
     refitPages(true);                        // la pagina appena aperta si adatta subito, senza aspettare i cambi di contenuto
 };
@@ -356,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initManual();
     initPageFit();
     initA11y();
+    setTimeout(() => Log.prefetchLog(), 1500);          // il Registro si apre già pronto
 
     CalculatorUI.setMarket('SPOT');
     CalculatorUI.setCtxLabel();

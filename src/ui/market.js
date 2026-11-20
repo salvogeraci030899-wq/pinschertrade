@@ -3,6 +3,7 @@
 import { State } from '../core/state.js';
 import { $, escapeHtml, fmtPrice } from '../utils/helpers.js';
 import { priceAlerts, firedPriceAlerts, loadAutomation, getAutoState } from './automation.js';
+import { refitPages } from './page-fit.js';
 
 const VIEWS = { chart: 'mktChart', sig: 'mktSig', alerts: 'mktAlerts' };
 const SUB = { sig: 'Segnali tecnici', alerts: 'Avvisi di prezzo' };
@@ -21,6 +22,7 @@ export function setMarketView(v) {
     if (view === 'chart' && window.resizeChart) requestAnimationFrame(window.resizeChart);
     if (view === 'sig' && window.orderSignalAssets) { window.orderSignalAssets(); if (window.renderSignalGrid) window.renderSignalGrid(); }
     if (view === 'alerts') { renderMarketAlerts(); if (!getAutoState().loaded) loadAutomation(); }
+    refitPages(true);                // la scheda appena aperta si adatta subito
 }
 
 const day = iso => (iso ? new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }) : '—');
