@@ -150,7 +150,8 @@ try {
                     let tw = 0;
                     for (const n of nodes) { const range = document.createRange(); range.selectNodeContents(n); for (const x of range.getClientRects()) tw = Math.max(tw, x.width); }
                     const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-                    if (el.clientWidth > 0 && tw > room + 1 && cs.display !== 'inline' && !scrollable(el)) why = 'sborda';
+                    // margine del 7%: i caratteri dell'iPhone possono essere un po' più larghi di quelli del browser di prova
+                    if (el.clientWidth > 0 && tw > room * 0.93 + 1 && cs.display !== 'inline' && !scrollable(el)) why = tw > room + 1 ? 'sborda' : 'quasi al limite';
                     else if (el.scrollWidth > el.clientWidth + 1 && (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') && !scrollable(el)) why = 'tagliato';
                     else if ((r.right > W + 1 || r.left < -1) && !scrollable(el)) why = 'fuori schermo';
                     else if (el.matches('button, .pill-btn, .nav-item, .set-label, label, .home-card-header span, .tech-title, .tech-trend-label')) {
