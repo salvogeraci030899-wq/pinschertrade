@@ -1,8 +1,7 @@
 import { State } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
-import { $, SYM, fetchT, escapeHtml, fmtIt, fmtPrice, fetchData, getGhToken } from '../utils/helpers.js';
-import { aggregateCellSignals } from './signals.js';
-import { bitgetAccountText, isRemovingAlert, paperPerformance, priceAlerts, getAutoState } from './automation.js';
+import { $, SYM, fetchT, fmtIt, fmtPrice, fetchData, getGhToken } from '../utils/helpers.js';
+import { bitgetAccountText, isRemovingAlert, paperPerformance, priceAlerts, getAutoState, portfolioLine } from './automation.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 import { updateModePills, tradingMode } from './account.js';
 import { liveUpl, hasLiveMarks } from './trade.js';
@@ -143,6 +142,8 @@ function renderMarket() {
 
 // ---------- Conto simulato ----------
 // numeri grandi in forma breve (35,2k), così entrano nelle tessere anche sugli schermi stretti
+// importo del conto: senza decimali oltre le migliaia, così entra nella tessera anche sugli schermi stretti
+const money = v => Number(v).toLocaleString('it-IT', Number(v) >= 1000 ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const signed = v => (v > 0 ? '+' : '') + (Math.abs(v) >= 10000
     ? Number(v / 1000).toLocaleString('it-IT', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k'
     : Number(v).toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -155,12 +156,13 @@ function renderAccount() {
     const label = (id, text) => put($(id), text);
     if (tradingMode().mode === 'on') {
         const acc = bot && bot.live && bot.live.account;
-        label('homeAccTitle', 'Conto Bitget · reale');
+        label('homeAccTitle', 'Conto Bitget · reale · USDT');
         label('homePnlLabel', 'Variazione oggi');
         if (!acc || !acc.connected) {
-            set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—');
+            set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—');
             return;
         }
+        set('homeEquity', money(acc.total_usdt != null ? acc.total_usdt : acc.equity));
         const ch = acc.day_change != null ? acc.day_change : 0;
         set('homePnlToday', signed(ch), tone(ch));
         // posizioni futures e coin spot (BTC, ETH, SOL); PnL al prezzo attuale dove l'acquisto è noto
@@ -172,11 +174,12 @@ function renderAccount() {
         put(lbl, n && hasLiveMarks() ? 'PnL live' : 'PnL aperto');
         return;
     }
-    label('homeAccTitle', 'Conto simulato · carta');
+    label('homeAccTitle', 'Conto simulato · carta · USDT');
     label('homeOpenPnlLabel', 'PnL aperto');
     label('homePnlLabel', 'PnL oggi');
     const live = bot && bot.live, sim = live && live.simulated;
-    if (!sim || !Number.isFinite(Number(sim.equity))) { set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—'); return; }
+    if (!sim || !Number.isFinite(Number(sim.equity))) { set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—'); return; }
+    set('homeEquity', money(sim.equity));
     const dayStart = Number(live.day && live.day.start_equity) || Number(sim.start) || Number(sim.equity);
     const todayPnl = Number(sim.equity) - dayStart;
     const open = Object.values(live.positions || {}).filter(p => p && p.status === 'open');
@@ -294,18 +297,6 @@ function ago(minutes) {
     return `${Math.floor(minutes / 1440)} giorni fa`;
 }
 
-function topSignal() {
-    let best = null, bestScore = -1;
-    for (const key in State.signalMatrix) {
-        const [asset, tf] = key.split('_');
-        const agg = aggregateCellSignals(asset, tf);
-        if (!agg || agg.consensus === 'NEUTRAL') continue;
-        const score = agg.agreement * 100 + agg.avgStrength;
-        if (score > bestScore) { bestScore = score; best = { asset, tf, agg }; }
-    }
-    return best;
-}
-
 // Esecuzioni recenti dei workflow (repository pubblico: l'API non chiede chiavi; con il token del telefono
 // il limite di richieste è più alto). Una richiesta ogni 2 minuti per bot e controllo rapido, una ogni
 // 15 per l'agente, che gira una volta al giorno e non sta tra le ultime esecuzioni.
@@ -383,15 +374,6 @@ function renderStatus() {
     renderJob('quick', null);
     renderJob('agent', null);
 
-    const sig = topSignal();
-    const asset = $('homeTopSignalAsset'), badge = $('homeTopSignalBadge');
-    put(asset, sig ? `${SYM(sig.asset)} ${sig.tf}` : 'nessuno');
-    if (badge) {
-        badge.style.display = sig ? '' : 'none';
-        if (sig) {
-            put(badge, `${sig.agg.consensus} ${sig.agg.agreement}/4`);
-            putCls(badge, `sc-badge ${escapeHtml(sig.agg.consensus.toLowerCase())}`);
-            badge.title = 'Non validato: indicazione tecnica, non un segnale provato sullo storico';
-        }
-    }
+    const pl = portfolioLine();
+    setLine('homePortfolio', pl.text, pl.cls);
 }

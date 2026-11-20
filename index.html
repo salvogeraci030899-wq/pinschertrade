@@ -67,46 +67,46 @@
 
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=200">
-    <meta name="app-version" content="200">
+    <link rel="stylesheet" href="./style.css?v=202">
+    <meta name="app-version" content="202">
     <!-- importmap:start (generata da tools/bump_version.py, non modificare a mano) -->
     <script type="importmap">
     {
         "imports": {
-            "./src/core/backup.js": "./src/core/backup.js?v=200",
-            "./src/core/commands.js": "./src/core/commands.js?v=200",
-            "./src/core/config.js": "./src/core/config.js?v=200",
-            "./src/core/datacrypt.js": "./src/core/datacrypt.js?v=200",
-            "./src/core/labEngine.js": "./src/core/labEngine.js?v=200",
-            "./src/core/logger.js": "./src/core/logger.js?v=200",
-            "./src/core/rules.js": "./src/core/rules.js?v=200",
-            "./src/core/state.js": "./src/core/state.js?v=200",
-            "./src/core/telegram.js": "./src/core/telegram.js?v=200",
-            "./src/core/theme.js": "./src/core/theme.js?v=200",
-            "./src/main.js": "./src/main.js?v=200",
-            "./src/ui/account.js": "./src/ui/account.js?v=200",
-            "./src/ui/ai.js": "./src/ui/ai.js?v=200",
-            "./src/ui/assistant.js": "./src/ui/assistant.js?v=200",
-            "./src/ui/automation.js": "./src/ui/automation.js?v=200",
-            "./src/ui/backtest.js": "./src/ui/backtest.js?v=200",
-            "./src/ui/calculator.js": "./src/ui/calculator.js?v=200",
-            "./src/ui/chart.js": "./src/ui/chart.js?v=200",
-            "./src/ui/history.js": "./src/ui/history.js?v=200",
-            "./src/ui/home.js": "./src/ui/home.js?v=200",
-            "./src/ui/lab.js": "./src/ui/lab.js?v=200",
-            "./src/ui/lock.js": "./src/ui/lock.js?v=200",
-            "./src/ui/log.js": "./src/ui/log.js?v=200",
-            "./src/ui/manual.js": "./src/ui/manual.js?v=200",
-            "./src/ui/market-panels.js": "./src/ui/market-panels.js?v=200",
-            "./src/ui/market.js": "./src/ui/market.js?v=200",
-            "./src/ui/orders.js": "./src/ui/orders.js?v=200",
-            "./src/ui/page-fit.js": "./src/ui/page-fit.js?v=200",
-            "./src/ui/results.js": "./src/ui/results.js?v=200",
-            "./src/ui/signals.js": "./src/ui/signals.js?v=200",
-            "./src/ui/terminal.js": "./src/ui/terminal.js?v=200",
-            "./src/ui/trade.js": "./src/ui/trade.js?v=200",
-            "./src/ui/windows.js": "./src/ui/windows.js?v=200",
-            "./src/utils/helpers.js": "./src/utils/helpers.js?v=200"
+            "./src/core/backup.js": "./src/core/backup.js?v=202",
+            "./src/core/commands.js": "./src/core/commands.js?v=202",
+            "./src/core/config.js": "./src/core/config.js?v=202",
+            "./src/core/datacrypt.js": "./src/core/datacrypt.js?v=202",
+            "./src/core/labEngine.js": "./src/core/labEngine.js?v=202",
+            "./src/core/logger.js": "./src/core/logger.js?v=202",
+            "./src/core/rules.js": "./src/core/rules.js?v=202",
+            "./src/core/state.js": "./src/core/state.js?v=202",
+            "./src/core/telegram.js": "./src/core/telegram.js?v=202",
+            "./src/core/theme.js": "./src/core/theme.js?v=202",
+            "./src/main.js": "./src/main.js?v=202",
+            "./src/ui/account.js": "./src/ui/account.js?v=202",
+            "./src/ui/ai.js": "./src/ui/ai.js?v=202",
+            "./src/ui/assistant.js": "./src/ui/assistant.js?v=202",
+            "./src/ui/automation.js": "./src/ui/automation.js?v=202",
+            "./src/ui/backtest.js": "./src/ui/backtest.js?v=202",
+            "./src/ui/calculator.js": "./src/ui/calculator.js?v=202",
+            "./src/ui/chart.js": "./src/ui/chart.js?v=202",
+            "./src/ui/history.js": "./src/ui/history.js?v=202",
+            "./src/ui/home.js": "./src/ui/home.js?v=202",
+            "./src/ui/lab.js": "./src/ui/lab.js?v=202",
+            "./src/ui/lock.js": "./src/ui/lock.js?v=202",
+            "./src/ui/log.js": "./src/ui/log.js?v=202",
+            "./src/ui/manual.js": "./src/ui/manual.js?v=202",
+            "./src/ui/market-panels.js": "./src/ui/market-panels.js?v=202",
+            "./src/ui/market.js": "./src/ui/market.js?v=202",
+            "./src/ui/orders.js": "./src/ui/orders.js?v=202",
+            "./src/ui/page-fit.js": "./src/ui/page-fit.js?v=202",
+            "./src/ui/results.js": "./src/ui/results.js?v=202",
+            "./src/ui/signals.js": "./src/ui/signals.js?v=202",
+            "./src/ui/terminal.js": "./src/ui/terminal.js?v=202",
+            "./src/ui/trade.js": "./src/ui/trade.js?v=202",
+            "./src/ui/windows.js": "./src/ui/windows.js?v=202",
+            "./src/utils/helpers.js": "./src/utils/helpers.js?v=202"
         }
     }
     </script>
@@ -156,10 +156,11 @@
                     <button type="button" class="home-tile" data-symbol="SOLUSDT" onclick="openHomeCoin(this)"><span class="home-tile-sym">SOL</span><span class="home-tile-px">—</span><span class="home-tile-chg">—</span></button>
                 </div>
 
-                <!-- 2. Conto simulato (posizioni aperte a mano dall'app) -->
+                <!-- 2. Conto: patrimonio, risultato di oggi e posizioni aperte (carta in Simulato, Bitget in Reale) -->
                 <div class="home-card clickable" onclick="switchTab('trade')">
                     <div class="home-card-header"><span id="homeAccTitle">Conto simulato</span><span class="home-card-link">Posizioni ›</span></div>
                     <div class="home-kpis">
+                        <div class="home-kpi"><span class="home-kpi-label">Patrimonio</span><span class="home-kpi-value" id="homeEquity">—</span></div>
                         <div class="home-kpi"><span class="home-kpi-label" id="homePnlLabel">PnL oggi</span><span class="home-kpi-value" id="homePnlToday">—</span></div>
                         <div class="home-kpi"><span class="home-kpi-label">Aperte</span><span class="home-kpi-value" id="homeOpenCount">0</span></div>
                         <div class="home-kpi"><span class="home-kpi-label" id="homeOpenPnlLabel">PnL aperto</span><span class="home-kpi-value" id="homeOpenPnl">—</span></div>
@@ -176,7 +177,7 @@
                     <div class="home-line home-sub"><span></span><b id="homeAutoBitgetDetail">—</b></div>
                 </div>
 
-                <!-- 4. Stato: salute del bot, segnale più forte (non validato), versione -->
+                <!-- 4. Stato: salute del bot, chiusura totale, versione -->
                 <div class="home-card">
                     <div class="home-card-header">
                         <span>Stato · <span class="home-version" id="homeAppVersion">—</span></span>
@@ -189,7 +190,7 @@
                     <div class="home-line"><span>Controllo rapido</span><b><i class="home-dot" id="homeJobQuickDot"></i><span id="homeJobQuick">—</span></b></div>
                     <div class="home-line clickable" onclick="switchTab('signals')"><span>Agente</span><b><i class="home-dot" id="homeJobAgentDot"></i><span id="homeJobAgent">—</span></b></div>
                     <div class="home-line clickable" onclick="openAlerts()"><span>Avvisi prezzo</span><b id="homeAlerts">—</b></div>
-                    <div class="home-line clickable" onclick="switchTab('signals')"><span>Segnale tecnico</span><b><span id="homeTopSignalAsset">—</span> <span class="sc-badge neutral" id="homeTopSignalBadge">—</span></b></div>
+                    <div class="home-line clickable" onclick="openPortfolioHelp()"><span>Chiusura totale</span><b id="homePortfolio">—</b></div>
                 </div>
 
                 <!-- 5. Ultime operazioni chiuse (carta in Simulato, conto Bitget in Reale): riempie lo spazio rimasto -->
@@ -522,7 +523,7 @@
             <div class="header-row">
                 <div class="header-title">
                     <h1>Posizioni</h1>
-                    <p id="tradeSubtitle">Conto simulato · carta</p>
+                    <p id="tradeSubtitle">Carta</p>
                 </div>
                 <div class="text-right">
                     <div class="capital-label">
@@ -1250,6 +1251,6 @@
     </div>
 </div>
 
-<script type="module" src="./src/main.js?v=200"></script>
+<script type="module" src="./src/main.js?v=202"></script>
 </body>
 </html>

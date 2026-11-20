@@ -91,6 +91,11 @@ try {
             const clipped = [...list.children].filter(r => !r.hidden && r.getBoundingClientRect().bottom > list.getBoundingClientRect().bottom + 1).length;
             return { fuori: kids.filter(e => e.getBoundingClientRect().bottom > top + 1).length, vuoto: Math.round(top - last.bottom), tagliate: clipped, rows: list.children.length, noChart: !document.getElementById('homeChartsList') };
         });
+        // Home con i dati di prova: ogni campo importante pieno, niente NaN o undefined, ultime chiuse presenti (carta)
+        const hd = await page.evaluate(() => { const t = id => (document.getElementById(id) || {}).textContent || '';
+            return { eq: t('homeEquity'), pnl: t('homePnlToday'), pf: t('homePortfolio'), strat: t('homeAutoStrategies'), bad: /NaN|undefined|null|\[object/.test(document.getElementById('page-home').innerText),
+                rows: document.querySelectorAll('#homeRecentList .home-line:not(.home-empty)').length }; });
+        if (hd.bad || hd.eq === '—' || hd.eq === '' || hd.pf === '—' || hd.pf === '' || hd.strat === '—' || (mode !== 'real' && hd.rows < 1)) problems.push(`${dev.n}, ${tag}: Home, dati mancanti o errati ${JSON.stringify(hd)}`);
         if (home.fuori || home.tagliate || !home.noChart) problems.push(`${dev.n}, ${tag}: Home fuori posto ${JSON.stringify(home)}`);
         // Mercato: grafico grande, pannelli a scorrimento orizzontale (Grafico, Verifica strategia, Futures, Livelli, Carta),
         // in basso solo i pallini e il tasto dell'analisi; niente contenuto tagliato nei pannelli
