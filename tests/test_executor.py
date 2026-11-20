@@ -81,6 +81,11 @@ def test_solo_strategie_live():
         cfg, ledger = setup([trade()], mode="paper")
         ex.run(cfg, ledger, bg.DryRunClient(10_000), "reale", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
         assert json.load(open(path))["positions"] == {}
+        # scelta esplicita: con real_follows_paper = 1 anche il reale segue la carta (stessi limiti), altrimenti no
+        cfg_f, ledger_f = setup([trade()], mode="paper", cfg_extra={"risk": {"real_follows_paper": 1}})
+        ex.run(cfg_f, ledger_f, bg.DryRunClient(10_000), "reale", os.path.join(d, "follow.json"), now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
+        assert [p["status"] for p in json.load(open(os.path.join(d, "follow.json")))["positions"].values()] == ["open"]
+        assert ex.risk_config({})["real_follows_paper"] == 0 and ex.RISK_BOUNDS["real_follows_paper"] == (0, 1)
         demo = os.path.join(d, "demo.json")
         go(cfg, ledger, demo, bg.DryRunClient(10_000))                                     # mode "demo"
         assert [p["status"] for p in json.load(open(demo))["positions"].values()] == ["open"]

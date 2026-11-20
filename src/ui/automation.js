@@ -13,7 +13,7 @@ const MAX_ACTIVE = 6;      // stesso limite di automation.py
 const PER_PAGE = 3;        // strategie per pagina nella lista (scorrimento orizzontale)
 let cfg = null, ledger = null, lab = null, live = null, loaded = false, loading = false;
 // Limiti di rischio dell'esecutore: stessi valori predefiniti e intervalli di executor.py
-const DEFAULT_RISK = { trading_enabled: false, risk_per_trade_pct: 0.5, max_leverage: 3, max_exposure_x: 1.5, max_open_positions: 3, max_same_direction: 2, max_daily_loss_pct: 3, portfolio_target_pct: 0, portfolio_stop_pct: 0, dry_run_equity: 1000 };
+const DEFAULT_RISK = { trading_enabled: false, risk_per_trade_pct: 0.5, max_leverage: 3, max_exposure_x: 1.5, max_open_positions: 3, max_same_direction: 2, max_daily_loss_pct: 3, portfolio_target_pct: 0, portfolio_stop_pct: 0, real_follows_paper: 0, dry_run_equity: 1000 };
 const RISK_FIELDS = [
     ['risk_per_trade_pct', 'Rischio per trade (%)', 0.1, 2, 0.1],
     ['max_leverage', 'Leva massima (x)', 1, 5, 1],
@@ -23,6 +23,7 @@ const RISK_FIELDS = [
     ['max_daily_loss_pct', 'Perdita massima al giorno (%)', 1, 10, 0.5],
     ['portfolio_target_pct', 'Obiettivo di portafoglio: chiude tutto a +% del conto (0 = spento)', 0, 20, 0.5],
     ['portfolio_stop_pct', 'Stop di portafoglio: chiude tutto a −% del conto (0 = spento)', 0, 20, 0.5],
+    ['real_follows_paper', 'Reale segue la carta (0 = no, 1 = sì)', 0, 1, 1],
 ];
 export const riskCfg = () => ({ ...DEFAULT_RISK, ...((cfg && cfg.risk) || {}) });
 // Stato letto dai file pubblicati, per le pagine Account e Opzioni
@@ -583,10 +584,12 @@ export async function saveAutoRisk() {
     }
     if (!changes.length) { closeAutoRisk(); return; }
     const NAMES = { risk_per_trade_pct: ['Rischio per trade', '%'], max_leverage: ['Leva massima', 'x'], max_exposure_x: ['Esposizione totale', 'x'], max_open_positions: ['Posizioni aperte', ''],
-        max_same_direction: ['Nello stesso verso', ''], max_daily_loss_pct: ['Perdita al giorno', '%'], portfolio_target_pct: ['Obiettivo di portafoglio', '%'], portfolio_stop_pct: ['Stop di portafoglio', '%'] };
+        max_same_direction: ['Nello stesso verso', ''], max_daily_loss_pct: ['Perdita al giorno', '%'], portfolio_target_pct: ['Obiettivo di portafoglio', '%'], portfolio_stop_pct: ['Stop di portafoglio', '%'], real_follows_paper: ['Reale segue la carta', ''] };
+    const warn = changes.some(c => c.field === 'real_follows_paper' && c.value === '1')
+        ? 'ATTENZIONE: in Reale l\'esecutore aprirà ordini VERI anche per le strategie su carta non confermate dalla prova finale. Valgono tutti i limiti, ma puoi perdere soldi.\n\n' : '';
     const summary = changes.map(c => { const [n, u] = NAMES[c.field] || [c.field, '']; return `${n}: ${fmtIt(Number(risk[c.field]), 2).replace(/,00$/, '')}${u} → ${fmtIt(Number(c.value), 2).replace(/,00$/, '')}${u}`; }).join('\n');
     // la finestra dei limiti resta aperta sotto: se annulli non perdi quello che hai scritto
-    openAutoConfirm('Cambiare i limiti di rischio?', `${summary}\nValgono per l'esecutore, anche in simulazione.`, 'Conferma', async () => {
+    openAutoConfirm('Cambiare i limiti di rischio?', `${warn}${summary}\nValgono per l'esecutore, anche in simulazione.`, 'Conferma', async () => {
         closeAutoRisk();
         for (const c of changes) if (!(await send(c, ''))) return;
         window.showAlert('Comandi inviati', `${changes.length} ${changes.length === 1 ? 'modifica inviata' : 'modifiche inviate'}: visibili qui dopo qualche minuto.`);
