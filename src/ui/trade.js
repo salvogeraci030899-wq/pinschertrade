@@ -83,7 +83,7 @@ export function refreshCapitalUI() {
     if (el) el.textContent = real ? (total != null ? fmtUsdt(total) : '—') : (paper != null ? fmtUsdt(paper) : '—');
     const lbl = document.getElementById('capitalLabel'), sub = document.getElementById('tradeSubtitle');
     if (lbl) lbl.textContent = real ? 'Saldo Bitget' : 'Patrimonio carta';
-    if (sub) sub.textContent = real ? 'Bitget · reale' : 'Conto simulato · carta';
+    if (sub) sub.textContent = real ? 'Bitget · reale' : 'Carta';
     Calculator.syncCapital();
 }
 
