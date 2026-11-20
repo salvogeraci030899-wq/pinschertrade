@@ -15,7 +15,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = 8800 + Math.floor(Math.random() * 100);
-const DEVICES = [{ n: 'iPhone 15 Safari', w: 393, h: 659 }, { n: 'iPhone 17 Pro app', w: 402, h: 874, pwa: true }];
+const DEVICES = [{ n: 'iPhone SE', w: 375, h: 667 }, { n: 'iPhone 15 Safari', w: 393, h: 659 }, { n: 'iPhone 17 Pro app', w: 402, h: 874, pwa: true }];
 const VIEWS = { log: [['setLogFilter', 'all'], ['setLogFilter', 'agente']], journal: [['setResultsSource', 'real'], ['setResultsSource', 'sim'], ['setResultsSource', 'paper'], ['setResultsPeriod', 'all'], ['setResultsPeriod', 'day']], terminal: [['setMarketView', 'chart'], ['setMarketView', 'sig'], ['setMarketView', 'alerts']], trade: [['setPosView', 'open'], ['setPosView', 'orders']], signals: [['setSignalsView', 'agent'], ['setSignalsView', 'auto'], ['setSignalsView', 'lab'], ['setTestView', 'bt'], ['setSignalsView', 'risk']] };
 
 const now = Date.now();
@@ -146,7 +146,12 @@ try {
                     const cs = getComputedStyle(el), r = el.getBoundingClientRect();
                     if (!r.width || !r.height) continue;
                     let why = null;
-                    if (el.scrollWidth > el.clientWidth + 1 && (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') && !scrollable(el)) why = 'tagliato';
+                    // la riga di testo più larga contro lo spazio utile dell'elemento (anche se il testo sborda senza essere nascosto)
+                    let tw = 0;
+                    for (const n of nodes) { const range = document.createRange(); range.selectNodeContents(n); for (const x of range.getClientRects()) tw = Math.max(tw, x.width); }
+                    const room = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+                    if (el.clientWidth > 0 && tw > room + 1 && cs.display !== 'inline' && !scrollable(el)) why = 'sborda';
+                    else if (el.scrollWidth > el.clientWidth + 1 && (cs.overflowX !== 'visible' || cs.textOverflow === 'ellipsis') && !scrollable(el)) why = 'tagliato';
                     else if ((r.right > W + 1 || r.left < -1) && !scrollable(el)) why = 'fuori schermo';
                     else if (el.matches('button, .pill-btn, .nav-item, .set-label, label, .home-card-header span, .tech-title, .tech-trend-label')) {
                         const tops = new Set();
