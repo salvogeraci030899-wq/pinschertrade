@@ -61,14 +61,17 @@ try {
             const data = u.includes('candles') ? candles() : u.includes('ticker') ? [{ symbol: 'BTCUSDT', lastPr: '70500', open24h: '69000', change24h: '0.021', high24h: '71000', low24h: '68800', baseVolume: '1000', usdtVolume: '7e7', markPrice: '70500' }] : [];
             return r.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*' }, body: JSON.stringify({ code: '00000', data }) });
         });
-        await page.route('**/events/*.jsonl*', r => {
+        let dataDelay = 0;          // ms di rete simulati sui dati (solo nella misura del contenuto pronto)
+        await page.route('**/events/*.jsonl*', async r => {
+            if (dataDelay) await new Promise(res => setTimeout(res, dataDelay));
             const at = new Date().toISOString();
             const ev = Array.from({ length: 14 }, (_, i) => JSON.stringify({ at, kind: ['ordini', 'agente', 'carta', 'avvisi', 'posizioni', 'sistema', 'conto'][i % 7], action: 'prova', text: `🔔 Evento di prova numero ${i + 1} ✅, con un testo di lunghezza normale come quelli veri.`, id: 'e' + i, ok: i % 5 !== 0, net: i % 2 ? 0.5 : -0.2 }));
             return r.fulfill({ contentType: 'text/plain', body: ev.join('\n') + '\n' });
         });
         // dati personali inventati (quelli veri nel repository sono cifrati): conto, posizioni, carta, agente, storico
         const FIX = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'ui_data.json'), 'utf8'));
-        await page.route(/\/(automation|live_trades|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state)\.json/, r => {
+        await page.route(/\/(automation|live_trades|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state)\.json/, async r => {
+            if (dataDelay) await new Promise(res => setTimeout(res, dataDelay));
             const name = new URL(r.request().url()).pathname.split('/').pop();
             const j = structuredClone(FIX[name]);
             if (name === 'automation.json') j.risk = { ...(j.risk || {}), trading_enabled: mode === 'real' };
@@ -110,22 +113,37 @@ try {
             const cdp2 = await page.context().newCDPSession(page);
             await cdp2.send('Emulation.setCPUThrottlingRate', { rate: 4 });
             const ready = [];
+            dataDelay = 350;                                           // rete da telefono: ogni file di dati impiega 350 ms
             for (const [label, fn, arg] of steps) {
                 if (fn === 'setSignalsView') await page.evaluate(() => window.switchTab('signals'));
                 if (fn === 'setMarketView') await page.evaluate(() => window.switchTab('terminal'));
-                await page.waitForTimeout(700);
-                const last = await page.evaluate(([fn, arg]) => new Promise(resolve => {
-                    const t0 = performance.now(); let last = 0;
-                    const mo = new MutationObserver(() => { last = performance.now() - t0; });
-                    mo.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style', 'class', 'width', 'height'] });
+                await page.waitForTimeout(900);
+                const r = await page.evaluate(([fn, arg]) => new Promise(resolve => {
+                    const t0 = performance.now(); let last = 0, what = '';
+                    const desc = n => { const e = n.nodeType === 1 ? n : n.parentElement; return e ? (e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className ? '.' + e.className.trim().split(/\s+/)[0] : '')) : '?'; };
+                    const mo = new MutationObserver(ms => {
+                        for (const m of ms) {
+                            if (m.target.closest && m.target.closest('.nav-wrap')) continue;     // la barra in basso non è contenuto
+                            const el = m.target.nodeType === 1 ? m.target : m.target.parentElement;
+                            if (el && el !== document.documentElement && el.getClientRects().length === 0) continue;   // elemento nascosto: non si vede
+                            last = performance.now() - t0; what = desc(m.target);
+                        }
+                    });
+                    mo.observe(document.querySelector('main'), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style', 'class', 'width', 'height'] });
+                    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });   // zoom di adattamento
                     window[fn](arg);
-                    setTimeout(() => { mo.disconnect(); resolve(Math.round(last)); }, 1300);
+                    setTimeout(() => { mo.disconnect(); resolve([Math.round(last), what]); }, 1500);
                 }), [fn, arg]);
-                ready.push([label, last]);
+                ready.push([label, ...r]);
             }
+            dataDelay = 0;
             await cdp2.send('Emulation.setCPUThrottlingRate', { rate: 1 });
-            const worst = [...ready].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([l, t]) => `${l} ${t} ms`).join(', ');
+            const worst = [...ready].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([l, t, w]) => `${l} ${t} ms (${w})`).join(', ');
+            if (process.env.READY_ALL) console.log('  tutte: ' + ready.map(([l, t]) => `${l}=${t}`).join(' '));
             console.log(`  contenuto pronto ${dev.n}, ${tag} (CPU 4x), ultima modifica dopo l'apertura: ${worst}`);
+            // Schede che mostrano dati caricati: devono disegnarsi dalla memoria, senza attendere la rete (350 ms simulati).
+            // Prima della correzione: Agente 410-440 ms, Registro 750 ms. Soglia larga contro le oscillazioni della CI.
+            for (const [l, t, w] of ready) if ((l.startsWith('Agente') || /^pagina (log|signals|journal|trade)$/.test(l)) && t > 300) problems.push(`${dev.n}, ${tag}: ${l} pronta dopo ${t} ms (${w}): deve disegnarsi subito dai dati in memoria`);
         }
         // Home: schede una sotto l'altra, tutte sopra la barra in basso e senza righe tagliate; l'ultima riempie lo spazio rimasto
         await page.evaluate(() => window.switchTab('home'));

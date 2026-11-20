@@ -1,4 +1,5 @@
 import { State } from '../core/state.js';
+import { refitPages } from './page-fit.js';
 import { $, escapeHtml, apiPost, getApiBase, setApiBase, clearAppKey, getGhToken, setGhToken, commandMode, fmtIt, fmtPrice, fetchData, fetchT, markChosen, chosenRecently } from '../utils/helpers.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 
@@ -260,16 +261,20 @@ export function bitgetAccountText(acc) {
     return { text: 'lettura non riuscita: controlla la chiave', cls: 'text-danger', detail: '' };
 }
 
-let loadedAt = 0;
+let loadedAt = 0, loadedSig = '';
 export async function loadAutomation() {
     if (loading) return;
     loading = true;
     let alertsState, quickState;
     [cfg, ledger, lab, live, alertsState, quickState, agentState, guardState] = await Promise.all([getJson('automation.json'), getJson('paper_trades.json'), getJson('lab_summary.json'), getJson('live_trades.json'), getJson('alerts_state.json'), getJson('quick_state.json'), getJson('agent_state.json'), getJson('guard_state.json')]);
     firedAlerts = [...((alertsState && alertsState._price_alerts_fired) || []), ...((quickState && quickState._price_alerts_fired) || [])];
+    const sig = JSON.stringify([cfg, ledger, lab, live, alertsState, quickState, agentState, guardState]);
+    const unchanged = loaded && sig === loadedSig;
+    loadedSig = sig;
     loaded = true;
     loadedAt = Date.now();
     loading = false;
+    if (unchanged) return;            // stessi dati: niente ridisegno (nessun lampo, nessuno scorrimento riportato all'inizio)
     for (const [key, mode] of Object.entries(pending)) if (currentMode(key, true) === mode) delete pending[key];
     for (const [f, v] of Object.entries(agentPending)) if (cfg && cfg.agent && cfg.agent[f] === v) delete agentPending[f];
     if (pendingTrading && (pendingTrading === 'on') === !!riskCfg().trading_enabled) pendingTrading = null;
@@ -679,6 +684,7 @@ export function setSignalsView(view, manual = true) {
     if (view === 'agent') renderAgentView();
     if ((view === 'auto' || view === 'risk' || view === 'agent') && loaded && Date.now() - loadedAt > 20e3) loadAutomation();
     if (view === 'lab' && window.setTestView) window.setTestView($('testView').value || 'lab');
+    refitPages(true);                // la scheda appena aperta si adatta subito
 }
 
 // --- Vista Agente: stato, impostazioni (autonomia, profilo, stile), cronologia delle decisioni ---

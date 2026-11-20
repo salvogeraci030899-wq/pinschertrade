@@ -353,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initManual();
     initPageFit();
     initA11y();
+    setTimeout(() => Log.prefetchLog(), 1500);          // il Registro si apre già pronto
 
     CalculatorUI.setMarket('SPOT');
     CalculatorUI.setCtxLabel();

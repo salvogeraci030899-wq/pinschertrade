@@ -11,27 +11,35 @@ let events = null, loadedAt = 0, filter = 'all', dayIdx = 0;
 const noEmoji = t => String(t).replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}]/gu, '').replace(/^\s+/, '');
 const monthKey = d => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 
+// Precaricamento dopo l'avvio: il Registro si apre già pronto
+export function prefetchLog() { load(false).catch(() => {}); }
+
 async function load(force = false) {
     if (events && !force && Date.now() - loadedAt < 60e3) return;
     const now = new Date(), prev = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
     const seen = new Set(), out = [];
-    for (const m of [monthKey(prev), monthKey(now)]) {
+    const files = await Promise.all([monthKey(prev), monthKey(now)].map(async m => {
         try {
             const r = await fetchData(`events/${m}.jsonl`);
-            if (!r.ok) continue;
-            for (const line of (await r.text()).split('\n')) {
-                if (!line.trim()) continue;
-                try {
-                    const e = JSON.parse(line);
-                    if (!e.id || seen.has(e.id)) continue;      // doppioni da salvataggi uniti
-                    seen.add(e.id);
-                    out.push(e);
-                } catch (err) { /* riga rotta: si salta */ }
-            }
-        } catch (err) { /* mese non ancora presente */ }
+            return r.ok ? await r.text() : '';
+        } catch (err) { return ''; }                  // mese non ancora presente
+    }));
+    for (const text of files) {
+        for (const line of text.split('\n')) {
+            if (!line.trim()) continue;
+            try {
+                const e = JSON.parse(line);
+                if (!e.id || seen.has(e.id)) continue;      // doppioni da salvataggi uniti
+                seen.add(e.id);
+                out.push(e);
+            } catch (err) { /* riga rotta: si salta */ }
+        }
     }
-    events = out.sort((a, b) => b.at.localeCompare(a.at));
+    out.sort((a, b) => b.at.localeCompare(a.at));
     loadedAt = Date.now();
+    // stessi eventi di prima: si tiene l'elenco già in memoria (nessun ridisegno)
+    if (events && events.length === out.length && (!out.length || (events[0].id === out[0].id && events[events.length - 1].id === out[out.length - 1].id))) return;
+    events = out;
 }
 
 function look(e) {

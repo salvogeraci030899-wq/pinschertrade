@@ -83,13 +83,13 @@ function fitActive() {
 }
 
 // Cambi di misura e apertura pagina: subito (un fotogramma). Cambi di contenuto (testi e liste che si aggiornano ogni pochi
-// secondi): al massimo una volta ogni 250 ms, e mai con l'app in background.
+// secondi): al massimo una volta ogni 80 ms, e mai con l'app in background.
 let lastRun = 0, timer = null;
 function schedule(urgent = true) {
     if (document.hidden) return;
     if (!urgent) {
         if (timer) return;
-        timer = setTimeout(() => { timer = null; schedule(true); }, Math.max(0, 250 - (Date.now() - lastRun)));
+        timer = setTimeout(() => { timer = null; schedule(true); }, Math.max(0, 80 - (Date.now() - lastRun)));
         return;
     }
     if (scheduled) return;
