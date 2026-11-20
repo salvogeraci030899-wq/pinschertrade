@@ -1,6 +1,6 @@
 // --- TEMA: chiaro, scuro o automatico (segue iOS) ---
 // La preferenza resta su questo dispositivo (localStorage). Il primo frame lo imposta lo script in
-// <head> di index.html; qui si gestiscono il cambio dalle Impostazioni e il cambio di iOS mentre
+// <head> di index.html; qui si gestiscono il cambio dalle Opzioni e il cambio di iOS mentre
 // l'app è aperta. Chi deve ridisegnarsi (i grafici) ascolta l'evento "pt-theme".
 
 const KEY = 'pt_theme';

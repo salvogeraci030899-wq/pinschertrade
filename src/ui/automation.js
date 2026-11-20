@@ -25,7 +25,7 @@ const RISK_FIELDS = [
     ['portfolio_stop_pct', 'Stop di portafoglio: chiude tutto a −% del conto (0 = spento)', 0, 20, 0.5],
 ];
 export const riskCfg = () => ({ ...DEFAULT_RISK, ...((cfg && cfg.risk) || {}) });
-// Stato letto dai file pubblicati, per le pagine Account e Impostazioni
+// Stato letto dai file pubblicati, per le pagine Account e Opzioni
 // Pagine che cambiano tra Simulato e Reale: Account, Posizioni (saldo e lista), Home
 function onModeData() {
     if (window.renderAccount) window.renderAccount();
@@ -396,7 +396,7 @@ export function runAgent() {
     send({ type: 'run_agent' }, 'Agente avviato: laboratorio e scelte in circa 15-30 minuti, rapporto su Telegram.');
 }
 
-const NO_SERVER = 'Per inviare comandi serve un token GitHub (Impostazioni → Comandi) oppure l\'indirizzo di un server.';
+const NO_SERVER = 'Per inviare comandi serve un token GitHub (Opzioni → Comandi) oppure l\'indirizzo di un server.';
 
 async function send(body, okText) {
     // okText vuoto: l'esito positivo lo comunica chi chiama (più comandi di fila)
@@ -409,7 +409,7 @@ async function send(body, okText) {
     try {
         r = await apiPost('/api/command', body);
     } catch (e) {
-        window.showAlert('Comando non inviato', commandMode() === 'github' ? 'GitHub non raggiungibile: controlla la connessione e riprova.' : 'Server comandi non raggiungibile. Controlla l\'indirizzo in Impostazioni → Comandi.');
+        window.showAlert('Comando non inviato', commandMode() === 'github' ? 'GitHub non raggiungibile: controlla la connessione e riprova.' : 'Server comandi non raggiungibile. Controlla l\'indirizzo in Opzioni → Comandi.');
         return false;
     }
     if ([404, 405, 501].includes(r.status)) {
@@ -792,7 +792,7 @@ export function setAgent(field, value) {
     go();
 }
 
-// --- Impostazioni: indirizzo del server comandi ---
+// --- Opzioni: indirizzo del server comandi ---
 export function fillServerSettings() {
     const input = $('apiBaseInput'), tok = $('ghTokenInput');
     if (input) input.value = getApiBase();

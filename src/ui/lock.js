@@ -1,5 +1,5 @@
 // --- BLOCCO DELL'APP: codice numerico di 6 cifre e Face ID / Touch ID ---
-// Come lo sblocco del telefono: all'apertura e al ritorno nell'app dopo un po' (Impostazioni → Blocco app).
+// Come lo sblocco del telefono: all'apertura e al ritorno nell'app dopo un po' (Opzioni → Blocco app).
 // - Il codice non viene mai salvato: solo un'impronta PBKDF2-SHA256 (150.000 giri, sale casuale) in localStorage.
 // - Face ID usa le passkey del sistema (WebAuthn, autenticatore del dispositivo con verifica dell'utente):
 //   l'app chiede a iOS di riconoscerti, nessun dato biometrico passa dall'app.
@@ -105,7 +105,7 @@ async function complete() {
         const old = load() || {};
         save({ salt, iter: ITER, hash: await hashPin(pin, salt), faceId: old.faceId || null, after: old.after || '1m' });
         hide(); renderLockSettings();
-        window.showAlert && window.showAlert('Blocco attivo', 'Da ora l\'app chiede il codice all\'apertura. Puoi aggiungere Face ID in Impostazioni → Blocco app.');
+        window.showAlert && window.showAlert('Blocco attivo', 'Da ora l\'app chiede il codice all\'apertura. Puoi aggiungere Face ID in Opzioni → Blocco app.');
         return;
     }
     const wait = attemptsWait();
@@ -141,7 +141,7 @@ export async function lockFaceId() {
 
 export function lockCancel() { hide(); }
 
-// ---------- Impostazioni → Blocco app ----------
+// ---------- Opzioni → Blocco app ----------
 export async function renderLockSettings() {
     const box = $('lockSettingsBody');
     if (!box) return;

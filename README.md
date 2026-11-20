@@ -10,7 +10,7 @@ Non è un consiglio finanziario: nessuna strategia ha un vantaggio garantito.
 
 | Parte | Dove | Cosa fa |
 | --- | --- | --- |
-| App (PWA) | `index.html`, `style.css`, `src/` (GitHub Pages) | Home, Mercato, Trade, Posizioni, Agente, Risultati, Registro, Impostazioni, Assistente |
+| App (PWA) | `index.html`, `style.css`, `src/` (GitHub Pages) | Home, Mercato, Trade, Posizioni, Agente, Risultati, Registro, Opzioni, Assistente |
 | Bot | `*.py`, `.github/workflows/` (GitHub Actions) | segnali, prova su carta, esecutore, agente, avvisi, controlli |
 | Server | `worker/` + `api/_core.js` (Cloudflare Workers) | orologio del bot (ogni 15 min), comandi dall'app, IA (Groq), bot Telegram |
 | Dati | file `.json`/`.jsonl` nel repository | stato del bot letto dall'app; quelli personali sono **cifrati** |
@@ -36,7 +36,7 @@ simulato ricominciano da capo, senza toccare mai posizioni vere. I file cifrati 
 Il repository è pubblico. I file personali (elencati in `.gitattributes`) sono cifrati con AES-256-GCM da un filtro git
 (`tools/datacrypt.py`), configurato in ogni workflow dal passo `.github/actions/data-key`. Nei workflow il bot li vede in
 chiaro; l'app e il server li decifrano con la stessa chiave (`src/core/datacrypt.js`). La chiave è il segreto `DATA_KEY`
-e, sul telefono, Impostazioni → Connessioni. **Non cambiarla**: i file cifrati con la vecchia chiave non si aprirebbero più.
+e, sul telefono, Opzioni → Connessioni. **Non cambiarla**: i file cifrati con la vecchia chiave non si aprirebbero più.
 
 ## Segreti (GitHub → Settings → Secrets and variables → Actions)
 

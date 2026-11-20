@@ -31,7 +31,7 @@ window.KState = State;
 // ==========================================
 // FUNZIONI GLOBALI (definite SUBITO per l'HTML)
 // ==========================================
-// Account (icona in Home) e Impostazioni (barra in basso): src/ui/account.js
+// Account (icona in Home) e Opzioni (barra in basso): src/ui/account.js
 window.openAccount = AccountUI.openAccount;
 window.setTheme = AccountUI.setTheme;
 window.setStatusBar = AccountUI.setStatusBar;
@@ -47,7 +47,7 @@ let dataLockedShown = false;
 window.addEventListener('pt-data-locked', e => {
     if (dataLockedShown || !window.showAlert) return;
     dataLockedShown = true;
-    window.showAlert('Dati cifrati', e.detail === 'wrong' ? 'La chiave dei dati salvata non apre i file: inseriscila di nuovo in Impostazioni → Connessioni.' : 'Saldo, posizioni e strategie sono cifrati. Inserisci la chiave dei dati in Impostazioni → Connessioni.');
+    window.showAlert('Dati cifrati', e.detail === 'wrong' ? 'La chiave dei dati salvata non apre i file: inseriscila di nuovo in Opzioni → Connessioni.' : 'Saldo, posizioni e strategie sono cifrati. Inserisci la chiave dei dati in Opzioni → Connessioni.');
 });
 window.closeConnections = AccountUI.closeConnections;
 window.goToSlide = (idx) => {
@@ -157,7 +157,7 @@ window.renderLab = LabUI.renderLab;
 window.goToLabPage = LabUI.goToLabPage;
 window.openLabDetail = LabUI.openLabDetail;
 
-// Automazione (pagina Segnali, vista Auto) e server comandi (Impostazioni)
+// Automazione (pagina Segnali, vista Auto) e server comandi (Opzioni)
 window.setSignalsView = AutoUI.setSignalsView;
 window.setAutoMode = AutoUI.setAutoMode;
 window.toggleEmergency = AutoUI.toggleEmergency;

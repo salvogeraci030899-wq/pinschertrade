@@ -47,7 +47,7 @@ export function doExportBackup(withKeys) {
         setTimeout(() => URL.revokeObjectURL(a.href), 1000);
         if (window.showAlert) window.showAlert('Backup pronto', withKeys
             ? 'Il file contiene anche token e chiave dei dati: tienilo in un posto sicuro (iCloud) e cancellalo dopo il ripristino.'
-            : 'Salvalo su iCloud. Token e chiave dei dati non sono inclusi: dopo il ripristino reinseriscili in Impostazioni → Connessioni.');
+            : 'Salvalo su iCloud. Token e chiave dei dati non sono inclusi: dopo il ripristino reinseriscili in Opzioni → Connessioni.');
     } catch (e) {
         if (window.showAlert) window.showAlert('Errore', 'Impossibile creare il backup: ' + e.message);
     }
@@ -84,7 +84,7 @@ export function handleImportBackup(event) {
             }
             if (window.showAlert) {
                 window.showAlert('Ripristino completato', `Segnali e impostazioni ripristinati${keys ? `, con ${keys} ${keys === 1 ? 'chiave' : 'chiavi'}` : ''}. `
-                    + 'Il blocco con codice e Face ID va riattivato in Impostazioni → Blocco app. L\'app si ricarica.');
+                    + 'Il blocco con codice e Face ID va riattivato in Opzioni → Blocco app. L\'app si ricarica.');
             }
             setTimeout(() => window.location.reload(), 2500);
         } catch (err) {

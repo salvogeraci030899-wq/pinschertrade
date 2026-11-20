@@ -457,7 +457,7 @@ export async function triggerRefresh() {
         setTimeout(() => { loadData(); }, 60000);
     } catch (e) {
         refreshDone('Non avviato');
-        if (window.showAlert) window.showAlert('Errore', "Impossibile avviare il giro del bot. Controlla Impostazioni → Altro → Connessioni.");
+        if (window.showAlert) window.showAlert('Errore', "Impossibile avviare il giro del bot. Controlla Opzioni → Altro → Connessioni.");
     }
 }
 
