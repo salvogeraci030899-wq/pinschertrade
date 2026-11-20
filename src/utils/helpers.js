@@ -12,7 +12,7 @@ export const fetchT = (url, ms = 8000) => {
 };
 
 // Chiamata agli endpoint /api del server comandi, protetti da APP_SECRET.
-// Il server è il sito stesso (Vercel) oppure quello indicato in Impostazioni → Server comandi
+// Il server è il sito stesso (Vercel) oppure quello indicato in Opzioni → Server comandi
 // (es. Cloudflare Workers): su GitHub Pages /api non esiste.
 // La chiave viene chiesta una sola volta, al primo 401, e resta in localStorage su questo dispositivo.
 const APP_KEY_STORAGE = 'pt_app_key';

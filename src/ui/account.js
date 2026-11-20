@@ -75,7 +75,7 @@ export function renderAccount() {
 
 }
 
-// Pastiglia "SIMULATO / REALE" in Home e valore nelle Impostazioni
+// Pastiglia "SIMULATO / REALE" in Home e valore nelle Opzioni
 export function updateModePills() {
     const st = getAutoState();
     if (!st.loaded) loadAutomation();          // la Home deve mostrare la modalità anche senza aprire Auto
@@ -127,7 +127,7 @@ export function renderSettings() {
     if (!getAutoState().loaded) loadAutomation();
 }
 
-// Connessioni: schermata a parte (Impostazioni → Altro)
+// Connessioni: schermata a parte (Opzioni → Altro)
 export function openConnections() {
     const input = $('apiBaseInput'), tok = $('ghTokenInput');
     if (input) input.value = getApiBase();

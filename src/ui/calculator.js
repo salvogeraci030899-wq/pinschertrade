@@ -402,7 +402,7 @@ async function openRealOrder() {
     const risk = riskCfg();
     if (!L || !(L.sizeNominal > 0)) { say('Compila entry, stop e rischio: la size non è calcolata.', 'text-danger'); return; }
     if (!(stop > 0)) { say('Lo stop loss è obbligatorio per un ordine vero.', 'text-danger'); return; }
-    if (lev < 1 || lev > risk.max_leverage) { say(`Leva tra 1 e ${risk.max_leverage}x (Impostazioni → Limiti di rischio).`, 'text-danger'); return; }
+    if (lev < 1 || lev > risk.max_leverage) { say(`Leva tra 1 e ${risk.max_leverage}x (Opzioni → Limiti di rischio).`, 'text-danger'); return; }
     say('Leggo prezzo e regole del contratto…');
     let mark, specs;
     try { [mark, specs] = await Promise.all([futuresMark(symbol), futuresSpecs(symbol)]); }

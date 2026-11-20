@@ -385,7 +385,7 @@ export function saveSignalSettingsFromUI() {
     State.saveSignalState();
     updateSignalNotifStatus();
     closeSignalSettings();
-    window.showAlert('Salvato', 'Impostazioni segnali aggiornate.');
+    window.showAlert('Salvato', 'Opzioni segnali aggiornate.');
 }
 
 function sendTelegramMessage(text) {
