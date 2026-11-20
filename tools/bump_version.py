@@ -38,6 +38,7 @@ html, n = re.subn(r"<!-- importmap:start.*?<!-- importmap:end -->", block, html,
 assert n == 1, "marcatori della import map non trovati"
 html = re.sub(r'<meta name="app-version" content="\d+">', f'<meta name="app-version" content="{version}">', html)
 html = re.sub(r"style\.css\?v=\d+", f"style.css?v={version}", html)
+html = re.sub(r"tokens\.css\?v=\d+", f"tokens.css?v={version}", html)
 html = re.sub(r"src/main\.js\?v=\d+", f"src/main.js?v={version}", html)
 INDEX.write_text(html, encoding="utf-8")
 print(f"Versione {current} -> {version} ({len(modules)} moduli nella import map)")

@@ -18,6 +18,7 @@ import { initManual } from './ui/manual.js';
 import * as Lock from './ui/lock.js';
 import * as Orders from './ui/orders.js';
 import { initPageFit, refitPages } from './ui/page-fit.js';
+import { initA11y } from './ui/a11y.js';
 import { normalizeWindows } from './ui/windows.js';
 import * as Market from './ui/market.js';
 import * as Results from './ui/results.js';
@@ -354,6 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initManual();
     initPageFit();
+    initA11y();
 
     CalculatorUI.setMarket('SPOT');
     CalculatorUI.setCtxLabel();
