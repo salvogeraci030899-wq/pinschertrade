@@ -10,7 +10,7 @@ import { $, SYM, escapeHtml, fmtIt, fetchData, markChosen, chosenRecently } from
 import { isRealMode, realHistory, realAccount } from './history.js';
 import { getAutoState, loadAutomation } from './automation.js';
 
-const SRC = { real: 'Bitget · reale', paper: 'Strategie su carta (stesse regole del reale)' };
+const SRC = { real: 'Bitget · reale', paper: 'Strategie su carta' };
 const PERIODS = { day: 'Oggi', week: 'Settimana', month: 'Mese', year: 'Anno', all: 'Tutto' };
 const WHO = { all: 'Tutti', manual: 'A mano', agent: 'Agente' };
 let src = null, period = 'month', who = 'all', equity = null, equityAt = 0;
