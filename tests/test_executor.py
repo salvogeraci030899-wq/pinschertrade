@@ -61,7 +61,7 @@ def test_ciclo_apertura_e_chiusura_simulato():
         st = json.load(open(path))
         p = st["positions"][trade()["id"]]
         assert p["status"] == "open" and p["size"] == 0.025 and p["stop"] == 98_000.0 and p["side"] == "long" and st["mode"] == "simulata"
-        assert st["simulated"]["positions"] == {"BTCUSDT": {"side": "long", "size": 0.025, "entry": 100_000.0}}
+        assert st["simulated"]["positions"] == {"BTCUSDT": {"side": "long", "size": 0.025, "entry": 100_000.0, "funded_to": int(NOW.timestamp())}}
         assert len(notes) == 1 and "SIMULATA" in notes[0] and "Aperta BTCUSDT LONG" in notes[0]
         # stesso giro: nessun doppione
         assert go(cfg, ledger, path, notes=notes) is False and len(notes) == 1
@@ -137,6 +137,34 @@ def test_la_carta_chiude_al_prezzo_della_carta_e_conta_il_netto():
         assert abs(p["net"] - (100 - 0.05 * 100_000 * 0.0011 - 0.05 * 98_000 * 0.0011)) < 0.01
         assert abs(st["simulated"]["cash"] - (10_000 + 100 - 5.5 - 5.39)) < 0.02 and st["simulated"]["positions"] == {}
         assert "netto" in notes[-1]
+
+
+def test_funding_e_statistiche_per_strategia_del_conto_simulato():
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "live.json")
+        t0 = trade("BTCUSDT", 1, 100_000.0, 98_000.0)
+        risk = {"dry_run_equity": 10_000, "risk_per_trade_pct": 1.0}
+        cfg, ledger = setup([t0], mode="paper", cfg_extra={"risk": risk})
+        go(cfg, ledger, path)
+        # dopo 17 ore (due regolazioni: 08:00 e 16:00) il long paga il funding sul nominale 5.000 (0,05 BTC a 100.000)
+        later = datetime(2026, 12, 1, 17, 30, tzinfo=timezone.utc)
+        ex.run(cfg, ledger, None, "simulata", path, now=later, specs_fn=SPECS, prices_fn=lambda s: {"BTCUSDT": 100_000.0}, funding_fn=lambda s: {"BTCUSDT": 0.0001})
+        st = json.load(open(path))
+        pos = st["simulated"]["positions"]["BTCUSDT"]
+        assert abs(pos["funding"] - 2 * 0.05 * 100_000 * 0.0001) < 1e-6 and pos["funded_to"] == int(later.timestamp())
+        # senza una nuova regolazione non si paga di nuovo
+        ex.run(cfg, ledger, None, "simulata", path, now=later, specs_fn=SPECS, prices_fn=lambda s: {"BTCUSDT": 100_000.0}, funding_fn=lambda s: {"BTCUSDT": 0.0001})
+        assert abs(json.load(open(path))["simulated"]["positions"]["BTCUSDT"]["funding"] - 1.0) < 1e-6
+        # chiusura a +2%: il netto comprende commissioni e funding
+        closed = dict(t0, open=False, exit=102_000.0)
+        cfg, ledger = setup([closed], mode="paper", cfg_extra={"risk": risk})
+        ex.run(cfg, ledger, None, "simulata", path, now=later, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
+        st = json.load(open(path))
+        p = st["positions"][t0["id"]]
+        expected = 0.05 * 2_000 - 0.05 * 100_000 * 0.0011 - 0.05 * 102_000 * 0.0011 - 1.0
+        assert abs(p["net"] - expected) < 0.01 and p["funding"] == 1.0
+        s = st["strategy_stats"]["big_candle_trail:1d"]
+        assert s["n"] == 1 and s["open"] == 0 and abs(s["avg_net_pct"] - expected / 5_000 * 100) < 0.01
 
 
 def test_perdita_del_giorno_con_il_non_realizzato_nel_conto_simulato():

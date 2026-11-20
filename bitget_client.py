@@ -328,6 +328,15 @@ class DryRunClient:
     def equity(self):
         return self._equity + self.unrealized()
 
+    def charge_funding(self, symbol, amount):
+        """Funding pagato (amount > 0) o incassato (< 0) da una posizione: tocca la cassa e si somma al costo della posizione."""
+        pos = self._positions.get(symbol)
+        if not pos:
+            return
+        self._equity -= amount
+        self.realized -= amount
+        pos["funding"] = round(pos.get("funding", 0.0) + amount, 8)
+
     def setup_symbol(self, symbol, leverage, side=None):
         self.calls.append(("setup", symbol, leverage))
 
