@@ -2,7 +2,7 @@ import { State } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
 import { Logger } from '../core/logger.js';
 import { journalTrades, isRealMode } from './history.js';
-import { $, SYM, fetchT, apiPost, fmtUsd, cleanData, analyzeTrend, buildRiskData, calcEMA, parseBitgetCandles, fetchData, markChosen } from '../utils/helpers.js';
+import { $, SYM, fetchT, apiPost, fmtUsd, analyzeTrend, buildRiskData, calcEMA, parseBitgetCandles, fetchData, markChosen } from '../utils/helpers.js';
 import { createChart, setCandles, setMarkers, setPriceLines, relayout } from './chart.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 
@@ -130,6 +130,12 @@ async function loadFutures() {
 
 // Dati futures di una coin (o null): usati anche dal calcolatore Rischio
 export const getFutures = symbol => (futData && futData.symbols && futData.symbols[symbol]) || null;
+
+const fmtSigned = (v, d = 2) => `${v >= 0 ? '+' : ''}${v.toFixed(d)}%`;
+
+function trItem(label, value, cls) {
+    return `<div class="filter-item ${cls}"><span class="f-label">${label}</span><span class="f-val">${value}</span></div>`;
+}
 
 function fmtUsdCompact(v) {
     if (v >= 1e9) return `$${(v / 1e9).toFixed(2)}B`;
