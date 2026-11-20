@@ -1,6 +1,6 @@
 """Controllo rapido, ogni 5 minuti (workflow "Controllo rapido", avviato dal server Cloudflare).
 
-Fa solo le cose che guadagnano dall'essere veloci, senza il modello Kronos (circa 30 secondi):
+Fa solo le cose che guadagnano dall'essere veloci, senza modelli (circa 30 secondi):
 - avvisi di prezzo (price_alerts.py) sulle candele da 1 minuto di Bitget;
 - avviso su Telegram per ogni posizione reale chiusa su Bitget (stop, target, a mano), in sola lettura.
 Il bot completo (segnali, prova su carta, esecutore, conto) resta ogni 15 minuti: i segnali dipendono

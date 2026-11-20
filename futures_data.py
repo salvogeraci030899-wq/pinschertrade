@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from kronos_core import ALL_ASSETS
+from market_data import ALL_ASSETS
 
 BASE_URL = "https://api.bitget.com"
 PRODUCT_TYPE = "USDT-FUTURES"

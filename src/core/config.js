@@ -11,14 +11,14 @@ export const CONFIG = {
     GH_REPO: REPO,
     // Server su Cloudflare (ha la chiave Groq): l'analisi AI passa da qui quando non c'è un altro server
     AI_SERVER: 'https://pinschertrade-server.salvogeraci030899.workers.dev',
-    // Dati del bot (dashboard.json, live_trades.json, ...) per la copia su Vercel: lì il sito si
+    // Dati del bot (live_trades.json, paper_trades.json, ...) per la copia su Vercel: lì il sito si
     // ripubblica solo quando cambia il codice (piano gratuito: 100 pubblicazioni al giorno), mentre
     // GitHub Pages si aggiorna a ogni salvataggio del bot. Riserva: i file grezzi del repository.
     DATA_SOURCES: [`https://${OWNER}.github.io/${NAME}/`, `https://raw.githubusercontent.com/${REPO}/main/`],
     FEE_RATE: 0.001,
     REFRESH_MAX_WAIT: 900,
     SIGNAL_SCAN_INTERVAL_MS: 600000,
-    // segnali tecnici (Mercato → Segnali): le 8 coin delle strategie; Kronos c'è solo su BTC, ETH e SOL
+    // segnali tecnici (Mercato → Segnali): le 8 coin delle strategie
     SIGNAL_ASSETS: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'BNBUSDT', 'ADAUSDT', 'LINKUSDT'],
     SIGNAL_TFS: ['1d', '4h', '1h'],
     SIGNAL_STRATEGIES: ['breakout', 'mean_reversion', 'ma_crossover'],

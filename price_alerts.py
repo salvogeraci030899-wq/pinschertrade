@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 import requests
 
-from kronos_core import TRADE_ASSETS
+from market_data import TRADE_ASSETS
 
 SYMBOLS = tuple(TRADE_ASSETS)
 SIDES = ("above", "below")

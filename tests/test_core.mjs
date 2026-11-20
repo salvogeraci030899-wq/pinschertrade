@@ -53,7 +53,6 @@ test('comandi ammessi e workflow giusti', async () => {
         [{ type: 'set_agent', field: 'profile', value: 'prudente' }, 'automation.yml', { action: 'agent', key: 'profile', mode: 'prudente' }],
         [{ type: 'run_lab', unseal: 'donchian55:4h' }, 'lab.yml', { unseal: 'donchian55:4h' }],
         [{ type: 'run_strategies' }, 'strategies.yml', { start: '2018-01-01' }],
-        [{ type: 'run_validation' }, 'validation.yml', { n_samples: '50', max_minutes: '320' }],
         [{ type: 'set_mode', key: 'big_candle_trail:1d', mode: 'paper' }, 'automation.yml', { action: 'set', key: 'big_candle_trail:1d', mode: 'paper' }],
         [{ type: 'emergency' }, 'automation.yml', { action: 'emergency', key: '', mode: '' }],
         [{ type: 'resume' }, 'automation.yml', { action: 'resume', key: '', mode: '' }],

@@ -36,10 +36,9 @@ import requests
 
 import futures_archive
 import lab_strategies
+import stats_util as vs
 import strategies_validation as sv
-import validation as va
-import validation_stats as vs
-from kronos_core import ALL_ASSETS, TRADE_ASSETS, ALL_TIMEFRAMES, ATR_PERIOD, FEE_PCT, SLIPPAGE_PCT, TAX_RATE, TF_DELTA
+from market_data import ALL_ASSETS, TRADE_ASSETS, ALL_TIMEFRAMES, ATR_PERIOD, FEE_PCT, SLIPPAGE_PCT, TAX_RATE, TF_DELTA, OUT_DIR, download_history
 
 HOLDOUT_START = "2025-11-11"     # da qui in poi lo storico è sigillato (deciso l'11/11/2026: ultimi 12 mesi)
 DEFAULT_START = "2018-01-01"
@@ -48,7 +47,7 @@ FDR = 0.10                        # quota attesa di falsi positivi tra le candid
 MIN_TRADES = 30
 SUMMARY_PATH = "lab_summary.json"
 REGISTRY_PATH = "lab_registry.json"
-REPORT_PATH = os.path.join(va.OUT_DIR, "LABORATORIO.md")
+REPORT_PATH = os.path.join(OUT_DIR, "LABORATORIO.md")
 FUNDING_URL = "https://api.bitget.com/api/v2/mix/market/history-fund-rate"
 FUNDING_INTERVAL = 8 * 3600
 # Bitget pubblica solo gli ultimi ~3 mesi di funding. Per i trade più vecchi si usa un'ipotesi
@@ -566,7 +565,7 @@ def main(start, symbols, tfs, unseal=(), save_registry=True):
     for tf in tfs:
         dfs = {}
         for symbol in symbols:
-            df = va.download_history(symbol, tf, start_ms)
+            df = download_history(symbol, tf, start_ms)
             if df is None or len(df) < WARMUP + 200:
                 print(f"{symbol} {tf}: storico insufficiente, salto.")
                 continue

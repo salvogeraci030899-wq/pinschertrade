@@ -16,9 +16,8 @@ on:
       - 'strategy_lab.py'
       - 'lab_strategies.py'
       - 'strategies_validation.py'
-      - 'validation.py'
-      - 'validation_stats.py'
-      - 'kronos_core.py'
+      - 'market_data.py'
+      - 'stats_util.py'
       - 'futures_archive.py'
       - '.github/workflows/lab.yml'
 

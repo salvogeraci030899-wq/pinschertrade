@@ -10,7 +10,7 @@ import pandas as pd
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import strategies_validation as sv  # noqa: E402
-from kronos_core import PRED_LEN, ATR_MULT, MIN_RR  # noqa: E402
+from strategies_validation import PRED_LEN, ATR_MULT, MIN_RR  # noqa: E402
 
 H = 3600
 T0 = 1_600_000_000 // H * H

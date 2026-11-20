@@ -9,7 +9,7 @@ alerts_state.json filter=ptenc merge=ptenc
 quick_state.json filter=ptenc merge=ptenc
 equity_history.json filter=ptenc merge=ptenc
 # File di stato che crescono riga per riga: se due workflow salvano insieme si tengono le righe di entrambi
-# (track_record.py scarta poi i doppioni per id).
+# (chi legge scarta poi i doppioni per id).
 *.jsonl merge=union
 # Registro degli eventi: cresce riga per riga; se due workflow salvano insieme si tengono le righe di
 # entrambi (unione per righe anche quando è cifrato); l'app scarta i doppioni per id.

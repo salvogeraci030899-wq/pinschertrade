@@ -262,8 +262,8 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .tech-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .tech-title { font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.5px; }
 .tech-trend-label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
-/* Affidabilità Kronos (track record) e Validazione storica, per coppia: stesso stile di Verifica Strategia */
-#tr-panel, #val-panel, #fut-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: 10px 12px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
+/* Scheda Futures, per coppia: stesso stile di Verifica Strategia */
+#fut-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card); padding: 10px 12px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; gap: 8px; }
 .tr-foot { font-size: 10px; color: var(--text-secondary); line-height: 1.4; text-align: center; }
 .tr-foot.text-warning { color: var(--warning); }
 .filter-item.neutral { border-color: var(--border); }
@@ -472,7 +472,6 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .sc-badge.long { background: rgba(48, 209, 88, 0.2); color: var(--accent); }
 .sc-badge.short { background: rgba(255, 69, 58, 0.2); color: var(--danger); }
 .sc-badge.neutral { background: rgba(142, 142, 147, 0.2); color: var(--text-secondary); }
-.signal-cell .sc-kronos-label { font-size: 9px; font-weight: 700; color: var(--blue); margin-top: 2px; letter-spacing: 0.3px; }
 /* Cella compatta su 3 righe: asset + timeframe, badge, pallini + etichetta K */
 .signal-cell { align-items: center; }
 .signal-cell .sc-head { display: flex; justify-content: center; align-items: baseline; gap: 4px; }
@@ -481,11 +480,8 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .signal-cell .sc-foot .sc-agree, .signal-cell .sc-foot .sc-kronos-label { margin-top: 0; }
 .signal-cell .sc-agree { font-size: 9px; color: var(--text-secondary); margin-top: 4px; display: flex; justify-content: center; align-items: center; gap: 3px; }
 .sc-agree-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
-.sc-agree-dot.kronos { width: 8px; height: 8px; border: 1.5px solid var(--blue); background: transparent; }
 .sc-agree-dot.on.long { background: var(--accent); }
 .sc-agree-dot.on.short { background: var(--danger); }
-.sc-agree-dot.kronos.on.long { background: var(--accent); border-color: var(--blue); }
-.sc-agree-dot.kronos.on.short { background: var(--danger); border-color: var(--blue); }
 .signal-legend { display: flex; justify-content: space-around; font-size: 10px; color: var(--text-secondary); padding: 6px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-ctl); margin-bottom: 12px; flex-shrink: 0; }
 .signal-legend span { display: flex; align-items: center; gap: 4px; }
 .legend-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
@@ -512,7 +508,6 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .shi-strat-tag { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 700; background: var(--surface-hover); color: var(--text-secondary); }
 .shi-strat-tag.long { background: rgba(48, 209, 88, 0.15); color: var(--accent); }
 .shi-strat-tag.short { background: rgba(255, 69, 58, 0.15); color: var(--danger); }
-.shi-strat-tag.kronos { background: rgba(10, 132, 255, 0.15); color: var(--blue); }
 
 /* --- MANUALE (Ripristinato funzionante) --- */
 #page-info.active {

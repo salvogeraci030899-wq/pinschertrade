@@ -98,8 +98,6 @@ export async function command(body, env, fetchFn) {
             return dispatch(env, fetchFn, 'agent.yml', {});
         case 'run_strategies':
             return dispatch(env, fetchFn, 'strategies.yml', { start: '2018-01-01' });
-        case 'run_validation':
-            return dispatch(env, fetchFn, 'validation.yml', { n_samples: '50', max_minutes: '320' });
         case 'set_mode':
             if (!STRATEGY_KEY.test(String(b.key || '')) || !MODES.includes(b.mode)) return json(400, { error: 'Strategia o stato non validi' });
             return dispatch(env, fetchFn, 'automation.yml', { action: 'set', key: b.key, mode: b.mode });
@@ -375,7 +373,7 @@ Regole automatiche attive: ${rules.length ? rules.join('; ') : 'nessuna'}.`;
 }
 
 // ---------- Assistente generale (Home): comanda il tool ----------
-const GENERAL_SYSTEM = `Sei l'assistente di PinscherTrade, un'app personale di trading: Kronos e i grafici su BTC, ETH e SOL, le strategie anche su XRP, DOGE, BNB, ADA e LINK. Parli in italiano, in modo breve (massimo 70 parole).
+const GENERAL_SYSTEM = `Sei l'assistente di PinscherTrade, un'app personale di trading: i grafici e le strategie su BTC, ETH, SOL, XRP, DOGE, BNB, ADA e LINK. Parli in italiano, in modo breve (massimo 70 parole).
 Ricevi lo stato attuale del tool e un messaggio dell'utente. Rispondi SOLO con un oggetto JSON:
 {"reply": "testo per l'utente", "action": null oppure un'azione}
 Azioni possibili (usa SOLO queste, con questi campi):

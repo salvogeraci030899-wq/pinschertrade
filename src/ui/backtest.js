@@ -301,7 +301,7 @@ export function exportBacktestCSV() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `kronos_backtest_${asset}_${tf}_${strategy}_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `backtest_${asset}_${tf}_${strategy}_${new Date().toISOString().slice(0,10)}.csv`;
     a.click();
 }
 

@@ -82,7 +82,7 @@ export async function takeSnapshot(btn, target = null, label = null) {
         });
         const imgData = canvas.toDataURL('image/png');
         const blob = await (await fetch(imgData)).blob();
-        const fileName = `kronos_${new Date().toISOString().slice(0,19).replace(/[:T]/g, '-')}.png`;
+        const fileName = `grafico_${new Date().toISOString().slice(0,19).replace(/[:T]/g, '-')}.png`;
         const file = new File([blob], fileName, { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
@@ -175,7 +175,7 @@ export async function loadData() {
     liveChart();
 }
 
-// Grafico: candele vere di Bitget per ogni coin (nessuna previsione: Kronos è stato tolto il 2026-11-20)
+// Grafico: candele vere di Bitget per ogni coin
 export function updateChart() {
     renderFutures();
     liveChart();

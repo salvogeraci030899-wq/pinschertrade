@@ -1,4 +1,4 @@
-name: Kronos Bot
+name: Bot
 
 on:
   # L'orologio vero è Cloudflare (worker/wrangler.toml, ogni 15 minuti). Questo schedule di GitHub
@@ -31,7 +31,7 @@ on:
           - 4h
           - 1h
       force:
-        description: 'Non più usato (era il ricalcolo di Kronos); resta perché il server lo invia ancora'
+        description: 'Non più usato; resta perché il server lo invia ancora'
         required: false
         default: 'true'
         type: choice
@@ -73,7 +73,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        # Senza il modello Kronos (tolto il 2026-11-20) non servono più torch e i pesi: il giro dura pochi secondi
+        # Nessun modello da scaricare: il giro dura pochi secondi
         run: pip install "pandas>=2.2.2" numpy requests
 
       - name: Run Bot

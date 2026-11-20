@@ -12,7 +12,7 @@ import { realPositions } from './history.js';
 // --- HOME: panoramica ---
 // Ordine di lettura: mercato → conto simulato → automazione → stato → grafici.
 // Ogni blocco ha una sola fonte:
-//   mercato        ticker spot Bitget (ogni 10 s, solo con la Home aperta); di riserva dashboard.json
+//   mercato        ticker spot Bitget (ogni 10 s, solo con la Home aperta)
 //   conto simulato State.simState (posizioni aperte a mano dall'app)
 //   automazione    automation.json, paper_trades.json, live_trades.json pubblicati dal bot (ogni 30 s)
 //   stato          ultimo e prossimo giro di bot, controllo rapido e agente (API pubblica di GitHub, ogni 2 min;

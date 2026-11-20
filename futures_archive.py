@@ -28,7 +28,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from kronos_core import TRADE_ASSETS
+from market_data import TRADE_ASSETS
 
 BASE = "https://data.binance.vision/data/futures/um"
 OUT_DIR = "futures_archive"

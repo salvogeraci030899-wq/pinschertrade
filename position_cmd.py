@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 
 import executor
 from bitget_client import BitgetClient, BitgetError
-from kronos_core import TRADE_ASSETS
+from market_data import TRADE_ASSETS
 
 ACTIONS = ("close", "tp", "sl", "clear", "untp", "unsl")
 # "refresh": nessun ordine, solo il conto riletto (chiesto dall'app aperta in modalità Reale)

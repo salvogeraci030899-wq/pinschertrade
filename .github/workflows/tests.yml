@@ -1,6 +1,6 @@
 name: Test
 
-# Test automatici della logica del bot (track record, validazione). Leggeri: non installano il modello Kronos.
+# Test automatici della logica del bot (laboratorio, prova su carta, esecutore, agente). Leggeri: nessun modello.
 on:
   push:
     branches: [main]
