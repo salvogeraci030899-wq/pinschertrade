@@ -22,9 +22,10 @@ async function fetchCandlesForSignal(asset, tf, limit = 300) {
 }
 
 export function getKronosSignal(asset, tf) {
-    if (!State.allData) return { signal: 'NEUTRAL', strength: 0, reason: 'dashboard.json non caricato' };
-    const d = State.allData[`${asset}_${tf}`];
-    if (!d || !d.ai_plan || d.ai_plan.error) return { signal: 'NEUTRAL', strength: 0, reason: 'Nessun piano Kronos' };
+    // Kronos è stato tolto (2026-11-20): le sue previsioni non battevano il caso. Il bot non scrive più previsioni;
+    // se un dashboard.json vecchio le contiene, qui non contano.
+    const d = null;
+    if (!d || !d.ai_plan || d.ai_plan.error) return { signal: 'NEUTRAL', strength: 0, reason: 'Kronos non più in uso' };
     const bias = d.ai_plan.bias;
     const prob = typeof d.prob_up === 'number' ? d.prob_up : null;
     const tradeable = d.ai_plan.tradeable !== false;

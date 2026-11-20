@@ -1,5 +1,8 @@
 # PinscherTrade
 
+> **2026-11-20: Kronos è stato tolto dal bot.** Il registro delle sue previsioni (789 chiuse) dava la direzione giusta il 37,7% delle volte, quasi come il caso, e un errore di calibrazione peggiore di una previsione costante. Il giro ogni 15 minuti ora scarica le candele, aggiorna la prova su carta, fa girare l'esecutore e l'agente eventi, e dura pochi secondi (niente torch né pesi del modello). Non arrivano più i messaggi NUOVO SEGNALE. Backtest e validazione del modello restano nel repository come strumenti manuali, ma non fanno più parte del giro. Le sezioni sotto che parlano di Kronos descrivono la versione precedente.
+
+
 App personale di trading (sulla schermata Home: «Pinscher») su 8 crypto (BTC, ETH, SOL, XRP, DOGE, BNB, ADA, LINK; Bitget, futures e spot) con un bot che lavora da solo su GitHub Actions.
 Non è un consiglio finanziario: nessuna strategia ha un vantaggio garantito.
 

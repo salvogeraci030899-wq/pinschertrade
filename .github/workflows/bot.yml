@@ -31,7 +31,7 @@ on:
           - 4h
           - 1h
       force:
-        description: 'Ricalcola anche senza nuove candele (gli avvii programmati da Cloudflare usano false)'
+        description: 'Non più usato (era il ricalcolo di Kronos); resta perché il server lo invia ancora'
         required: false
         default: 'true'
         type: choice
@@ -72,24 +72,14 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      # Evita di riscaricare i pesi di Kronos da Hugging Face a ogni run
-      - name: Cache modelli Hugging Face
-        uses: actions/cache@v5
-        with:
-          path: ~/.cache/huggingface
-          key: hf-kronos-v1
-
       - name: Install dependencies
-        # torch solo CPU: i server di GitHub non hanno GPU; evita di scaricare le librerie CUDA (vari GB)
-        run: pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt
+        # Senza il modello Kronos (tolto il 2026-11-20) non servono più torch e i pesi: il giro dura pochi secondi
+        run: pip install "pandas>=2.2.2" numpy requests
 
       - name: Run Bot
         env:
           SYMBOL: ${{ github.event.inputs.symbol || 'ALL' }}
           TIMEFRAME: ${{ github.event.inputs.timeframe || 'ALL' }}
-          # Le esecuzioni manuali ricalcolano sempre; lo schedule solo se c'è una nuova candela chiusa
-          FORCE: ${{ (github.event_name == 'schedule' || github.event.inputs.force == 'false') && '0' || '1' }}
-          N_SAMPLES: ${{ vars.N_SAMPLES || '50' }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           # Ordini veri solo con queste chiavi E l'interruttore generale acceso nell'app E una strategia confermata
@@ -105,8 +95,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dashboard.json alerts_state.json
-          git add track_record.jsonl track_record_summary.json 2>/dev/null || true
+          git add alerts_state.json
           git add futures_data.json futures_history.jsonl 2>/dev/null || true
           git add paper_trades.json 2>/dev/null || true
           git add live_trades.json 2>/dev/null || true
