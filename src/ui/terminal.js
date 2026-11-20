@@ -5,6 +5,7 @@ import { journalTrades, realPositions } from './history.js';
 import { $, SYM, fetchT, apiPost, fmtUsd, analyzeTrend, buildRiskData, calcEMA, parseBitgetCandles, fetchData, markChosen } from '../utils/helpers.js';
 import { createChart, setCandles, setMarkers, setPriceLines, relayout } from './chart.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
+import { renderLevels, renderPaperOnCoin } from './market-panels.js';
 
 const chartContainer = document.getElementById('chart');
 const mainChartContainer = document.getElementById('mainChartContainer');
@@ -30,8 +31,10 @@ export function initTerminal() {
 
 function initChart() {
     if (chartHandle) chartHandle.destroy();
+    // il grafico di Mercato sta in una pagina a scorrimento orizzontale: col dito il trascinamento laterale cambia pannello
+    // (zoom con due dita e prezzo in verticale restano; a schermo intero il trascinamento torna al grafico)
     chartHandle = createChart(chartContainer, {
-        interactive: true
+        interactive: true, horzTouchDrag: false
     });
     // Il grafico segue sempre la misura reale del contenitore (cambio tab, barra di Safari,
     // altezza dello schermo che si assesta all'avvio della PWA, pannelli che cambiano altezza)
@@ -56,6 +59,7 @@ export function toggleFullscreenChart() {
         isFullscreen = mainChartContainer.classList.toggle('fullscreen');
         document.body.classList.toggle('chart-fullscreen', isFullscreen);
     });
+    if (chartHandle) chartHandle.chart.applyOptions({ handleScroll: { horzTouchDrag: isFullscreen } });
     const btn = document.getElementById('btnFullscreen');
     if (isFullscreen) btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>`;
     else btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`;
@@ -178,13 +182,13 @@ export async function loadData() {
 // Grafico: candele vere di Bitget per ogni coin
 export function updateChart() {
     renderFutures();
+    renderPaperOnCoin();
     liveChart();
 }
 
 let liveSeq = 0;
 async function liveChart() {
     const asset = State.currentAsset, tf = State.currentTF, seq = ++liveSeq;
-    $('last-update-footer').textContent = 'Prezzi dal vivo da Bitget';
     if (State.livePx[asset]) setHeaderPrice(State.livePx[asset]);
     else { State.lastHeaderPrice = null; $('live-price').textContent = '…'; }
     try {
@@ -273,7 +277,9 @@ export async function pollPrices() {
             State.livePx[res.sym] = res.px;
             if (res.sym === State.currentAsset) setHeaderPrice(res.px);
         }
-        } finally { State.pollInFlight = false; }
+        const pg = document.getElementById('page-terminal');
+        if (pg && pg.classList.contains('active')) renderPaperOnCoin();       // risultato lordo delle aperte ai prezzi di adesso
+    } finally { State.pollInFlight = false; }
 }
 
 export function startPricePoll() {
@@ -332,9 +338,11 @@ export async function loadTechData() {
         techData = {
             trend: analyzeTrend(candles, price),
             riskData: buildRiskData(candles.slice(0, -1), price),
-            ema20: calcEMA(closes, 20), ema50: calcEMA(closes, 50), ema200: calcEMA(closes, 200), price
+            ema20: calcEMA(closes, 20), ema50: calcEMA(closes, 50), ema200: calcEMA(closes, 200), price,
+            hh20: Math.max(...candles.slice(0, -1).slice(-20).map(c => c.high)), ll20: Math.min(...candles.slice(0, -1).slice(-20).map(c => c.low))
         };
         renderTechFilters();
+        renderLevels(techData, State.currentAsset, State.currentTF);
         if (window.updateCalcHints) window.updateCalcHints();
     } catch(e) { Logger.log('ERROR', 'TERMINAL', 'Tech fetch error', e); }
 }
@@ -369,19 +377,30 @@ export function renderTechFilters() {
         html.push(buildItem('Volumi', (techData.trend.volRatio * 100).toFixed(0) + '%', techData.trend.volRatio >= 1.0));
     }
     grid.innerHTML = html.join('');
+    const foot = $('techFoot'), ok = (html.join('').match(/filter-item pass/g) || []).length;
+    const rule = { breakout: 'Entra long sopra il massimo delle 20 candele, con RSI alto, volumi forti e prezzo sopra la EMA 200.',
+        mean_reversion: 'Entra long quando il prezzo è ipervenduto ma ancora sopra la EMA 200 meno il 5%.',
+        ma_crossover: 'Entra long con le medie allineate (EMA 20 > 50 > 200) e prezzo sopra la EMA 50.' }[strategy] || '';
+    if (foot) foot.textContent = `Condizioni soddisfatte: ${ok} su ${html.length}. ${rule} Solo verifica, nessun ordine.`;
 }
 
-// --- DASHBOARD CAROUSEL ---
+// --- PAGINA A SCORRIMENTO ORIZZONTALE (grafico + pannelli) ---
+const slideIndex = carousel => {
+    const x = carousel.scrollLeft, slides = [...carousel.children];
+    let best = 0;
+    slides.forEach((s, i) => { if (Math.abs(s.offsetLeft - x) < Math.abs(slides[best].offsetLeft - x)) best = i; });
+    return best;
+};
 export function goToDashboardSlide(idx) {
     const carousel = document.getElementById('dashboardCarousel');
-    if (!carousel) return;
-    carousel.scrollTo({ left: idx * carousel.clientWidth, behavior: 'smooth' });
+    const slide = carousel && carousel.children[idx];
+    if (slide) carousel.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
 }
 
 export function updateDashboardDots() {
     const carousel = document.getElementById('dashboardCarousel');
     if (!carousel || carousel.clientWidth === 0) return;
-    const idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    const idx = slideIndex(carousel);
     document.querySelectorAll('#dashboardDots .info-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
 }
 

@@ -73,7 +73,6 @@ function render(msg = '', error = false) {
     $('lockDots').innerHTML = Array.from({ length: PIN_LEN }, (_, i) => `<span class="${i < entry.length ? 'on' : ''}"></span>`).join('');
     const cfg = load() || {};
     $('lockFace').style.visibility = mode === 'unlock' && cfg.faceId ? 'visible' : 'hidden';
-    $('lockForgot').style.display = mode === 'unlock' ? '' : 'none';
     $('lockCancel').style.display = mode === 'unlock' ? 'none' : '';
 }
 
@@ -141,13 +140,6 @@ export async function lockFaceId() {
 }
 
 export function lockCancel() { hide(); }
-
-export function lockForgot() {
-    const ok = window.confirm('Hai dimenticato il codice?\n\nPer togliere il blocco cancello i dati dell\'app su questo dispositivo: trade simulati, impostazioni, chiavi salvate (le reinserisci dopo). Bitget, GitHub e i server non vengono toccati.\n\nProcedo?');
-    if (!ok) return;
-    try { localStorage.clear(); sessionStorage.clear(); } catch (e) {}
-    location.reload();
-}
 
 // ---------- Impostazioni → Blocco app ----------
 export async function renderLockSettings() {
