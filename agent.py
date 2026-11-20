@@ -38,6 +38,7 @@ import requests
 
 import automation
 import lab_strategies
+from fmt_it import it, it_g
 from market_data import TRADE_ASSETS
 
 STATE_PATH = "agent_state.json"
@@ -196,7 +197,7 @@ def capital_facts(cap):
     extra = (f" Degli ultimi {feas[1]} trade su carta, il conto vero ne avrebbe aperti {feas[0]}." if feas[1] else "")
     ok = [s.replace("USDT", "") for s, v in cap["symbols"].items() if v["ok"]]
     least = min(cap["symbols"].items(), key=lambda kv: kv[1]["needed"])
-    head = f"Capitale {cap['equity']} USDT, rischio {cap['risk_pct']}% a trade, stop tipico {cap['stop_pct']}%"
+    head = f"Capitale {it(cap['equity'], 2)} USDT, rischio {it_g(cap['risk_pct'])}% a trade, stop tipico {it_g(cap['stop_pct'])}%"
     if not ok:
         return [f"{head}: troppo poco per i minimi di Bitget, ogni trade reale verrebbe saltato. "
                 f"Servono almeno ~{least[1]['needed']:.0f} USDT ({least[0].replace('USDT', '')}), oppure un profilo con più rischio." + extra]
@@ -293,7 +294,7 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
             continue
         taken.add(twin_group(key))
         r = results.get(key) or {}
-        out["on"].append((key, f"candidata del laboratorio ({r.get('n')} trade, oltre il mercato {r.get('excess_avg_pct')}% a trade)"))
+        out["on"].append((key, f"candidata del laboratorio ({r.get('n')} trade, oltre il mercato {it(r.get('excess_avg_pct') or 0, 2, True)}% a trade)"))
         free -= 1
     if not candidates:
         out["notes"].append(f"Nessuna strategia {('giornaliera' if ag['style'] == 'giornaliero' else ag['style'])} supera i controlli del laboratorio: l'agente non ne accende.")
@@ -304,7 +305,7 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
                   key=lambda kv: (kv[1].get("excess_p") if kv[1].get("excess_p") is not None else 1, -(kv[1].get("excess_avg_pct") or 0)))
     pool = [(k, r) for k, r in pool if twin_group(k) not in taken and not taken.add(twin_group(k))]
     for key, r in pool[:max(0, room)]:
-        out["observe"].append((key, f"in osservazione: non candidata ma promettente sullo storico ({r.get('n')} trade, oltre il mercato {r.get('excess_avg_pct')}% a trade). Solo carta, non andrà al reale"))
+        out["observe"].append((key, f"in osservazione: non candidata ma promettente sullo storico ({r.get('n')} trade, oltre il mercato {it(r.get('excess_avg_pct') or 0, 2, True)}% a trade). Solo carta, non andrà al reale"))
 
     # 3) dalla carta al reale
     trading = bool((cfg.get("risk") or {}).get("trading_enabled"))
@@ -349,12 +350,12 @@ def facts_text(cfg, paper, d, errors):
     for k in sorted(active):
         st = _paper_stats(paper, k)
         lines.append(f"Stato {_label(k)} ({'reale' if active[k] == 'live' else 'su carta'}): {st.get('n', 0)} trade chiusi, "
-                     f"{st.get('open', 0)} aperti" + (f", netto medio {st['avg_net_pct']}%" if st.get("avg_net_pct") is not None else "") + ".")
+                     f"{st.get('open', 0)} aperti" + (f", netto medio {it(st['avg_net_pct'], 2, True)}%" if st.get("avg_net_pct") is not None else "") + ".")
     if not active:
         lines.append("Nessuna strategia accesa.")
     ret, n, dd = paper_performance(cfg, paper)
     if n:
-        lines.append(f"Su carta in totale: {ret:+.2f}% del patrimonio in {n} trade (calo massimo {dd:.2f}%), con il rischio per trade attuale.")
+        lines.append(f"Su carta in totale: {it(ret, 2, True)}% del patrimonio in {n} trade (calo massimo {it(dd, 2)}%), con il rischio per trade attuale.")
     if cfg.get("emergency"):
         lines.insert(0, "Emergenza attiva: l'agente non accende nulla.")
     return lines

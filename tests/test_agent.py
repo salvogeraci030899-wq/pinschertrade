@@ -247,7 +247,7 @@ def test_avviso_capitale_una_volta():
 def test_rendimento_su_carta():
     paper = {"strategies": {A: {"trades": [ptrade(1, 10.0), ptrade(2, -5.0), ptrade(3, 5.0), {"open": True}]}}}
     assert agent.paper_performance({"risk": {"risk_per_trade_pct": 0.5}}, paper) == (1.0, 3, 0.5)
-    assert any("Su carta in totale: +1.00%" in f for f in agent.facts_text({"strategies": {}}, paper, {k: [] for k in ("off", "on", "promote", "demote", "proposals", "notes")}, []))
+    assert any("Su carta in totale: +1,00%" in f for f in agent.facts_text({"strategies": {}}, paper, {k: [] for k in ("off", "on", "promote", "demote", "proposals", "notes")}, []))
 
 
 # ---------- osservazione ----------
