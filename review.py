@@ -6,7 +6,7 @@ e funding più alti, ordini saltati. Il revisore lo misura, senza decidere nulla
 - aperture fallite;
 - per ogni trade reale chiuso su Bitget e ritrovato (coin, lato, apertura entro 10 minuti): prezzo d'ingresso e
   risultato netto veri contro quelli della carta.
-Lo chiama l'agente ogni giorno: i fatti finiscono nel suo rapporto e in agent_state.json ("review", Agente → Panoramica).
+Lo chiama l'agente ogni giorno: i fatti finiscono nel suo rapporto e in agent_state.json ("review", Agente → Stato).
 """
 from datetime import datetime, timedelta, timezone
 

@@ -89,7 +89,7 @@ export function refreshCapitalUI() {
 
 // Quanto si vince o si perde (USDT) se il prezzo arriva a un livello: posizioni reali con le commissioni di Bitget
 // (0,06% futures, 0,1% spot, niente tasse)
-const usdAt = v => (v == null || !isFinite(v) ? '' : `<small class="at-usd ${v >= 0 ? 'green' : 'red'}">${v >= 0 ? '+' : ''}${v.toFixed(2).replace('.', ',')} USDT</small>`);
+const usdAt = v => (v == null || !isFinite(v) ? '' : `<small class="at-usd ${v >= 0 ? 'green' : 'red'}">${v >= 0 ? '+' : ''}${v.toFixed(2).replace('.', ',')} $</small>`);
 function realAt(p, level) {
     if (!level || !p.entry) return null;
     return netPnlAt({ type: p.side === 'short' ? 'SHORT' : 'LONG', entryPrice: p.entry, size: p.size, feeRate: p.market === 'spot' ? 0.001 : 0.0006, noTax: true }, level);

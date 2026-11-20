@@ -89,7 +89,7 @@ export function openAssistant(id, voice, real) {
     const realMode = tradingMode().mode === 'on';
     $('assistTitle').textContent = general ? 'Assistente' : `${SYM(real.symbol)} ${real.market === 'spot' ? 'spot' : real.side.toUpperCase()}`;
     const sub = $('assistSub');
-    sub.textContent = general ? (realMode ? 'Conto Bitget · reale' : 'Conto simulato · carta') : `Bitget ${real.market === 'spot' ? 'spot' : 'futures'} · ORDINI VERI`;
+    sub.textContent = general ? (realMode ? 'Conto Bitget · reale' : 'Conto Simulato · carta') : `Bitget ${real.market === 'spot' ? 'spot' : 'futures'} · ORDINI VERI`;
     sub.className = (real || (general && realMode)) ? 'real' : '';
     renderCtx(real);
     renderQuick(!!real);
@@ -181,7 +181,7 @@ function allOpen() {
     }
     return [];      // in Simulato non ci sono posizioni a mano: la carta fa da sola
 }
-const pnlLabel = v => (v == null ? 'PnL non noto' : `${v >= 0 ? '+' : ''}${Number(v).toFixed(2).replace('.', ',')} USDT`);
+const pnlLabel = v => (v == null ? 'PnL non noto' : `${v >= 0 ? '+' : ''}${Number(v).toFixed(2).replace('.', ',')} $`);
 
 // Chiusura di più posizioni (in perdita, in profitto o tutte). In Reale: un comando a Bitget per posizione.
 function planCloseMany(filter) {

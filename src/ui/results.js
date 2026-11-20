@@ -153,9 +153,9 @@ export async function renderResults() {
     const unit = paper ? '%' : ' USDT';
     const pct = !paper && s.base > 0 ? s.total / s.base * 100 : null;
     const ddTxt = paper ? `−${fmtIt(s.dd, 2)}%` : s.base > 0 ? `−${fmtIt(s.dd / s.base * 100, 1)}%` : `−${fmtIt(s.dd, 2)}`;
-    const note = paper ? 'in % del patrimonio, rischio per trade attuale · simulato'
+    const note = paper ? 'in % del patrimonio, rischio per trade attuale · carta'
         : src === 'real' ? (who !== 'all' ? `solo trade ${who === 'agent' ? 'dell\'agente' : 'aperti a mano'}, somma dei chiusi` : s.usedEquity ? 'variazione del conto, al netto di versamenti e prelievi' : 'somma dei trade chiusi (storico del conto non ancora disponibile)')
-        : 'al netto di commissioni e tasse simulate';
+        : 'al netto di commissioni e tasse stimate';
     const coinCards = Object.entries(s.coins).sort((a, b) => b[1].pnl - a[1].pnl)
         .map(([c, v]) => `<div class="res-mini"><b>${SYM(c)}</b><b class="${tone(v.pnl)}">${money(v.pnl)}${paper ? '%' : ''}</b><small>${v.n} trade</small></div>`).join('');
     const tradeCards = [...s.list].reverse().map(x => `<div class="res-trade"><div class="res-trade-h"><b>${SYM(x.symbol)} ${escapeHtml(x.side || '')}</b><small>${new Date(x.t).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}</small></div>`

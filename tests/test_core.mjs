@@ -352,7 +352,7 @@ test('bot Telegram: risposte in sola lettura', async () => {
     assert.match(st, /16,06 USDT \(oggi -0,10\)/); assert.match(st, /Ordini veri: spenti/); assert.match(st, /tsmom30 1d \(carta\)/);
     assert.match(telegramAnswer('/posizioni', data), /SOL SHORT 3x · 0,1000 da 160,00[\s\S]*stop NESSUNO · target 150,00/);
     const ag = telegramAnswer('/agente@SgBot', data);
-    assert.match(ag, /simulato, bilanciato, swing/); assert.match(ag, /servono ~73 per BTC/); assert.match(ag, /in osservazione: tsmom30 1d/);
+    assert.match(ag, /Simulato, bilanciato, swing/); assert.match(ag, /servono ~73 per BTC/); assert.match(ag, /in osservazione: tsmom30 1d/);
     const ca = telegramAnswer('/carta', data);
     assert.match(ca, /tsmom30 1d \(osservazione\)/); assert.match(ca, /In totale: \+0,50% del patrimonio in 2 trade/);
     const av = telegramAnswer('/avvisi', data);

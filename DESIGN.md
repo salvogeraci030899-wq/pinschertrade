@@ -52,3 +52,20 @@ Gli stati vuoto ed errore dei dati restano testi inline nei pannelli (non sono t
 2. Niente stili inline, tranne `display` alternato dal codice.
 3. Un tasto nuovo usa una famiglia esistente; niente nuove famiglie.
 4. Versione: eseguire `python3 tools/bump_version.py` a ogni rilascio dell'interfaccia.
+
+## Testi e glossario
+
+Il glossario per l'utente è nel Manuale (slide «Glossario»). Regole di scrittura per chi aggiunge testi:
+
+| Tema | Regola |
+|---|---|
+| Modalità | `Simulato` e `Reale` (sempre maiuscole). Mai «simulata», «simulazione», «live» come nome di modalità. |
+| Carta | I trade di prova automatici del bot. Si scrive «su carta» o «la carta»; mai «paper» né «trade simulati». |
+| Componenti | bot, esecutore, agente, laboratorio: minuscolo nelle frasi, maiuscolo solo se sono un titolo, un tasto o una scheda (`Bot`, `Agente`, `Lab`). |
+| Pagine | Home, Mercato, Trade, Posizioni, Agente, Risultati, Registro, Opzioni. Schede: Agente → Stato / Strategie / Lab / Rischio; Mercato → Grafici / Segnali / Avvisi. Non esiste «Panoramica» né «Dashboard». |
+| Titoli e tasti | Maiuscola solo sulla prima parola e sui nomi propri (Bitget, Telegram): «Invia test Telegram», «Margine richiesto». |
+| Importi | In `$` dopo il numero, con spazio: `1.234,56 $`. «USDT» solo nel nome delle coppie (BTCUSDT) e nei messaggi Telegram sul conto Bitget. |
+| Numeri | Formato italiano: punto per le migliaia, virgola per i decimali; percentuali senza spazio (`2,5%`); segno esplicito su PnL (`+12,30 $`, `−4,10 $`). |
+| Date e ore | `gg/mm/aa · hh:mm`, 24 ore, ora italiana. |
+| Termini | Trade = operazione; posizione = trade aperto. Patrimonio = valore totale; saldo = soldi liberi; capitale = soldi di partenza. PnL (non «P&L»). |
+| Tono | Frasi brevi, seconda persona singolare, niente anglicismi dove esiste una parola italiana (forza, accordo, prova finale). |

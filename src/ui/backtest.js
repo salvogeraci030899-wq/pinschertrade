@@ -217,7 +217,7 @@ export async function runBacktestSingle() {
         resultsDiv.innerHTML = `<div class="bt-error">Errore: ${String(e.message || e).replace(/[<>&]/g, '')}</div>`;
     } finally {
         btn.disabled = false;
-        btn.textContent = 'Esegui Backtest';
+        btn.textContent = 'Esegui backtest';
     }
 }
 
@@ -284,13 +284,13 @@ async function runLabBacktest() {
     } catch (e) {
         resultsDiv.innerHTML = `<div class="bt-error">Errore: ${String(e.message || e).replace(/[<>&]/g, '')}</div>`;
     } finally {
-        btn.disabled = false; btn.textContent = 'Esegui Backtest';
+        btn.disabled = false; btn.textContent = 'Esegui backtest';
     }
 }
 
 export function exportBacktestCSV() {
     if (!State.lastBacktestData || !State.lastBacktestData.trades.length) { 
-        if (window.showAlert) window.showAlert('Esporta CSV', 'Nessun trade simulato.'); 
+        if (window.showAlert) window.showAlert('Esporta CSV', 'Nessun trade nel test.'); 
         return; 
     }
     const { trades, asset, tf, strategy } = State.lastBacktestData;

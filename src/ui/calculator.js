@@ -154,8 +154,8 @@ export function calc() {
 
     const isLong = direction === 'LONG';
     if (State.currentMarket === 'SPOT' && !isLong) return fail('In Spot non si può andare SHORT.');
-    if (isLong && (stop >= entry || target <= entry)) return fail('In un LONG, Stop Loss < Entry < Target.');
-    if (!isLong && (stop <= entry || target >= entry)) return fail('In uno SHORT, Target < Entry < Stop Loss.');
+    if (isLong && (stop >= entry || target <= entry)) return fail('In un LONG, Stop loss < Entry < Target.');
+    if (!isLong && (stop <= entry || target >= entry)) return fail('In uno SHORT, Target < Entry < Stop loss.');
 
     const stopDistPct = Math.abs(entry - stop) / entry;
     const targetDistPct = Math.abs(target - entry) / entry;
@@ -189,7 +189,7 @@ export function calc() {
         levMaxSafe = Math.max(1, Math.floor(1 / (stopDistPct / 0.8 + mmr)));
         if (tier) levMaxSafe = Math.min(levMaxSafe, tier.max_leverage);
         levMaxSafe = Math.min(levMaxSafe, PRUDENT_MAX_LEV);
-        if (tier && leverage > tier.max_leverage) return fail(`Per una posizione di ${Math.round(sizeNominal)} USDT su ${SYM(ctx.asset)} Bitget concede al massimo leva ${tier.max_leverage}x.`);
+        if (tier && leverage > tier.max_leverage) return fail(`Per una posizione di ${Math.round(sizeNominal)} $ su ${SYM(ctx.asset)} Bitget concede al massimo leva ${tier.max_leverage}x.`);
         liqDistPct = 1 / leverage - (tier ? tier.mmr_pct / 100 : FALLBACK_MMR);
         liqPrice = isLong ? entry * (1 - liqDistPct) : entry * (1 + liqDistPct);
         if (stopDistPct >= liqDistPct) return fail(`Con leva ${leverage}x la liquidazione stimata (${fmtPrice(Math.max(liqPrice, 0))}) arriva prima dello stop: perderesti tutto il margine. Riduci la leva o avvicina lo stop.`);
@@ -217,16 +217,16 @@ export function calc() {
     const usd = v => (Math.abs(v) < 100 ? v.toFixed(2).replace('.', ',') : String(Math.round(v)));
     State.lastCalc = { entry, stop, target, direction, leverage, sizeNominal, marginRequired, realRisk, rr };
     resRR.textContent = rr.toFixed(2);
-    resRiskEur.textContent = `${usd(realRisk)} USDT (${realRiskPct.toFixed(2)}%)`;
-    resMargin.textContent = `${usd(marginRequired)} USDT`;
-    resSize.textContent = `${usd(sizeNominal)} USDT`;
-    resGross.textContent = `+${usd(grossProfit)} USDT`;
-    resCosts.textContent = `-${usd(totalFees)} USDT`;
-    resTax.textContent = `-${usd(taxes)} USDT`;
+    resRiskEur.textContent = `${usd(realRisk)} $ (${realRiskPct.toFixed(2)}%)`;
+    resMargin.textContent = `${usd(marginRequired)} $`;
+    resSize.textContent = `${usd(sizeNominal)} $`;
+    resGross.textContent = `+${usd(grossProfit)} $`;
+    resCosts.textContent = `-${usd(totalFees)} $`;
+    resTax.textContent = `-${usd(taxes)} $`;
     // Il netto in USDT non dipende dalla leva (la size viene dal rischio); dipende dalla leva il
     // margine bloccato, quindi il rendimento sul margine: lo mostro accanto in futures
     const onMargin = State.currentMarket === 'FUTURES' && marginRequired > 0 ? ` (${netProfit > 0 ? '+' : ''}${Math.round(netProfit / marginRequired * 100)}% sul margine)` : '';
-    resNet.textContent = `${netProfit > 0 ? '+' : ''}${usd(netProfit)} USDT${onMargin}`;
+    resNet.textContent = `${netProfit > 0 ? '+' : ''}${usd(netProfit)} $${onMargin}`;
     if (levMin !== null && resLevMin) {
         const x = v => `${(Math.ceil(v * 10) / 10).toLocaleString('it-IT')}x`;
         resLevMin.textContent = levMin <= 1 ? '1x (basta il capitale)' : x(levMin);
@@ -237,7 +237,7 @@ export function calc() {
     if (liqPrice !== null) {
         resLiq.textContent = liqPrice > 0 ? `${fmtPrice(liqPrice)} (${isLong ? '-' : '+'}${(liqDistPct * 100).toFixed(1)}%)` : 'Nessuna';
         resFundingLabel.textContent = `Funding stimato (${holdHours >= 48 ? Math.round(holdHours / 24) + ' giorni' : holdHours + ' h'})`;
-        resFunding.textContent = fundingKnown ? `${fundingCost > 0 ? '-' : '+'}${Math.abs(fundingCost).toFixed(2)} USDT` : '—';
+        resFunding.textContent = fundingKnown ? `${fundingCost > 0 ? '-' : '+'}${Math.abs(fundingCost).toFixed(2)} $` : '—';
     }
 
     resRR.className = rr < 1.5 ? 'res-val danger' : (rr < 2.0 ? 'res-val tax' : 'res-val safe');
@@ -412,13 +412,13 @@ async function openRealOrder() {
     const f = 10 ** specs.step;
     const qty = Math.floor(L.sizeNominal / mark * f + 1e-9) / f;
     if (qty < specs.min) {
-        say(`Quantità ${qty} sotto il minimo di Bitget per ${SYM(symbol)} (${specs.min}, circa ${it(specs.min * mark)} USDT): aumenta il rischio o allarga lo stop.`, 'text-danger');
+        say(`Quantità ${qty} sotto il minimo di Bitget per ${SYM(symbol)} (${specs.min}, circa ${it(specs.min * mark)} $): aumenta il rischio o allarga lo stop.`, 'text-danger');
         return;
     }
     const margin = qty * mark / lev, loss = qty * Math.abs(mark - stop) + qty * mark * 0.0012;
     say('');
-    const msg = `ORDINE VERO su Bitget: ${side.toUpperCase()} ${SYM(symbol)} ${qty} a mercato (circa ${it(mark, specs.pricePlace)}), leva ${lev}x, margine isolato circa ${it(margin)} USDT. `
-        + `Stop ${it(stop, specs.pricePlace)}: allo stop perdi circa ${it(loss)} USDT. ` + (target > 0 ? `Target ${it(target, specs.pricePlace)}.` : 'Nessun target.');
+    const msg = `ORDINE VERO su Bitget: ${side.toUpperCase()} ${SYM(symbol)} ${qty} a mercato (circa ${it(mark, specs.pricePlace)}), leva ${lev}x, margine isolato circa ${it(margin)} $. `
+        + `Stop ${it(stop, specs.pricePlace)}: allo stop perdi circa ${it(loss)} $. ` + (target > 0 ? `Target ${it(target, specs.pricePlace)}.` : 'Nessun target.');
     openAutoConfirm('Conferma ordine vero', msg, 'Invia ordine', () => sendOrder({ type: 'position', action: 'open', symbol, side, price: String(stop), size: String(qty), leverage: String(lev), tp: target > 0 ? String(target) : '' }, say));
 }
 
@@ -463,11 +463,11 @@ async function openSpotOrder() {
     if (target > 0 && target <= px) { say(`Il target va sopra il prezzo attuale (${it(px, rules.pricePlace)}).`, 'text-danger'); return; }
     const f = 10 ** rules.qtyPlace;
     const qty = Math.floor(L.sizeNominal / px * f + 1e-9) / f;
-    if (!(qty > 0) || qty * px < rules.minUsdt) { say(`Importo troppo piccolo: su Bitget spot servono almeno ${it(rules.minUsdt)} USDT.`, 'text-danger'); return; }
+    if (!(qty > 0) || qty * px < rules.minUsdt) { say(`Importo troppo piccolo: su Bitget spot servono almeno ${it(rules.minUsdt)} $.`, 'text-danger'); return; }
     const cost = qty * px, loss = qty * (px - stop) + cost * 0.002;
     say('');
-    const msg = `ORDINE VERO su Bitget (spot): compro ${qty} ${SYM(symbol)} a circa ${it(px, rules.pricePlace)} (al massimo +0,5%), spesa circa ${it(cost)} USDT dal conto spot. `
-        + `Stop ${it(stop, rules.pricePlace)}: allo stop perdi circa ${it(loss)} USDT. ` + (target > 0 ? `Target ${it(target, rules.pricePlace)}.` : 'Nessun target.');
+    const msg = `ORDINE VERO su Bitget (spot): compro ${qty} ${SYM(symbol)} a circa ${it(px, rules.pricePlace)} (al massimo +0,5%), spesa circa ${it(cost)} $ dal conto spot. `
+        + `Stop ${it(stop, rules.pricePlace)}: allo stop perdi circa ${it(loss)} $. ` + (target > 0 ? `Target ${it(target, rules.pricePlace)}.` : 'Nessun target.');
     openAutoConfirm('Conferma acquisto vero', msg, 'Compra', () => sendOrder({ type: 'position', action: 'open', market: 'spot', symbol, side: 'long', price: String(stop), size: String(qty), leverage: '1', tp: target > 0 ? String(target) : '' }, say));
 }
 

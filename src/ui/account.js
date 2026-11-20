@@ -38,7 +38,7 @@ export function renderAccount() {
     const acc = live && live.account;
     const t = bitgetAccountText(acc);
     if (acc && acc.connected) {
-        set('accTotal', `${usdt(acc.total_usdt != null ? acc.total_usdt : acc.equity)} USDT`, 'acc-total');
+        set('accTotal', `${usdt(acc.total_usdt != null ? acc.total_usdt : acc.equity)} $`, 'acc-total');
         set('accKind', acc.demo ? 'DEMO' : 'REALE', 'acc-kind ' + (acc.demo ? 'demo' : 'real'));
         set('accDetail', t.detail);
         const when = acc.checked_at ? new Date(acc.checked_at).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
@@ -91,7 +91,7 @@ export function updateModePills() {
     if (acc) {
         const real = m.known && m.mode === 'on';
         acc.classList.toggle('acc-real', real);
-        const title = real ? 'Account · modalità REALE: ordini veri' : 'Account · modalità simulata';
+        const title = real ? 'Account · modalità REALE: ordini veri' : 'Account · modalità Simulato';
         if (acc.title !== title) { acc.title = title; acc.setAttribute('aria-label', title); }
     }
 }

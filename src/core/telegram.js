@@ -25,7 +25,7 @@ const n = (v, d = 2) => (v == null || !isFinite(v) ? '—' : Number(v).toLocaleS
 const sg = (v, d = 2) => (v == null || !isFinite(v) ? '—' : (v > 0 ? '+' : '') + n(v, d));
 const coin = s => String(s || '').replace('USDT', '');
 const lab = k => String(k || '').replace(/_/g, ' ').replace(':', ' ');
-const AG = { autonomy: { off: 'spento', paper: 'simulato', live: 'REALE' }, def: { autonomy: 'paper', profile: 'bilanciato', style: 'swing' } };
+const AG = { autonomy: { off: 'spento', paper: 'Simulato', live: 'Reale' }, def: { autonomy: 'paper', profile: 'bilanciato', style: 'swing' } };
 
 function help() {
     return '🤖 PinscherTrade: comandi (sola lettura)\n' + Object.entries(COMMANDS).map(([c, t]) => `${c} · ${t}`).join('\n')
@@ -45,7 +45,7 @@ function stato(d) {
         lines.push(`Posizioni: ${acc.positions || 0}${acc.positions ? ` · PnL aperto ${sg(acc.upl)} USDT` : ''}`);
         if (acc.checked_at) lines.push(`Letto alle ${new Date(acc.checked_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`);
     } else lines.push('Conto Bitget non letto.');
-    lines.push(`Ordini veri: ${risk.trading_enabled ? 'interruttore ACCESO' : 'spenti'} · esecutore ${live.mode || 'simulato'}`);
+    lines.push(`Ordini veri: ${risk.trading_enabled ? 'interruttore ACCESO' : 'spenti'} · esecutore ${live.mode || 'simulata'}`);
     const active = Object.entries(cfg.strategies || {}).filter(([, m]) => m !== 'off');
     lines.push('Strategie: ' + (active.length ? active.map(([k, m]) => `${lab(k)} (${m === 'live' ? 'reale' : 'carta'})`).join(', ') : 'nessuna'));
     const ag = { ...AG.def, ...(cfg.agent || {}) };

@@ -150,7 +150,7 @@ export function openChartAlert(symbol, px) {
     caPx = px > 0 ? px : (State.livePx[symbol] || null);
     $('caCoins').innerHTML = TRADE_SYMBOLS.map(s => `<button type="button" class="pill-btn${s === symbol ? ' active' : ''}" onclick="openChartAlert('${s}')">${s.replace('USDT', '')}</button>`).join('');
     $('caTitle').textContent = `Avviso su ${symbol.replace('USDT', '')}`;
-    $('caNow').textContent = caPx ? `Ora ${fmtPrice(caPx)} USDT` : 'Prezzo attuale non disponibile';
+    $('caNow').textContent = caPx ? `Ora ${fmtPrice(caPx)} $` : 'Prezzo attuale non disponibile';
     $('caPrice').value = caPx ? String(Number(caPx.toPrecision(6))) : '';
     $('caSteps').innerHTML = [-5, -2, -1, 1, 2, 5].map(p => `<button type="button" onclick="chartAlertStep(${p})">${p > 0 ? '+' : ''}${p}%</button>`).join('');
     const mine = priceAlerts().filter(a => a.symbol === symbol);
@@ -168,7 +168,7 @@ async function loadAlertPrice(symbol) {
         if (!(px > 0) || caSym !== symbol) return;
         caPx = px;
         State.livePx[symbol] = px;
-        $('caNow').textContent = `Ora ${fmtPrice(px)} USDT`;
+        $('caNow').textContent = `Ora ${fmtPrice(px)} $`;
         if (!$('caPrice').value) $('caPrice').value = String(Number(px.toPrecision(6)));
         caHint();
     } catch (e) { /* resta "Prezzo attuale non disponibile" */ }
@@ -254,7 +254,7 @@ export function bitgetAccountText(acc) {
             : acc.spot_usdt != null
                 ? `spot ${usdt(acc.spot_usdt)} · futures ${usdt(acc.equity)} · ${pos}`
                 : `futures ${usdt(acc.equity)} · ${pos}${acc.spot_error ? ' · spot non leggibile' : ''}`;
-        return { text: `${usdt(total)} USDT · ${kind}`, cls: 'text-ui', detail };
+        return { text: `${usdt(total)} $ · ${kind}`, cls: 'text-ui', detail };
     }
     if (acc.reason === 'chiavi non impostate') return { text: 'chiavi non impostate', cls: '', detail: '' };
     return { text: 'lettura non riuscita: controlla la chiave', cls: 'text-danger', detail: '' };
@@ -308,7 +308,7 @@ export function renderAutomation() {
     const halted = !!(live && live.halted);
     const risk = riskCfg();
     const execMode = (live && live.mode) || 'simulata';
-    const realText = !risk.trading_enabled ? 'spenti (esecutore simulato)'
+    const realText = !risk.trading_enabled ? 'spenti (modalità Simulato)'
         : (execMode === 'simulata' ? 'abilitati, ma senza chiavi Bitget o strategie confermate' : `abilitati (${execMode})`);
     const mode = commandMode();
     const serverText = { server: 'server impostato', github: 'token GitHub', site: 'questo sito', cloud: 'server Cloudflare', none: 'non impostati' }[mode];
@@ -605,7 +605,7 @@ export async function saveAutoRisk() {
         ? 'ATTENZIONE: in Reale l\'esecutore aprirà ordini VERI anche per le strategie su carta non confermate dalla prova finale. Valgono tutti i limiti, ma puoi perdere soldi.\n\n' : '';
     const summary = changes.map(c => { const [n, u] = NAMES[c.field] || [c.field, '']; return `${n}: ${fmtIt(Number(risk[c.field]), 2).replace(/,00$/, '')}${u} → ${fmtIt(Number(c.value), 2).replace(/,00$/, '')}${u}`; }).join('\n');
     // la finestra dei limiti resta aperta sotto: se annulli non perdi quello che hai scritto
-    openAutoConfirm('Cambiare i limiti di rischio?', `${warn}${summary}\nValgono per l'esecutore, anche in simulazione.`, 'Conferma', async () => {
+    openAutoConfirm('Cambiare i limiti di rischio?', `${warn}${summary}\nValgono per l'esecutore, anche in Simulato.`, 'Conferma', async () => {
         closeAutoRisk();
         for (const c of changes) if (!(await send(c, ''))) return;
         window.showAlert('Comandi inviati', `${changes.length} ${changes.length === 1 ? 'modifica inviata' : 'modifiche inviate'}: visibili qui dopo qualche minuto.`);
@@ -622,7 +622,7 @@ export function setTradingMode(value) {
     const go = async () => {
         const ok = await send({ type: 'trading', value }, value === 'on'
             ? 'Modalità reale inviata. Diventa attiva entro qualche minuto.'
-            : 'Modalità simulata inviata: nessun nuovo ordine vero.');
+            : 'Modalità Simulato inviata: nessun nuovo ordine vero.');
         if (ok) { pendingTrading = value; onModeData(); setTimeout(loadAutomation, 90000); }
     };
     if (value === 'on') {
@@ -649,10 +649,10 @@ export function closeAutoConfirm() { $('autoConfirmModal').classList.remove('act
 export function okAutoConfirm() { const a = confirmAction; closeAutoConfirm(); if (a) a(); }
 
 // Passa tra i segnali e l'automazione (stessa pagina, tasti in alto a destra)
-// Pagina Agente: schede Panoramica (agent) · Strategie (auto) · Laboratorio (lab) · Rischio (risk)
+// Pagina Agente: schede Stato (agent) · Strategie (auto) · Lab (lab) · Rischio (risk)
 const AGENT_PAGES = { agent: ['agentView', 'Lavora per te'], auto: ['autoView', 'Strategie'], lab: ['labPage', 'Laboratorio'], risk: ['riskView', 'Rischio e reale'] };
 // All'apertura della pagina Agente: Rischio se c'è un'emergenza, un blocco dell'esecutore o una pausa dell'agente
-// eventi; altrimenti Panoramica. Se hai scelto tu una scheda negli ultimi 30 minuti, resta quella.
+// eventi; altrimenti Stato. Se hai scelto tu una scheda negli ultimi 30 minuti, resta quella.
 export function autoSignalsView() {
     if (chosenRecently('agentView')) return $('signalsView').value || 'agent';
     const g = guardState || {};
@@ -817,9 +817,9 @@ function capitalRow() {
     if (!c || !c.symbols || !Object.keys(c.symbols).length) return '';
     const ok = Object.entries(c.symbols).filter(([, v]) => v.ok).map(([k]) => k.replace('USDT', ''));
     const least = Object.entries(c.symbols).sort((a, b) => a[1].needed - b[1].needed)[0];
-    const text = ok.length === Object.keys(c.symbols).length ? `${fmtIt(c.equity, 2)} USDT · basta per tutte le coin`
-        : ok.length ? `${fmtIt(c.equity, 2)} USDT · solo ${ok.join(', ')}`
-        : `${fmtIt(c.equity, 2)} USDT · troppo poco: servono ~${fmtIt(least[1].needed, 0)} (${least[0].replace('USDT', '')})`;
+    const text = ok.length === Object.keys(c.symbols).length ? `${fmtIt(c.equity, 2)} $ · basta per tutte le coin`
+        : ok.length ? `${fmtIt(c.equity, 2)} $ · solo ${ok.join(', ')}`
+        : `${fmtIt(c.equity, 2)} $ · troppo poco: servono ~${fmtIt(least[1].needed, 0)} (${least[0].replace('USDT', '')})`;
     const f = c.paper_feasible || [0, 0];
     const feas = f[1] ? `<div class="auto-row auto-sub"><span></span><b>della carta il conto avrebbe aperto ${f[0]} trade su ${f[1]}</b></div>` : '';
     return `<div class="auto-row"><span>Capitale</span><b class="${ok.length ? '' : 'text-warning'}" title="Rischio ${c.risk_pct}% a trade, stop tipico ${c.stop_pct}%">${escapeHtml(text)}</b></div>${feas}`;
