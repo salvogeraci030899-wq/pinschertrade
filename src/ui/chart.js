@@ -1,7 +1,6 @@
 // src/ui/chart.js
 // Factory unica per i grafici dell'app (candele, volumi, markers e linee di prezzo).
-// Usata da ui/terminal.js (candele + forecast + bande + markers + priceLines)
-// e da ui/home-charts.js (candele + volume).
+// Usata da ui/terminal.js (candele, volumi, markers e linee di prezzo).
 
 import { Logger } from '../core/logger.js';
 import { cssVar } from '../core/theme.js';

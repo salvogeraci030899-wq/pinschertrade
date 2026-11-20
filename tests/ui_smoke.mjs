@@ -77,6 +77,18 @@ try {
             return { l: Math.round(n.left), r: Math.round(innerWidth - n.right), b: Math.round(innerHeight - n.bottom), fuori: Math.round(n.top - d.bottom), sopra: Math.round(it.top - n.top), sotto: Math.round(n.bottom - it.bottom) }; });
         if (glass && !(await page.evaluate(() => document.documentElement.classList.contains('glass')))) problems.push(`${dev.n}, ${tag}: il vetro non si accende`);
         if (nav.l !== nav.r || nav.l < 4 || nav.b < 4 || nav.b > 60 || nav.fuori < 0 || nav.sopra !== nav.sotto) problems.push(`${dev.n}, ${tag}: barra in basso fuori posto ${JSON.stringify(nav)}`);
+        // Home: schede una sotto l'altra, tutte sopra la barra in basso e senza righe tagliate; l'ultima riempie lo spazio rimasto
+        await page.evaluate(() => window.switchTab('home'));
+        await page.waitForTimeout(700);
+        const home = await page.evaluate(() => {
+            const top = document.querySelector('.nav-wrap').getBoundingClientRect().top;
+            const kids = [...document.querySelectorAll('#page-home .home-container > *')].filter(e => e.getClientRects().length);
+            const last = kids[kids.length - 1].getBoundingClientRect();
+            const list = document.getElementById('homeRecentList');
+            const clipped = [...list.children].filter(r => !r.hidden && r.getBoundingClientRect().bottom > list.getBoundingClientRect().bottom + 1).length;
+            return { fuori: kids.filter(e => e.getBoundingClientRect().bottom > top + 1).length, vuoto: Math.round(top - last.bottom), tagliate: clipped, rows: list.children.length, noChart: !document.getElementById('homeChartsList') };
+        });
+        if (home.fuori || home.tagliate || !home.noChart) problems.push(`${dev.n}, ${tag}: Home fuori posto ${JSON.stringify(home)}`);
         // identificativi doppi: il codice troverebbe l'elemento sbagliato
         const dup = await page.evaluate(() => { const c = {}; document.querySelectorAll('[id]').forEach(e => { c[e.id] = (c[e.id] || 0) + 1; }); return Object.keys(c).filter(k => c[k] > 1); });
         if (dup.length) problems.push(`${dev.n}, ${tag}: identificativi doppi: ${dup.join(', ')}`);

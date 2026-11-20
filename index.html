@@ -67,46 +67,45 @@
 
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link rel="stylesheet" href="./style.css?v=189">
-    <meta name="app-version" content="189">
+    <link rel="stylesheet" href="./style.css?v=191">
+    <meta name="app-version" content="191">
     <!-- importmap:start (generata da tools/bump_version.py, non modificare a mano) -->
     <script type="importmap">
     {
         "imports": {
-            "./src/core/backup.js": "./src/core/backup.js?v=189",
-            "./src/core/commands.js": "./src/core/commands.js?v=189",
-            "./src/core/config.js": "./src/core/config.js?v=189",
-            "./src/core/datacrypt.js": "./src/core/datacrypt.js?v=189",
-            "./src/core/labEngine.js": "./src/core/labEngine.js?v=189",
-            "./src/core/logger.js": "./src/core/logger.js?v=189",
-            "./src/core/rules.js": "./src/core/rules.js?v=189",
-            "./src/core/state.js": "./src/core/state.js?v=189",
-            "./src/core/telegram.js": "./src/core/telegram.js?v=189",
-            "./src/core/theme.js": "./src/core/theme.js?v=189",
-            "./src/main.js": "./src/main.js?v=189",
-            "./src/ui/account.js": "./src/ui/account.js?v=189",
-            "./src/ui/ai.js": "./src/ui/ai.js?v=189",
-            "./src/ui/assistant.js": "./src/ui/assistant.js?v=189",
-            "./src/ui/automation.js": "./src/ui/automation.js?v=189",
-            "./src/ui/backtest.js": "./src/ui/backtest.js?v=189",
-            "./src/ui/calculator.js": "./src/ui/calculator.js?v=189",
-            "./src/ui/chart.js": "./src/ui/chart.js?v=189",
-            "./src/ui/history.js": "./src/ui/history.js?v=189",
-            "./src/ui/home-charts.js": "./src/ui/home-charts.js?v=189",
-            "./src/ui/home.js": "./src/ui/home.js?v=189",
-            "./src/ui/lab.js": "./src/ui/lab.js?v=189",
-            "./src/ui/lock.js": "./src/ui/lock.js?v=189",
-            "./src/ui/log.js": "./src/ui/log.js?v=189",
-            "./src/ui/manual.js": "./src/ui/manual.js?v=189",
-            "./src/ui/market.js": "./src/ui/market.js?v=189",
-            "./src/ui/orders.js": "./src/ui/orders.js?v=189",
-            "./src/ui/page-fit.js": "./src/ui/page-fit.js?v=189",
-            "./src/ui/results.js": "./src/ui/results.js?v=189",
-            "./src/ui/signals.js": "./src/ui/signals.js?v=189",
-            "./src/ui/terminal.js": "./src/ui/terminal.js?v=189",
-            "./src/ui/trade.js": "./src/ui/trade.js?v=189",
-            "./src/ui/windows.js": "./src/ui/windows.js?v=189",
-            "./src/utils/helpers.js": "./src/utils/helpers.js?v=189"
+            "./src/core/backup.js": "./src/core/backup.js?v=191",
+            "./src/core/commands.js": "./src/core/commands.js?v=191",
+            "./src/core/config.js": "./src/core/config.js?v=191",
+            "./src/core/datacrypt.js": "./src/core/datacrypt.js?v=191",
+            "./src/core/labEngine.js": "./src/core/labEngine.js?v=191",
+            "./src/core/logger.js": "./src/core/logger.js?v=191",
+            "./src/core/rules.js": "./src/core/rules.js?v=191",
+            "./src/core/state.js": "./src/core/state.js?v=191",
+            "./src/core/telegram.js": "./src/core/telegram.js?v=191",
+            "./src/core/theme.js": "./src/core/theme.js?v=191",
+            "./src/main.js": "./src/main.js?v=191",
+            "./src/ui/account.js": "./src/ui/account.js?v=191",
+            "./src/ui/ai.js": "./src/ui/ai.js?v=191",
+            "./src/ui/assistant.js": "./src/ui/assistant.js?v=191",
+            "./src/ui/automation.js": "./src/ui/automation.js?v=191",
+            "./src/ui/backtest.js": "./src/ui/backtest.js?v=191",
+            "./src/ui/calculator.js": "./src/ui/calculator.js?v=191",
+            "./src/ui/chart.js": "./src/ui/chart.js?v=191",
+            "./src/ui/history.js": "./src/ui/history.js?v=191",
+            "./src/ui/home.js": "./src/ui/home.js?v=191",
+            "./src/ui/lab.js": "./src/ui/lab.js?v=191",
+            "./src/ui/lock.js": "./src/ui/lock.js?v=191",
+            "./src/ui/log.js": "./src/ui/log.js?v=191",
+            "./src/ui/manual.js": "./src/ui/manual.js?v=191",
+            "./src/ui/market.js": "./src/ui/market.js?v=191",
+            "./src/ui/orders.js": "./src/ui/orders.js?v=191",
+            "./src/ui/page-fit.js": "./src/ui/page-fit.js?v=191",
+            "./src/ui/results.js": "./src/ui/results.js?v=191",
+            "./src/ui/signals.js": "./src/ui/signals.js?v=191",
+            "./src/ui/terminal.js": "./src/ui/terminal.js?v=191",
+            "./src/ui/trade.js": "./src/ui/trade.js?v=191",
+            "./src/ui/windows.js": "./src/ui/windows.js?v=191",
+            "./src/utils/helpers.js": "./src/utils/helpers.js?v=191"
         }
     }
     </script>
@@ -150,11 +149,11 @@
                 </div>
             </div>
             <div class="home-container">
-                <!-- 1. Mercato: prezzo e variazione 24h; il tocco mostra il grafico della coin qui sotto -->
+                <!-- 1. Mercato: prezzo e variazione 24h; il tocco apre il grafico della coin in Mercato -->
                 <div class="home-market" id="homeMarket">
-                    <button type="button" class="home-tile active" data-symbol="BTCUSDT" onclick="goToHomeChart(0)"><span class="home-tile-sym">BTC</span><span class="home-tile-px">—</span><span class="home-tile-chg">—</span></button>
-                    <button type="button" class="home-tile" data-symbol="ETHUSDT" onclick="goToHomeChart(1)"><span class="home-tile-sym">ETH</span><span class="home-tile-px">—</span><span class="home-tile-chg">—</span></button>
-                    <button type="button" class="home-tile" data-symbol="SOLUSDT" onclick="goToHomeChart(2)"><span class="home-tile-sym">SOL</span><span class="home-tile-px">—</span><span class="home-tile-chg">—</span></button>
+                    <button type="button" class="home-tile" data-symbol="BTCUSDT" onclick="openHomeCoin(this)"><span class="home-tile-sym">BTC</span><span class="home-tile-px">—</span><span class="home-tile-chg">—</span></button>
+                    <button type="button" class="home-tile" data-symbol="ETHUSDT" onclick="openHomeCoin(this)"><span class="home-tile-sym">ETH</span><span class="home-tile-px">—</span><span class="home-tile-chg">—</span></button>
+                    <button type="button" class="home-tile" data-symbol="SOLUSDT" onclick="openHomeCoin(this)"><span class="home-tile-sym">SOL</span><span class="home-tile-px">—</span><span class="home-tile-chg">—</span></button>
                 </div>
 
                 <!-- 2. Conto simulato (posizioni aperte a mano dall'app) -->
@@ -193,16 +192,10 @@
                     <div class="home-line clickable" onclick="switchTab('signals')"><span>Segnale tecnico</span><b><span id="homeTopSignalAsset">—</span> <span class="sc-badge neutral" id="homeTopSignalBadge">—</span></b></div>
                 </div>
 
-                <!-- 5. Grafici -->
-                <div class="home-charts-section">
-                    <div class="home-charts-carousel-wrapper">
-                        <div class="home-charts-list" id="homeChartsList"></div>
-                        <div class="home-chart-dots" id="homeChartDots">
-                            <div class="info-dot active" onclick="goToHomeChart(0)"></div>
-                            <div class="info-dot" onclick="goToHomeChart(1)"></div>
-                            <div class="info-dot" onclick="goToHomeChart(2)"></div>
-                        </div>
-                    </div>
+                <!-- 5. Ultime operazioni chiuse (carta in Simulato, conto Bitget in Reale): riempie lo spazio rimasto -->
+                <div class="home-card home-recent clickable" onclick="switchTab('journal')">
+                    <div class="home-card-header"><span id="homeRecentTitle">Ultime chiuse · carta</span><span class="home-card-link">Risultati ›</span></div>
+                    <div class="home-recent-list" id="homeRecentList"></div>
                 </div>
             </div>
         </section>
@@ -1001,7 +994,7 @@
                     </div>
                     <div class="rule-card">
                         <div class="rule-card-title blue">Il percorso di una strategia</div>
-                        <div class="rule-step"><div class="content"><b>Coin:</b> le strategie lavorano su BTC, ETH, SOL, XRP, DOGE, BNB, ADA e LINK (più mercati = più trade e più conferme). Nel Mercato le 8 coin sono sulla riga in alto (scorrono di lato), accanto ai timeframe; il grafico mostra le candele vere di Bitget; per un'analisi c'è Analisi AI live. I segnali tecnici sono su tutte le 8, a pagine da 3 coin. In Home le 3 coin in alto si scelgono da sole ogni minuto: prima quelle con una posizione aperta (vera, simulata o su carta), poi quelle con un avviso di prezzo entro il 3%, poi quelle che si muovono di più nelle 24 ore.</div></div>
+                        <div class="rule-step"><div class="content"><b>Coin:</b> le strategie lavorano su BTC, ETH, SOL, XRP, DOGE, BNB, ADA e LINK (più mercati = più trade e più conferme). Nel Mercato le 8 coin sono sulla riga in alto (scorrono di lato), accanto ai timeframe; il grafico mostra le candele vere di Bitget; per un'analisi c'è Analisi AI live. I segnali tecnici sono su tutte le 8, a pagine da 3 coin. In Home le 3 coin in alto si scelgono da sole ogni minuto: prima quelle con una posizione aperta (vera o su carta), poi quelle con un avviso di prezzo entro il 3%, poi quelle che si muovono di più nelle 24 ore; toccandone una si apre il suo grafico in Mercato. Sotto ci sono le ultime operazioni chiuse.</div></div>
                         <div class="rule-step"><div class="content"><b>Pagine che si sistemano da sole</b> (quando le apri, mai mentre le guardi): il Mercato parte sulla coin più rilevante; i Segnali mettono in prima pagina le coin con il segnale più forte o una posizione; gli Avvisi mostrano in cima i più vicini a scattare; Risultati si apre sulla fonte che ha dati nel periodo; l'Agente si apre su Rischio se c'è un blocco, un'emergenza o una pausa per eventi. Se scegli tu una coin o una scheda, la tua scelta vale per 30 minuti. Trade e timeframe non cambiano mai da soli.</div></div>
                         <div class="rule-step"><div class="content"><b>1. Candidata</b> → il laboratorio la trova migliore del mercato dopo i costi, e regge il controllo sulle prove multiple.</div></div>
                         <div class="rule-step"><div class="content"><b>2. Su carta</b> → segue i segnali dal vivo senza soldi. Va peggio dello storico? Spenta. Con meno di 4 strategie accese, l'agente aggiunge le più promettenti non candidate <b>in osservazione</b>: solo carta, per avere dati prima; niente prova finale né reale finché non diventano candidate.</div></div>
@@ -1235,6 +1228,6 @@
     </div>
 </div>
 
-<script type="module" src="./src/main.js?v=189"></script>
+<script type="module" src="./src/main.js?v=191"></script>
 </body>
 </html>

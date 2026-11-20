@@ -4,22 +4,21 @@ import { $, SYM, fetchT, escapeHtml, fmtIt, fmtPrice, fetchData, getGhToken } fr
 import { aggregateCellSignals } from './signals.js';
 import { bitgetAccountText, isRemovingAlert, paperPerformance, priceAlerts, getAutoState } from './automation.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
-import { setHomeChartCoins } from './home-charts.js';
 import { updateModePills, tradingMode } from './account.js';
 import { liveUpl, hasLiveMarks } from './trade.js';
-import { realPositions } from './history.js';
+import { realPositions, realHistory } from './history.js';
 
 // --- HOME: panoramica ---
-// Ordine di lettura: mercato → conto simulato → automazione → stato → grafici.
+// Ordine di lettura: mercato → conto → automazione → stato → ultime operazioni chiuse.
 // Ogni blocco ha una sola fonte:
 //   mercato        ticker spot Bitget (ogni 10 s, solo con la Home aperta)
 //   automazione    automation.json, paper_trades.json, live_trades.json pubblicati dal bot (ogni 30 s)
 //   stato          ultimo e prossimo giro di bot, controllo rapido e agente (API pubblica di GitHub, ogni 2 min;
 //                  ) e consenso tecnico della pagina Segnali
 
-// Le 3 coin in alto (e nei grafici sotto) tra le 8 delle strategie, scelte ogni minuto: prima quelle con una
+// Le 3 coin in alto tra le 8 delle strategie, scelte ogni minuto: prima quelle con una
 // posizione aperta (vera, simulata o su carta), poi quelle con un avviso di prezzo vicino (entro il 3%), poi le
-// altre per movimento delle 24 ore. Prezzi delle 8 coin ogni 15 secondi con la Home aperta.
+// altre per movimento delle 24 ore. Prezzi delle 8 coin ogni 15 secondi con la Home aperta; il tocco apre il grafico in Mercato.
 const COINS = TRADE_SYMBOLS;
 let shown = ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'], lastPickAt = 0;
 const PICK_EVERY_MS = 60_000;
@@ -57,6 +56,7 @@ export function updateHome() {
     renderMarket();
     renderAccount();
     renderAutomationCard();
+    renderRecent();
     renderStatus();
     updateModePills();
 }
@@ -123,7 +123,6 @@ export function pickCoins() {
         t.dataset.symbol = sym;
         put(t.querySelector('.home-tile-sym'), SYM(sym));
     });
-    setHomeChartCoins(shown);
 }
 
 function renderMarket() {
@@ -182,6 +181,45 @@ function renderAccount() {
     set('homePnlToday', signed(todayPnl), tone(todayPnl));
     set('homeOpenCount', String(open.length));
     set('homeOpenPnl', open.length ? signed(floating) : '—', open.length ? tone(floating) : '');
+}
+
+// Il tocco su una coin in alto apre il suo grafico in Mercato
+export function openHomeCoin(tile) {
+    const sym = tile && tile.dataset && tile.dataset.symbol;
+    if (!sym) return;
+    window.switchTab('terminal');
+    if (window.setAsset) window.setAsset(sym);
+}
+
+// ---------- Ultime operazioni chiuse ----------
+// Simulato: le ultime chiuse dell'esecutore simulato (carta, live_trades.json). Reale: le ultime chiuse su Bitget.
+// Le righe che non entrano nello spazio rimasto si nascondono: niente scorrimento e niente righe tagliate a metà.
+const RECENT_MAX = 6;
+function recentTrades() {
+    if (tradingMode().mode === 'on') {
+        return realHistory().filter(h => h.closedAt).map(h => ({ t: typeof h.closedAt === 'number' ? h.closedAt : Date.parse(h.closedAt), symbol: h.symbol, side: h.type, pnl: h.pnl }));
+    }
+    const live = bot && bot.live;
+    return Object.values((live && live.positions) || {}).filter(p => p && p.status === 'closed' && p.net != null && p.closed_at)
+        .map(p => ({ t: Date.parse(p.closed_at), symbol: p.symbol, side: String(p.side).toUpperCase(), pnl: Number(p.net) }));
+}
+function renderRecent() {
+    const list = $('homeRecentList');
+    if (!list) return;
+    put($('homeRecentTitle'), tradingMode().mode === 'on' ? 'Ultime chiuse · reale' : 'Ultime chiuse · carta');
+    const rows = recentTrades().filter(x => x.t > 0).sort((a, b) => b.t - a.t).slice(0, RECENT_MAX);
+    const html = rows.length ? rows.map(x => `<div class="home-line"><span>${SYM(x.symbol)} ${x.side === 'SHORT' ? 'SHORT' : 'LONG'} <small>${ago((Date.now() - x.t) / 60000)}</small></span><b class="${tone(x.pnl)}">${signed(x.pnl)}</b></div>`).join('')
+        : '<div class="home-line home-empty"><span>Nessuna operazione chiusa ancora</span></div>';
+    if (list.dataset.sig !== html) { list.dataset.sig = html; list.innerHTML = html; }
+    fitRecent(list);
+}
+// Mostra solo le righe che entrano per intero nello spazio della scheda
+function fitRecent(list) {
+    const rows = [...list.children];
+    rows.forEach(r => { r.style.visibility = ''; r.hidden = false; });
+    const limit = list.clientHeight;
+    if (!limit) return;
+    rows.forEach(r => { if (r.offsetTop + r.offsetHeight > limit + 1) r.hidden = true; });
 }
 
 // ---------- Automazione ----------
