@@ -191,6 +191,22 @@ try {
             // Posizioni resta fuori: i prezzi dal vivo arrivano dalla rete dopo l'apertura, non sono dati in memoria.
             for (const [l, t, w] of ready) if ((l.startsWith('Agente') || /^pagina (log|signals|journal)$/.test(l)) && t > 300) problems.push(`${dev.n}, ${tag}: ${l} pronta dopo ${t} ms (${w}): deve disegnarsi subito dai dati in memoria`);
         }
+        // Risultati: cambiando periodo (Oggi, Settimana, ...) e fonte (Reale, Carta) nulla si sposta né cambia misura
+        await page.evaluate(() => window.switchTab('journal'));
+        await page.waitForTimeout(700);
+        const resSig = async () => page.evaluate(() => {
+            const r = e => { const b = e.getBoundingClientRect(); return [b.top, b.left, b.width, b.height].map(Math.round).join(','); };
+            const parts = [document.querySelector('#page-journal .header-row'), document.getElementById('resTabs'), ...document.getElementById('resBody').children];
+            return parts.map(r).join(' | ') + ' | zoom ' + document.documentElement.style.getPropertyValue('--fit-zoom-journal');
+        });
+        const resSigs = {};
+        for (const sv of ['real', 'paper']) for (const pv of ['day', 'week', 'month', 'year', 'all']) {
+            await page.evaluate(([a, b]) => { window.setResultsSource(a); window.setResultsPeriod(b); }, [sv, pv]);
+            await page.waitForTimeout(450);
+            resSigs[`${sv}/${pv}`] = await resSig();
+        }
+        const resKeys = Object.keys(resSigs);
+        for (const kk of resKeys.slice(1)) if (resSigs[kk] !== resSigs[resKeys[0]]) problems.push(`${dev.n}, ${tag}: Risultati si sposta o cambia misura tra ${resKeys[0]} e ${kk}\n    ${resSigs[resKeys[0]]}\n    ${resSigs[kk]}`);
         // Home: schede una sotto l'altra, tutte sopra la barra in basso e senza righe tagliate; l'ultima riempie lo spazio rimasto
         await page.evaluate(() => window.switchTab('home'));
         await page.waitForTimeout(700);

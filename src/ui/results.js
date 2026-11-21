@@ -163,13 +163,13 @@ export async function renderResults() {
         + `<b class="${tone(x.pnl)}">${money(x.pnl)}${unit}</b></div>`).join('');
     box.innerHTML = `
         <div class="card-box res-big"><small>${escapeHtml(periodLabel(period))} · ${escapeHtml(note)}</small>
-            <b class="${tone(s.total)}">${money(s.total)}${unit}</b>${pct != null ? `<span class="${tone(s.total)}">${money(pct, 1)}%</span>` : ''}</div>
+            <b class="${tone(s.total)}">${money(s.total)}${unit}</b>${pct != null ? `<span class="${tone(s.total)}">${money(pct, 1)}%</span>` : '<span class="res-ghost">&nbsp;</span>'}</div>
         <div class="card-box res-chart">${spark(s.curve)}</div>
         <div class="res-kpis"><div><small>Trade</small><b>${s.list.length}</b></div><div><small>Vincenti</small><b>${s.list.length ? fmtIt(s.wins / s.list.length * 100, 0) + '%' : '—'}</b></div>
             <div><small>Costi</small><b class="text-warning">${paper ? 'inclusi' : (s.fees ? '−' + fmtIt(s.fees, 2) : '0')}</b></div><div><small>Calo max</small><b class="${s.dd ? 'text-danger' : ''}">${s.dd ? ddTxt : '0'}</b></div></div>
         <div class="section-title"><span>Da dove viene</span></div>
-        <div class="res-hlist">${coinCards || '<div class="empty-hint">Nessun trade chiuso nel periodo.</div>'}</div>
+        <div class="res-hlist">${coinCards || `<div class="res-mini res-ghost" aria-hidden="true"><b>BTC</b><b>0</b><small>0 trade</small></div><div class="empty-hint res-empty">Nessun trade chiuso nel periodo.</div>`}</div>
         <div class="section-title"><span>Trade chiusi <small class="auto-count">${s.list.length || ''}</small></span>
             <span class="section-actions">${src === 'real' ? Object.entries(WHO).map(([k, l]) => `<button class="btn-link-secondary${k === who ? ' on' : ''}" onclick="setResultsWho('${k}')">${l}</button>`).join('') : ''}</span></div>
-        <div class="res-hlist res-trades">${tradeCards || '<div class="empty-hint">Nessun trade chiuso nel periodo.</div>'}</div>`;
+        <div class="res-hlist res-trades">${tradeCards || `<div class="res-trade res-ghost" aria-hidden="true"><div class="res-trade-h"><b>BTC</b><small>00/00</small></div><small>0 → 0</small><b>0</b></div><div class="empty-hint res-empty">Nessun trade chiuso nel periodo.</div>`}</div>`;
 }
