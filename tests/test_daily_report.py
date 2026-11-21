@@ -15,6 +15,7 @@ NOW = datetime(2026, 11, 12, 8, 17, tzinfo=timezone.utc)
 
 def files(d, emergency=False, halted=False):
     paths = {k: os.path.join(d, f"{k}.json") for k in ("futures", "paper", "live", "automation", "lab")}
+    paths["paper_account"] = os.path.join(d, "paper_account_assente.json")      # mai il file vero del repository
     json.dump({"symbols": {"BTCUSDT": {"funding_rate_pct": 0.01, "open_interest_change_24h_pct": -3.2}}}, open(paths["futures"], "w"))
     json.dump({"strategies": {"big_candle_trail:1d": {"mode": "paper", "stats": {"n": 3, "open": 1, "win_rate": 66.7, "avg_net_pct": 1.234, "vs_backtest": {"verdict": "sotto"}}},
                               "donchian55:1d": {"mode": "off", "stats": {"n": 9, "open": 0}}}}, open(paths["paper"], "w"))
@@ -51,11 +52,17 @@ def test_contenuto():
         json.dump({"proposals": [{"key": "big_candle_trail:1d"}]}, open(os.path.join(d, "agent_state.json"), "w"))
         t2 = dr.build({}, NOW, {**files(d), "agent": os.path.join(d, "agent_state.json")})
         assert "proposta per il reale: big candle trail:1d" in t2 and "_" not in t2
+        pa = os.path.join(d, "paper_account.json")
+        json.dump({"simulated": {"equity": 1012.5, "start": 1000},
+                   "positions": {"a": {"status": "open"}, "b": {"status": "closed", "net": 15.0}, "c": {"status": "closed", "net": -2.5}, "d": {"status": "skipped"}}}, open(pa, "w"))
+        t3 = dr.build({}, NOW, {**files(d), "paper_account": pa})
+        assert "Conto carta: 1.012,50 USDT (+12,50 da 1.000), 1 aperte, 2 chiuse (netto +12,50 USDT)" in t3 and "_" not in t3
+        assert "Conto carta" not in text                                                           # senza file: nessuna riga
         alarm = dr.build({}, NOW, files(d, emergency=True, halted=True))
         assert "EMERGENZA ATTIVA" in alarm and "BLOCCATO" in alarm
     # senza file: riepilogo comunque leggibile, nessun errore
     with tempfile.TemporaryDirectory() as d:
-        text = dr.build({}, NOW, {k: os.path.join(d, "manca.json") for k in ("futures", "paper", "live", "automation", "lab")})
+        text = dr.build({}, NOW, {k: os.path.join(d, "manca.json") for k in ("futures", "paper", "live", "automation", "lab", "paper_account")})
         assert "Strategie attive: nessuna" in text and "nessuna attività" in text
 
 
