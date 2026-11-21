@@ -36,7 +36,6 @@ window.KState = State;
 // Account (icona in Home) e Opzioni (barra in basso): src/ui/account.js
 window.openAccount = AccountUI.openAccount;
 window.setTheme = AccountUI.setTheme;
-window.setStatusBar = AccountUI.setStatusBar;
 window.setGlass = AccountUI.setGlass;
 window.renderAccount = AccountUI.renderAccount;
 window.setTradingMode = AutoUI.setTradingMode;

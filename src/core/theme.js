@@ -4,7 +4,6 @@
 // l'app è aperta. Chi deve ridisegnarsi (i grafici) ascolta l'evento "pt-theme".
 
 const KEY = 'pt_theme';
-const BAR_KEY = 'pt_statusbar';     // 'integrated' | 'separate'
 const MODES = ['auto', 'light', 'dark'];
 const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: light)') : null;
 
@@ -24,7 +23,7 @@ export function applyTheme() {
     const meta = document.getElementById('metaThemeColor');
     if (meta) meta.setAttribute('content', theme === 'light' ? '#f2f2f7' : '#000000');
     const bar = document.getElementById('metaStatusBar');
-    if (bar) bar.setAttribute('content', theme === 'light' ? 'default' : (getStatusBarPref() === 'separate' ? 'black' : 'black-translucent'));
+    if (bar) bar.setAttribute('content', theme === 'light' ? 'default' : 'black-translucent');
     window.dispatchEvent(new CustomEvent('pt-theme', { detail: theme }));
     return theme;
 }
@@ -60,14 +59,6 @@ export function setGlassPref(pref) {
     document.documentElement.classList.toggle('glass-anim', pref === 'anim');
     applyTheme();      // i grafici si ridipingono (sfondo trasparente col vetro)
     requestAnimationFrame(syncWalls);
-}
-
-export function getStatusBarPref() {
-    try { return localStorage.getItem(BAR_KEY) === 'separate' ? 'separate' : 'integrated'; } catch (e) { return 'integrated'; }
-}
-export function setStatusBarPref(pref) {
-    try { localStorage.setItem(BAR_KEY, pref === 'separate' ? 'separate' : 'integrated'); } catch (e) {}
-    applyTheme();
 }
 
 // Sfondo dinamico: ogni schermata intera (app, finestre, Assistente, blocco) ha le sue luci. Tutte agganciate allo

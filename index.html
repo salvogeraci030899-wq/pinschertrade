@@ -17,7 +17,7 @@
     <script>
         // Nomi vecchi (SGTRADER) della memoria del telefono: passano ai nuovi una volta sola, prima di tutto il resto
         (function() {
-            var map = { sg_lock: 'pt_lock', sgt_theme: 'pt_theme', sgt_statusbar: 'pt_statusbar', sgt_glass: 'pt_glass', sgt_data_key: 'pt_data_key',
+            var map = { sg_lock: 'pt_lock', sgt_theme: 'pt_theme', sgt_glass: 'pt_glass', sgt_data_key: 'pt_data_key',
                 sg_account_refresh_at: 'pt_account_refresh_at', sg_pos_view: 'pt_pos_view', kronos_state_v3: 'pt_state_v3', kronos_signals_v1: 'pt_signals_v1',
                 kronos_gh_token: 'pt_gh_token', kronos_app_key: 'pt_app_key', kronos_api_base: 'pt_api_base', kronos_refresh_start_ts: 'pt_refresh_start_ts' };
             try {
@@ -41,17 +41,13 @@
             var pref = 'auto';
             try { pref = localStorage.getItem('pt_theme') || 'auto'; } catch (e) {}
             var light = pref === 'light' || (pref === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches);
-            var bar = 'integrated';
-            try { bar = localStorage.getItem('pt_statusbar') || 'integrated'; } catch (e) {}
             document.documentElement.setAttribute('data-theme', light ? 'light' : 'dark');
             // Vetro (Opzioni → Aspetto): spento finché non lo accendi
             try { var g = localStorage.getItem('pt_glass'); if (g === 'on' || g === 'anim') document.documentElement.classList.add('glass'); if (g === 'anim') document.documentElement.classList.add('glass-anim'); } catch (e) {}
             if (light) document.getElementById('metaThemeColor').setAttribute('content', '#f2f2f7');
-            // Barra di stato di iOS (rilette solo all'apertura dell'app):
-            //   integrata: la pagina passa sotto l'ora e la batteria (black-translucent, testo bianco);
-            //   separata: barra piena disegnata da iOS, la pagina comincia sotto (niente sfocatura sul contenuto).
-            //   In chiaro c'è solo "default" (barra piena, testo scuro): black-translucent avrebbe il testo bianco.
-            document.getElementById('metaStatusBar').setAttribute('content', light ? 'default' : (bar === 'separate' ? 'black' : 'black-translucent'));
+            // Barra di stato di iOS, sempre integrata: la pagina passa sotto l'ora e la batteria (black-translucent, testo bianco).
+            // In chiaro c'è solo "default" (barra piena, testo scuro): black-translucent avrebbe il testo bianco.
+            document.getElementById('metaStatusBar').setAttribute('content', light ? 'default' : 'black-translucent');
         })();
     </script>
 
@@ -67,50 +63,50 @@
 
     <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <link rel="stylesheet" href="./tokens.css?v=215">
-    <link rel="stylesheet" href="./style.css?v=215">
-    <meta name="app-version" content="215">
+    <link rel="stylesheet" href="./tokens.css?v=216">
+    <link rel="stylesheet" href="./style.css?v=216">
+    <meta name="app-version" content="216">
     <!-- importmap:start (generata da tools/bump_version.py, non modificare a mano) -->
     <script type="importmap">
     {
         "imports": {
-            "./src/core/backup.js": "./src/core/backup.js?v=215",
-            "./src/core/commands.js": "./src/core/commands.js?v=215",
-            "./src/core/config.js": "./src/core/config.js?v=215",
-            "./src/core/datacrypt.js": "./src/core/datacrypt.js?v=215",
-            "./src/core/labEngine.js": "./src/core/labEngine.js?v=215",
-            "./src/core/logger.js": "./src/core/logger.js?v=215",
-            "./src/core/rules.js": "./src/core/rules.js?v=215",
-            "./src/core/state.js": "./src/core/state.js?v=215",
-            "./src/core/strategy-status.js": "./src/core/strategy-status.js?v=215",
-            "./src/core/telegram.js": "./src/core/telegram.js?v=215",
-            "./src/core/theme.js": "./src/core/theme.js?v=215",
-            "./src/main.js": "./src/main.js?v=215",
-            "./src/ui/a11y.js": "./src/ui/a11y.js?v=215",
-            "./src/ui/account.js": "./src/ui/account.js?v=215",
-            "./src/ui/ai.js": "./src/ui/ai.js?v=215",
-            "./src/ui/assistant.js": "./src/ui/assistant.js?v=215",
-            "./src/ui/automation.js": "./src/ui/automation.js?v=215",
-            "./src/ui/backtest.js": "./src/ui/backtest.js?v=215",
-            "./src/ui/calculator.js": "./src/ui/calculator.js?v=215",
-            "./src/ui/chart.js": "./src/ui/chart.js?v=215",
-            "./src/ui/history.js": "./src/ui/history.js?v=215",
-            "./src/ui/home.js": "./src/ui/home.js?v=215",
-            "./src/ui/lab.js": "./src/ui/lab.js?v=215",
-            "./src/ui/lock.js": "./src/ui/lock.js?v=215",
-            "./src/ui/log.js": "./src/ui/log.js?v=215",
-            "./src/ui/manual.js": "./src/ui/manual.js?v=215",
-            "./src/ui/market-panels.js": "./src/ui/market-panels.js?v=215",
-            "./src/ui/market.js": "./src/ui/market.js?v=215",
-            "./src/ui/marquee.js": "./src/ui/marquee.js?v=215",
-            "./src/ui/orders.js": "./src/ui/orders.js?v=215",
-            "./src/ui/page-fit.js": "./src/ui/page-fit.js?v=215",
-            "./src/ui/results.js": "./src/ui/results.js?v=215",
-            "./src/ui/signals.js": "./src/ui/signals.js?v=215",
-            "./src/ui/terminal.js": "./src/ui/terminal.js?v=215",
-            "./src/ui/trade.js": "./src/ui/trade.js?v=215",
-            "./src/ui/windows.js": "./src/ui/windows.js?v=215",
-            "./src/utils/helpers.js": "./src/utils/helpers.js?v=215"
+            "./src/core/backup.js": "./src/core/backup.js?v=216",
+            "./src/core/commands.js": "./src/core/commands.js?v=216",
+            "./src/core/config.js": "./src/core/config.js?v=216",
+            "./src/core/datacrypt.js": "./src/core/datacrypt.js?v=216",
+            "./src/core/labEngine.js": "./src/core/labEngine.js?v=216",
+            "./src/core/logger.js": "./src/core/logger.js?v=216",
+            "./src/core/rules.js": "./src/core/rules.js?v=216",
+            "./src/core/state.js": "./src/core/state.js?v=216",
+            "./src/core/strategy-status.js": "./src/core/strategy-status.js?v=216",
+            "./src/core/telegram.js": "./src/core/telegram.js?v=216",
+            "./src/core/theme.js": "./src/core/theme.js?v=216",
+            "./src/main.js": "./src/main.js?v=216",
+            "./src/ui/a11y.js": "./src/ui/a11y.js?v=216",
+            "./src/ui/account.js": "./src/ui/account.js?v=216",
+            "./src/ui/ai.js": "./src/ui/ai.js?v=216",
+            "./src/ui/assistant.js": "./src/ui/assistant.js?v=216",
+            "./src/ui/automation.js": "./src/ui/automation.js?v=216",
+            "./src/ui/backtest.js": "./src/ui/backtest.js?v=216",
+            "./src/ui/calculator.js": "./src/ui/calculator.js?v=216",
+            "./src/ui/chart.js": "./src/ui/chart.js?v=216",
+            "./src/ui/history.js": "./src/ui/history.js?v=216",
+            "./src/ui/home.js": "./src/ui/home.js?v=216",
+            "./src/ui/lab.js": "./src/ui/lab.js?v=216",
+            "./src/ui/lock.js": "./src/ui/lock.js?v=216",
+            "./src/ui/log.js": "./src/ui/log.js?v=216",
+            "./src/ui/manual.js": "./src/ui/manual.js?v=216",
+            "./src/ui/market-panels.js": "./src/ui/market-panels.js?v=216",
+            "./src/ui/market.js": "./src/ui/market.js?v=216",
+            "./src/ui/marquee.js": "./src/ui/marquee.js?v=216",
+            "./src/ui/orders.js": "./src/ui/orders.js?v=216",
+            "./src/ui/page-fit.js": "./src/ui/page-fit.js?v=216",
+            "./src/ui/results.js": "./src/ui/results.js?v=216",
+            "./src/ui/signals.js": "./src/ui/signals.js?v=216",
+            "./src/ui/terminal.js": "./src/ui/terminal.js?v=216",
+            "./src/ui/trade.js": "./src/ui/trade.js?v=216",
+            "./src/ui/windows.js": "./src/ui/windows.js?v=216",
+            "./src/utils/helpers.js": "./src/utils/helpers.js?v=216"
         }
     }
     </script>
@@ -257,12 +253,6 @@
                             <button type="button" data-pref="auto" onclick="setTheme('auto')">Auto</button>
                             <button type="button" data-pref="light" onclick="setTheme('light')">Chiaro</button>
                             <button type="button" data-pref="dark" onclick="setTheme('dark')">Scuro</button>
-                        </div>
-                    </div>
-                    <div class="set-row set-static"><span class="set-label">Barra di stato</span>
-                        <div class="theme-toggle" id="statusBarToggle">
-                            <button type="button" data-bar="integrated" onclick="setStatusBar('integrated')">Integrata</button>
-                            <button type="button" data-bar="separate" onclick="setStatusBar('separate')">Separata</button>
                         </div>
                     </div>
                     <div class="set-row set-static"><span class="set-label">Vetro</span>
@@ -900,7 +890,7 @@
 <div class="info-slide">
 <div class="rule-card">
 <div class="rule-card-title blue">Opzioni · aspetto</div>
-<div class="rule-step"><div class="content"><b>Aspetto</b> · Auto (segue iOS), Chiaro o Scuro. <b>Vetro</b> · No, Statico o Dinamico (Dinamico muove piano lo sfondo e consuma più batteria). <b>Barra di stato</b> · Integrata o Separata. Valgono solo su questo dispositivo.</div></div>
+<div class="rule-step"><div class="content"><b>Aspetto</b> · Auto (segue iOS), Chiaro o Scuro. <b>Vetro</b> · No, Statico o Dinamico (Dinamico muove piano lo sfondo e consuma più batteria). Valgono solo su questo dispositivo.</div></div>
 <div class="rule-step"><div class="content"><b>Icona</b> · sulla schermata home resta quella scura: per vedere la nuova togli e riaggiungi l'app.</div></div>
 <div class="rule-step"><div class="content"><b>Primo avvio</b> · Opzioni → Altro → Connessioni: token GitHub fine-grained, solo su PinscherTrade, con «Actions: Read and write».</div></div>
 </div>
@@ -1115,6 +1105,6 @@ PinscherTrade · Manuale<br>
     </div>
 </div>
 
-<script type="module" src="./src/main.js?v=215"></script>
+<script type="module" src="./src/main.js?v=216"></script>
 </body>
 </html>
