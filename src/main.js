@@ -20,6 +20,7 @@ import * as Orders from './ui/orders.js';
 import { initPageFit, refitPages } from './ui/page-fit.js';
 import { initA11y } from './ui/a11y.js';
 import { initMarquee } from './ui/marquee.js';
+import { initTitleIcon } from './ui/title-icon.js';
 import { normalizeWindows } from './ui/windows.js';
 import * as Market from './ui/market.js';
 import * as Results from './ui/results.js';
@@ -352,6 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initManual();
     initPageFit();
+    initTitleIcon();            // icona in alto a sinistra di ogni titolo (prima di a11y: i titoli diventano tasti)
     initA11y();
     initMarquee();
     setTimeout(() => Log.prefetchLog(), 1500);          // il Registro si apre già pronto

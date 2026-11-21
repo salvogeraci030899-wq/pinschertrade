@@ -79,7 +79,14 @@ main {
 .section-title { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); font-size: var(--fs-md); font-weight: 700; color: var(--text); margin: var(--sp-2) 0 var(--sp-3); flex-shrink: 0; min-height: 24px; }
 /* Il titolo prende lo spazio libero e il sottotitolo resta su una riga: così i tasti a destra
    (selettori, icone) hanno sempre la stessa misura e non si spostano quando cambia il testo */
-.header-title { flex: 1 1 auto; min-width: 0; }
+.header-title { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; cursor: pointer; }
+.title-text { min-width: 0; flex: 1 1 auto; }
+/* Icona dell'app a sinistra del titolo: un tocco sul titolo la mostra o la nasconde (src/ui/title-icon.js) */
+.title-icon { flex: none; width: 40px; height: 40px; margin-right: var(--sp-3); border-radius: var(--r-md); border: 1px solid var(--border); background: url(./icons/icon-180.png?v=3) center / cover no-repeat; opacity: 1; transform: scale(1);
+    transition: width var(--dur) var(--ease), margin var(--dur) var(--ease), opacity var(--dur) var(--ease), transform var(--dur) var(--ease), border-width var(--dur) var(--ease); }
+html[data-theme="light"] .title-icon { background-image: url(./icons/icon-light-512.png?v=3); }
+html.title-icon-off .title-icon { width: 0; margin-right: 0; opacity: 0; transform: scale(0.5); border-width: 0; }
+@media (prefers-reduced-motion: reduce) { .title-icon { transition: none; } }
 .header-row > :not(.header-title) { flex-shrink: 0; }
 .header-title h1 { font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.5px; }
 .header-title p { font-size: var(--fs-sm); color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
