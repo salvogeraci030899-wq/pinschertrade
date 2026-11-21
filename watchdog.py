@@ -4,6 +4,7 @@ Se qualcosa non va manda un avviso su Telegram (anche quando il bot stesso non p
 Controlla:
 - che il bot sia partito di recente e che l'ultimo giro non sia fallito;
 - che l'esecutore non sia bloccato e che non ci sia un'emergenza attiva;
+- che il conto della carta (sempre acceso) si aggiorni e non sia bloccato;
 - che l'archivio futures non sia vecchio (aggiornamento settimanale fallito);
 - che il controllo rapido (avvisi di prezzo, chiusure Bitget) e l'agente girino e non falliscano.
 
@@ -32,7 +33,7 @@ def _read(path):
         return None
 
 
-def checks(now, last_run, last_conclusion, live=None, automation=None, archive_last_day=None, others=None):
+def checks(now, last_run, last_conclusion, live=None, automation=None, archive_last_day=None, others=None, paper=None):
     """Lista dei problemi trovati (testi brevi in italiano). Vuota se va tutto bene."""
     problems = []
     if last_run is None:
@@ -46,6 +47,15 @@ def checks(now, last_run, last_conclusion, live=None, automation=None, archive_l
             problems.append(f"L'ultimo giro del bot è finito con esito: {last_conclusion}. Controlla i log in GitHub, scheda Actions.")
     if live and live.get("halted"):
         problems.append("L'esecutore è BLOCCATO (posizioni su Bitget diverse dal previsto o emergenza). Controlla Bitget, poi Sblocca nell'app.")
+    if paper:                               # conto della carta (sempre acceso): fermo o bloccato
+        if paper.get("halted"):
+            problems.append("Il conto della carta è BLOCCATO: la carta non lavora finché non lo sblocchi dall'app.")
+        try:
+            gap = (now - datetime.fromisoformat(str(paper.get("updated_at")).replace("Z", "+00:00"))).total_seconds() / 3600
+            if gap > MAX_BOT_GAP_HOURS:
+                problems.append(f"Il conto della carta non si aggiorna da {gap:.0f} ore (limite {MAX_BOT_GAP_HOURS:g}).")
+        except (ValueError, TypeError):
+            pass                            # nessuna marca (file nuovo o vecchio): niente allarme
     if automation and automation.get("emergency"):
         problems.append("Emergenza attiva: automazione ferma finché non la sblocchi dall'app.")
     for key, (when, conclusion) in (others or {}).items():
@@ -114,7 +124,7 @@ if __name__ == "__main__":
     when = lambda v: datetime.fromisoformat(v.replace("Z", "+00:00")) if v else None  # noqa: E731
     last_run = when(args.last_run)
     others = {k: (when(getattr(args, f"{k}_run")), getattr(args, f"{k}_conclusion") or None) for k in WATCHED}
-    found = checks(now, last_run, args.last_conclusion or None, _read("live_trades.json"), _read("automation.json"), archive_last_day(), others)
+    found = checks(now, last_run, args.last_conclusion or None, _read("live_trades.json"), _read("automation.json"), archive_last_day(), others, _read("paper_account.json"))
     if found:
         text = "🩺 PinscherTrade, CONTROLLO DI SALUTE\n" + "\n".join(f"- {p}" for p in found)
         print(text)
