@@ -75,6 +75,11 @@ def automation_step(frames, notify=None):
         print(f"Esecutore non eseguito: {e}")
         notify(f"⚠️ Esecutore: errore inatteso ({e}). Controlla le posizioni su Bitget.")
     try:
+        # la carta lavora sempre, anche con gli ordini veri accesi: conto suo (paper_account.json), nessun avviso doppio
+        executor.run_paper_account(cfg, paper_ledger, near_keys=automation.near_keys(), candidate_keys=automation.candidate_keys())
+    except Exception as e:
+        print(f"Conto della carta non aggiornato: {e}")
+    try:
         executor.account_snapshot(notify=notify)
     except Exception as e:
         print(f"Lettura del conto Bitget non riuscita: {e}")

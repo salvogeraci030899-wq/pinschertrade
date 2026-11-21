@@ -79,7 +79,7 @@ export function setCtxLabel() {
 
 // Capitale di partenza in Simulato: il patrimonio della carta (l'esecutore simulato), o il capitale di prova
 function paperCapital() {
-    const st = getAutoState(), sim = st.live && st.live.simulated;
+    const st = getAutoState(), sim = st.paper && st.paper.simulated;
     const eq = sim && Number(sim.equity);
     return eq > 0 ? eq : Number(st.cfg && st.cfg.risk && st.cfg.risk.dry_run_equity) || 1000;
 }
