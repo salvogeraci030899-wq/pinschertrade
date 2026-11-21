@@ -190,7 +190,7 @@ function simAccount() {
     for (const p of skipped) { const k = String(p.reason || 'altro').replace(/^già \d+ posizioni (long|short) aperte.*/, 'già troppe posizioni nello stesso verso'); reasons[k] = (reasons[k] || 0) + 1; }
     const why = Object.entries(reasons).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${escapeHtml(k)} (${n})`).join(' · ');
     const r = riskCfg, lim = [`rischio ${fmtIt(r.risk_per_trade_pct ?? 0.5, 2)}% a trade`, `leva ${r.max_leverage ?? 3}x`, `max ${r.max_open_positions ?? 3} posizioni`, `${r.max_same_direction ?? 2} nello stesso verso`, `stop del giorno −${fmtIt(r.max_daily_loss_pct ?? 3, 1)}%`].join(' · ');
-    const day = live.day || {}, dayTxt = day.blocked ? '<br><span class="text-danger">limite di perdita del giorno raggiunto: nessun nuovo ingresso fino a domani</span>' : day.target_hit ? '<br><span class="text-accent">obiettivo del giorno raggiunto: nessun nuovo ingresso fino a domani</span>' : '';
+    const day = simSrc().day || {}, dayTxt = day.blocked ? '<br><span class="text-danger">limite di perdita del giorno raggiunto: nessun nuovo ingresso fino a domani</span>' : day.target_hit ? '<br><span class="text-accent">obiettivo del giorno raggiunto: nessun nuovo ingresso fino a domani</span>' : '';
     return `<div class="ord-sec bot-acc"><div class="ord-title">Conto su carta del bot</div>`
         + `<div class="bot-acc-main"><b>${fmtIt(total, 2)} $</b><span class="${tone(total - start)}">${usd(total - start)}</span></div>`
         + `<small>chiusi ${closed.length}: <span class="${tone(netClosed)}">${usd(netClosed)}</span> · aperti ${nOpen}: <span class="${tone(unreal)}">${usd(unreal)}</span>`
