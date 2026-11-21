@@ -176,7 +176,7 @@ export function renderSignalGrid() {
     // pagine da 3 coin (3 timeframe ciascuna) che scorrono di lato
     const pages = [];
     for (let i = 0; i < signalOrder.length; i += 3) pages.push(signalOrder.slice(i, i + 3));
-    const prevPage = grid.clientWidth ? Math.round(grid.scrollLeft / grid.clientWidth) : 0;
+    const prevPage = grid.clientWidth ? Math.round(grid.scrollLeft / gridStride(grid)) : 0;
     const html = pages.map(assets => `<div class="signal-page">${assets.map(cells).join('')}</div>`).join('');
     // niente ridisegno se non è cambiato nulla, né mentre scorri col dito (la pagina saltava all'inizio)
     if (grid.dataset.sig === html) return;
@@ -184,7 +184,7 @@ export function renderSignalGrid() {
     grid.dataset.sig = html;
     grid.innerHTML = html;
     grid.style.scrollBehavior = 'auto';
-    grid.scrollLeft = prevPage * grid.clientWidth;
+    grid.scrollLeft = prevPage * gridStride(grid);
     grid.style.scrollBehavior = '';
     const dots = $('signalDots');
     if (dots) dots.innerHTML = pages.map((_, i) => `<div class="info-dot${i === prevPage ? ' active' : ''}" onclick="goToSignalPage(${i})"></div>`).join('');
@@ -209,7 +209,12 @@ export function orderSignalAssets() {
     if (g) g.scrollLeft = 0;
 }
 
-export function goToSignalPage(i) { const g = $('signalGrid'); if (g) g.scrollTo({ left: i * g.clientWidth, behavior: 'smooth' }); }
+// Passo reale tra una pagina e l'altra della griglia (larghezza + spazio)
+function gridStride(grid) {
+    const pages = grid.querySelectorAll('.signal-page');
+    return pages.length > 1 ? pages[1].offsetLeft - pages[0].offsetLeft : (grid.clientWidth || 1);
+}
+export function goToSignalPage(i) { const g = $('signalGrid'); if (g) g.scrollTo({ left: i * gridStride(g), behavior: 'smooth' }); }
 let dotsFrame = 0;
 export function updateSignalDots() {
     if (dotsFrame) return;
@@ -218,7 +223,7 @@ export function updateSignalDots() {
         const g = $('signalGrid');
         if (!g || !g.clientWidth) return;
         touchUntil = Math.max(touchUntil, Date.now() + 300);      // finché scorre, la griglia non si ridisegna
-        const i = Math.round(g.scrollLeft / g.clientWidth);
+        const i = Math.round(g.scrollLeft / gridStride(g));
         document.querySelectorAll('#signalDots .info-dot').forEach((d, k) => d.classList.toggle('active', k === i));
     });
 }
