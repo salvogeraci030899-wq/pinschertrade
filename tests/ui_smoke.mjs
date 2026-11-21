@@ -128,7 +128,13 @@ try {
                     const mo = new MutationObserver(ms => {
                         let styleChange = false, changed = null;
                         for (const m of ms) {
-                            if (m.target === document.documentElement) { styleChange = true; continue; }
+                            if (m.target === document.documentElement) {
+                                // conta solo se cambia lo zoom della pagina che si sta guardando (le altre pagine non si vedono)
+                                const pg = ((document.querySelector('.page.active') || {}).id || '').replace('page-', '');
+                                const zoomOf = st => (String(st || '').match(new RegExp('--fit-zoom-' + pg + ':\\s*([0-9.]+)')) || [])[1];
+                                if (zoomOf(m.oldValue) !== zoomOf(document.documentElement.getAttribute('style'))) styleChange = true;
+                                continue;
+                            }
                             if (m.target.closest && m.target.closest('.nav-wrap')) continue;     // la barra in basso non è contenuto
                             const el = m.target.nodeType === 1 ? m.target : m.target.parentElement;
                             if (el && el.getClientRects().length === 0) continue;               // elemento nascosto: non si vede
@@ -138,11 +144,11 @@ try {
                         if (styleChange) { last = performance.now() - t0; what = 'zoom di adattamento'; }
                     });
                     mo.observe(document.querySelector('main'), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style', 'class', 'width', 'height'] });
-                    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });   // zoom di adattamento
+                    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'], attributeOldValue: true });   // zoom di adattamento
                     window[fn](arg);
                     setTimeout(() => { mo.disconnect(); resolve([Math.round(last), what]); }, 1500);
                 }), [fn, arg]);
-                ready.push([label, ...r]);
+                ready.push([label, r[0], r[1]]);
             }
             dataDelay = 0;
             await cdp2.send('Emulation.setCPUThrottlingRate', { rate: 1 });
@@ -311,25 +317,25 @@ try {
         await page.evaluate(() => { window.switchTab('signals'); window.setSignalsView('agent'); });
         await page.waitForTimeout(800);
         // Strategie su carta: lo stato viene dal laboratorio e vale per chiunque le abbia messe (agente o tu).
-        // Dati di prova: 3 su carta = 1 candidata, 1 in osservazione, 1 bocciata alla prova finale (la quarta è spenta).
+        // Dati di prova: 4 su carta = 1 candidata, 1 quasi candidata, 1 in osservazione, 1 bocciata alla prova finale.
         await step('agente: la riga Stato conta le strategie per stato del laboratorio', async () => {
             const t = await page.evaluate(() => document.getElementById('agentStatus').innerText.replace(/\s+/g, ' '));
-            return /3 su carta · 0 reali/.test(t) && /1 candidata · 1 in osservazione · 1 bocciata/.test(t);
+            return /4 su carta · 0 reali/.test(t) && /1 candidata · 1 quasi candidata · 1 in osservazione · 1 bocciata/.test(t);
         });
         await step('agente: ogni scheda strategia ha la sua etichetta di stato', async () => {
             await page.evaluate(() => window.setSignalsView('auto')); await page.waitForTimeout(400);
             const tags = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#autoList .auto-item')].map(i => [i.querySelector('.auto-open-trades').textContent.replace(/[›\s]+$/, '').trim(), (i.querySelector('.auto-tag') || {}).textContent || ''])));
             await page.evaluate(() => window.setSignalsView('agent')); await page.waitForTimeout(300);
-            return tags['big candle trail 1d'] === 'bocciata' && tags['tsmom30 1d'] === 'osservazione' && tags['donchian20 long 1d'] === 'candidata' && tags['donchian20 turtle 1d'] === 'osservazione';
+            return tags['big candle trail 1d'] === 'bocciata' && tags['tsmom30 1d'] === 'osservazione' && tags['donchian20 long 1d'] === 'candidata' && tags['donchian20 turtle 1d'] === 'quasi candidata';
         });
-        await step('agente: Osservazione Vicine chiede la conferma e non parte da sola', async () => {
-            await page.evaluate(() => window.setSignalsView('auto')); await page.waitForTimeout(400);
-            const n = await page.evaluate(() => document.querySelectorAll('#agentStyle .agent-set').length);
-            await page.locator('#agentStyle .agent-set').nth(1).locator('.pill-btn', { hasText: 'Vicine' }).click(); await page.waitForTimeout(300);
-            const m = await page.evaluate(() => ({ on: document.getElementById('autoConfirmModal').classList.contains('active'), t: document.getElementById('autoConfirmTitle').textContent }));
-            await page.evaluate(() => window.closeAutoConfirm());
-            await page.evaluate(() => window.setSignalsView('agent')); await page.waitForTimeout(300);
-            return n === 2 && m.on && /Osservazione vicine/.test(m.t);
+        await step('limiti di rischio: Alto rischio c\'è e chiede la conferma con l\'avviso, senza partire da solo', async () => {
+            await page.evaluate(() => { window.openAutoRisk(); });
+            const has = await page.evaluate(() => !!document.getElementById('risk_near_candidates') && /Alto rischio/.test(document.getElementById('autoRiskFields').innerText));
+            await page.evaluate(() => { document.getElementById('risk_near_candidates').value = '1'; window.saveAutoRisk(); });
+            await page.waitForTimeout(300);
+            const m = await page.evaluate(() => ({ on: document.getElementById('autoConfirmModal').classList.contains('active'), t: document.getElementById('autoConfirmMsg').innerText }));
+            await page.evaluate(() => { window.closeAutoConfirm(); window.closeAutoRisk(); });
+            return has && m.on && /ALTO RISCHIO/.test(m.t) && /sia su carta sia in Reale/.test(m.t);
         });
         await step('agente: Reale senza la conferma', async () => {
             await page.click('#agentSettings .pill-btn:has-text("Reale")'); await page.waitForTimeout(300);

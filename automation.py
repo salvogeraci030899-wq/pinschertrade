@@ -11,7 +11,6 @@ anche a mano:
     python automation.py agent autonomy live    # agente: off | paper | live (vedi agent.py)
     python automation.py agent profile prudente # profilo di rischio: imposta tutti i limiti insieme
     python automation.py agent style giornaliero    # timeframe su cui l'agente sceglie: swing | giornaliero | misto
-    python automation.py agent observe vicine      # osservazione su carta: base | vicine (le più vicine alla candidatura, anche gemelle)
 
 Regole che il codice fa rispettare, qualunque cosa arrivi dall'app:
 - si possono attivare solo strategie che esistono nel laboratorio, su timeframe su cui sono state provate;
@@ -69,6 +68,31 @@ def save(cfg, path=CONFIG_PATH):
         if os.path.exists(tmp):
             os.remove(tmp)
         raise
+
+
+NEAR_P = 0.10             # "non candidata per poco": p-value dell'eccesso sul mercato fino a 0,10
+NEAR_MIN_TRADES = 50      # storico minimo
+
+
+def is_near_candidate(key, r):
+    """Non candidata per poco: nel laboratorio, non candidata né già bocciata alla prova finale, abbastanza trade, sopra il mercato,
+    stabile nelle due metà del periodo e con p-value dell'eccesso fino a NEAR_P. Stessa regola di src/core/strategy-status.js."""
+    spec = lab_strategies.STRATEGIES.get(key.split(":", 1)[0]) or {}
+    p = r.get("excess_p")
+    return (spec.get("family") not in ("forza relativa", "funding") and not r.get("candidate") and not r.get("holdout")
+            and (r.get("n") or 0) >= NEAR_MIN_TRADES and (r.get("excess_avg_pct") or 0) > 0 and bool(r.get("stable"))
+            and p is not None and p <= NEAR_P)
+
+
+def near_keys(summary_path=SUMMARY_PATH):
+    """Strategie non candidate per poco (dal laboratorio). Vuoto se il file manca."""
+    try:
+        with open(summary_path) as f:
+            summary = json.load(f)
+    except Exception:
+        return set()
+    confirmed_keys = set(summary.get("confirmed") or []) | set(summary.get("candidates") or [])
+    return {k for k, r in (summary.get("results") or {}).items() if k not in confirmed_keys and is_near_candidate(k, r)}
 
 
 def confirmed(summary_path=SUMMARY_PATH):
@@ -145,7 +169,7 @@ def set_risk(cfg, field, value):
     lo, hi = executor.RISK_BOUNDS[field]
     if not lo <= v <= hi:
         raise CommandError(f"{field} deve essere tra {lo:g} e {hi:g}.")
-    if field in ("max_leverage", "max_open_positions", "max_same_direction", "real_follows_paper"):
+    if field in ("max_leverage", "max_open_positions", "max_same_direction", "real_follows_paper", "near_candidates"):
         if v != int(v):
             raise CommandError(f"{field} deve essere un numero intero.")
         v = int(v)
@@ -168,8 +192,7 @@ def set_trading(cfg, value):
 
 
 # --- Agente (agent.py): autonomia, profilo di rischio, stile ---
-AGENT_DEFAULT = {"autonomy": "paper", "profile": "bilanciato", "style": "swing", "observe": "base"}
-OBSERVE_MODES = ("base", "vicine")   # base: poche in osservazione, una per idea; vicine: fino a 6 su carta, anche gemelle, le più vicine alla candidatura
+AGENT_DEFAULT = {"autonomy": "paper", "profile": "bilanciato", "style": "swing"}
 AUTONOMY = ("off", "paper", "live")
 # Ogni profilo imposta tutti i limiti dell'esecutore insieme (restano modificabili uno per uno)
 PROFILES = {
@@ -221,10 +244,6 @@ def set_agent(cfg, field, value):
         if value not in STYLES:
             raise CommandError(f"Stile ammesso: {', '.join(STYLES)}.")
         extra = ""
-    elif field == "observe":
-        if value not in OBSERVE_MODES:
-            raise CommandError(f"Osservazione ammessa: {', '.join(OBSERVE_MODES)}.")
-        extra = " Con \"vicine\" l'agente tiene su carta, anche gemelle, le strategie che mancano la candidatura per poco." if value == "vicine" else ""
     else:
         raise CommandError(f"Impostazione dell'agente sconosciuta: {field}.")
     before = ag[field]

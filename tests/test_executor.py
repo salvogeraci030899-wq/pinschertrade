@@ -86,6 +86,24 @@ def test_solo_strategie_live():
         ex.run(cfg_f, ledger_f, bg.DryRunClient(10_000), "reale", os.path.join(d, "follow.json"), now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
         assert [p["status"] for p in json.load(open(os.path.join(d, "follow.json")))["positions"].values()] == ["open"]
         assert ex.risk_config({})["real_follows_paper"] == 0 and ex.RISK_BOUNDS["real_follows_paper"] == (0, 1)
+        # alto rischio (near_candidates): in REALE segue solo le strategie su carta "non candidate per poco", non tutte
+        cfg_n, ledger_n = setup([trade()], mode="paper", cfg_extra={"risk": {"near_candidates": 1}})
+        near_p = os.path.join(d, "near.json")
+        cl_near = bg.DryRunClient(10_000)
+        ex.run(cfg_n, ledger_n, cl_near, "reale", near_p, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, near_keys={"big_candle_trail:1d"})
+        assert [p["status"] for p in json.load(open(near_p))["positions"].values()] == ["open"]
+        far_p = os.path.join(d, "far.json")      # interruttore acceso ma la strategia non è tra le vicine: niente
+        ex.run(cfg_n, ledger_n, bg.DryRunClient(10_000), "reale", far_p, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, near_keys={"altra:1d"})
+        assert json.load(open(far_p))["positions"] == {}
+        off_p = os.path.join(d, "off.json")      # vicina ma interruttore spento: niente
+        ex.run(cfg, ledger, bg.DryRunClient(10_000), "reale", off_p, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, near_keys={"big_candle_trail:1d"})
+        assert json.load(open(off_p))["positions"] == {}
+        # interruttore riportato a 0: la posizione aperta per quel motivo si chiude (come per "Reale segue la carta")
+        cfg_off, _ = setup([trade()], mode="paper", cfg_extra={"risk": {"near_candidates": 0}})
+        ex.run(cfg_off, ledger_n, cl_near, "reale", near_p, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, near_keys={"big_candle_trail:1d"})
+        closed = [p for p in json.load(open(near_p))["positions"].values()]
+        assert [p["status"] for p in closed] == ["closed"] and closed[0]["close_reason"] == "SEGUE LA CARTA"
+        assert ex.risk_config({})["near_candidates"] == 0
         demo = os.path.join(d, "demo.json")
         go(cfg, ledger, demo, bg.DryRunClient(10_000))                                     # mode "demo"
         assert [p["status"] for p in json.load(open(demo))["positions"].values()] == ["open"]

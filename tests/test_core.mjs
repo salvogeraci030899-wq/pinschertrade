@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { handle, safeEqual, pickModel, summarizeCandles, buildAnalysisPrompt, modelOptions, sanitizeGeneralAction } from '../api/_core.js';
 import worker, { scheduled } from '../worker/index.js';
 import { telegramAnswer } from '../src/core/telegram.js';
+import { isNearCandidate, strategyStatus } from '../src/core/strategy-status.js';
 
 const env = { APP_SECRET: 'segreto-lungo', GH_TOKEN: 'tok', GH_REPO: 'io/repo', GH_REF: 'main', GROQ_API_KEY: 'g' };
 const calls = [];
@@ -15,6 +16,19 @@ const fakeFetch = async (url, opts) => {
 const ok = { 'x-app-key': 'segreto-lungo' };
 const tests = [];
 const test = (name, fn) => tests.push([name, fn]);
+
+test('quasi candidata: stessa regola di automation.is_near_candidate (tests/test_agent.py)', () => {
+    const ok = { n: 300, excess_avg_pct: 2.0, excess_p: 0.0865, stable: true };
+    assert.equal(isNearCandidate(ok), true);
+    assert.equal(isNearCandidate({ ...ok, excess_p: 0.13 }), false);        // troppo lontana
+    assert.equal(isNearCandidate({ ...ok, stable: false }), false);
+    assert.equal(isNearCandidate({ ...ok, n: 20 }), false);
+    assert.equal(isNearCandidate({ ...ok, candidate: true }), false);
+    assert.equal(isNearCandidate({ ...ok, holdout: { confirmed: false } }), false);     // già bocciata
+    assert.equal(isNearCandidate({ ...ok, excess_avg_pct: -1 }), false);
+    assert.equal(isNearCandidate({ ...ok, family: 'forza relativa' }), false);
+    assert.equal(strategyStatus('x:1d', { results: { 'x:1d': ok } }), 'vicina');
+});
 
 test('confronto della chiave', () => {
     assert.equal(safeEqual('abc', 'abc'), true);
@@ -57,6 +71,7 @@ test('comandi ammessi e workflow giusti', async () => {
         [{ type: 'emergency' }, 'automation.yml', { action: 'emergency', key: '', mode: '' }],
         [{ type: 'resume' }, 'automation.yml', { action: 'resume', key: '', mode: '' }],
         [{ type: 'set_risk', field: 'max_leverage', value: '2' }, 'automation.yml', { action: 'risk', key: 'max_leverage', mode: '2' }],
+        [{ type: 'set_risk', field: 'near_candidates', value: '1' }, 'automation.yml', { action: 'risk', key: 'near_candidates', mode: '1' }],
         [{ type: 'trading', value: 'on' }, 'automation.yml', { action: 'trading', key: '', mode: 'on' }],
     ];
     for (const [body, wf, inputs] of cases) {

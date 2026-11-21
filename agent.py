@@ -47,7 +47,6 @@ PROMO_MIN_TRADES = 20          # trade chiusi su carta prima della prova finale 
 LOG_MAX = 60
 OBSERVE_UP_TO = 4              # strategie accese in tutto, oltre le quali non se ne aggiungono in osservazione
 OBSERVE_MIN_TRADES = 50        # storico minimo per l'osservazione
-NEAR_P = 0.10                  # modalità "vicine": eccesso sul mercato con p-value fino a 0,10 (mancano la candidatura per poco)
 # Strategie "gemelle": stesso segnale di ingresso con filtri o uscite diverse (big_candle_trail usa i segnali di
 # big_candle; le donchian20_* sono tutte la rottura delle 20 candele). Accese insieme sullo stesso timeframe aprono
 # gli stessi trade: su carta contano due volte la stessa idea. L'agente ne tiene una sola per gruppo.
@@ -219,17 +218,11 @@ def observable(key, r, tfs):
             and (r.get("excess_avg_pct") or 0) > 0 and bool(r.get("stable")) and not r.get("candidate"))
 
 
-def is_near(r):
-    """Vicina alla candidatura: eccesso sul mercato con p-value fino a NEAR_P."""
-    p = r.get("excess_p")
-    return p is not None and p <= NEAR_P
-
-
 def decide(cfg, summary, paper, added, observing=frozenset()):
     """Solo regole, nessun effetto. Ritorna un dizionario di liste: off, on, promote, demote, proposals, notes."""
     ag = automation.agent_config(cfg)
     tfs = automation.STYLES[ag["style"]]
-    near = ag.get("observe") == "vicine"
+    near = int(automation.executor.risk_config(cfg).get("near_candidates") or 0) == 1      # limite di rischio "alto rischio"
     results = summary.get("results") or {}
     confirmed = set(summary.get("confirmed") or [])
     candidates = [k for k in dict.fromkeys(sorted(confirmed) + list(summary.get("candidates") or [])) if k.split(":")[1] in tfs]
@@ -265,7 +258,7 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
         elif active[key] == "paper" and key in observing and key not in candidates:
             if not observable(key, results.get(key) or {}, tfs):
                 out["off"].append((key, "non è più promettente sullo storico (osservazione finita)"))
-            elif near and not is_near(results.get(key) or {}):
+            elif near and not automation.is_near_candidate(key, results.get(key) or {}):
                 out["off"].append((key, f"più lontana dalla candidatura (p {it((results.get(key) or {}).get('excess_p') or 1, 3)}): lascio il posto a quelle più vicine"))
         elif active[key] == "paper" and key in added and key not in candidates:
             out["off"].append((key, "non è più candidata (laboratorio aggiornato o stile cambiato)"))
@@ -312,7 +305,7 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
     # 2b) posti liberi: le più promettenti non candidate, in osservazione su carta (più dati dal vivo, prima)
     ceiling = automation.MAX_ACTIVE if near else OBSERVE_UP_TO          # "vicine": fino a MAX_ACTIVE strategie in tutto
     room = min(free, ceiling - (len(active) - len(leaving) + len(out["on"])))
-    pool = sorted(((k, r) for k, r in results.items() if k not in active and observable(k, r, tfs) and (not near or is_near(r))),
+    pool = sorted(((k, r) for k, r in results.items() if k not in active and observable(k, r, tfs) and (not near or automation.is_near_candidate(k, r))),
                   key=lambda kv: (kv[1].get("excess_p") if kv[1].get("excess_p") is not None else 1, -(kv[1].get("excess_avg_pct") or 0)))
     if not near:
         pool = [(k, r) for k, r in pool if twin_group(k) not in taken and not taken.add(twin_group(k))]
@@ -342,7 +335,7 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
 
 def strategy_status(key, summary):
     """Stato di una strategia dai dati del laboratorio (stessa regola di src/core/strategy-status.js):
-    confermata, bocciata (prova finale fallita), candidata, in osservazione (non candidata) o senza storico."""
+    confermata, bocciata (prova finale fallita), candidata, quasi candidata (p fino a 0,10), in osservazione o senza storico."""
     summary = summary or {}
     r = (summary.get("results") or {}).get(key)
     if key in (summary.get("confirmed") or []):
@@ -351,6 +344,8 @@ def strategy_status(key, summary):
         return "confermata" if r["holdout"].get("confirmed") else "bocciata"
     if key in (summary.get("candidates") or []):
         return "candidata"
+    if r and automation.is_near_candidate(key, r):
+        return "quasi candidata"
     return "in osservazione" if r else "senza storico"
 
 
@@ -515,7 +510,7 @@ def run(notify, cfg_path=automation.CONFIG_PATH, summary_path=automation.SUMMARY
         json.dump(state, f, indent=1, ensure_ascii=False)
 
     if full_report or acted or (new_props and d["proposals"]):
-        head = "🤖 AGENTE" + (" · rapporto" if full_report else "") + f" ({ag['autonomy']}, {ag['profile']}, {ag['style']}{', osservazione vicine' if ag.get('observe') == 'vicine' else ''})"
+        head = "🤖 AGENTE" + (" · rapporto" if full_report else "") + f" ({ag['autonomy']}, {ag['profile']}, {ag['style']})"
         msg = head + "\n\n" + (text or "\n".join(f"• {x}" for x in facts))
         if d["proposals"]:
             msg += "\n\n👉 " + "; ".join(f"{_label(p['key'])}: proposta per il reale" for p in d["proposals"]) + ". Conferma in app: Agente → Stato."

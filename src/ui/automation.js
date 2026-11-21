@@ -15,7 +15,7 @@ const MAX_ACTIVE = 6;      // stesso limite di automation.py
 const PER_PAGE = 3;        // strategie per pagina nella lista (scorrimento orizzontale)
 let cfg = null, ledger = null, lab = null, live = null, loaded = false, loading = false;
 // Limiti di rischio dell'esecutore: stessi valori predefiniti e intervalli di executor.py
-const DEFAULT_RISK = { trading_enabled: false, risk_per_trade_pct: 0.5, max_leverage: 3, max_exposure_x: 1.5, max_open_positions: 3, max_same_direction: 2, max_daily_loss_pct: 3, portfolio_target_pct: 0, portfolio_stop_pct: 0, real_follows_paper: 0, dry_run_equity: 1000 };
+const DEFAULT_RISK = { trading_enabled: false, risk_per_trade_pct: 0.5, max_leverage: 3, max_exposure_x: 1.5, max_open_positions: 3, max_same_direction: 2, max_daily_loss_pct: 3, portfolio_target_pct: 0, portfolio_stop_pct: 0, real_follows_paper: 0, near_candidates: 0, dry_run_equity: 1000 };
 const RISK_FIELDS = [
     ['risk_per_trade_pct', 'Rischio per trade (%)', 0.1, 2, 0.1],
     ['max_leverage', 'Leva massima (x)', 1, 5, 1],
@@ -25,6 +25,7 @@ const RISK_FIELDS = [
     ['max_daily_loss_pct', 'Perdita massima al giorno (%)', 1, 10, 0.5],
     ['portfolio_target_pct', 'Obiettivo di portafoglio: chiude tutto a +% del conto (0 = spento)', 0, 20, 0.5],
     ['portfolio_stop_pct', 'Stop di portafoglio: chiude tutto a −% del conto (0 = spento)', 0, 20, 0.5],
+    ['near_candidates', 'Alto rischio: non candidate per poco (0 = no, 1 = sì)', 0, 1, 1],
     ['real_follows_paper', 'Reale segue la carta (0 = no, 1 = sì)', 0, 1, 1],
 ];
 export const riskCfg = () => ({ ...DEFAULT_RISK, ...((cfg && cfg.risk) || {}) });
@@ -209,13 +210,14 @@ let agentState = null;     // agent_state.json: ultimo giro dell'agente, rapport
 let guardState = null;     // guard_state.json: agente eventi (pausa dei nuovi ingressi per notizie di rischio)
 // Etichetta di stato di una strategia (dal laboratorio, uguale per chi l'ha messa: agente o tu)
 const TAG_TITLE = {
+    vicina: 'Quasi candidata: manca poco alla soglia. Con Alto rischio attivo (Limiti di rischio) viene eseguita su carta e in Reale',
     osservazione: 'Non candidata: sta su carta per raccogliere dati, senza prova finale né reale',
     candidata: 'Candidata: aspetta la prova finale',
     bocciata: 'Ha fatto la prova finale e non l\'ha superata: solo carta',
     confermata: 'Confermata dalla prova finale: può andare in Reale',
     senza_storico: 'Nessun dato nel laboratorio'
 };
-const TAG_CLASS = { confermata: ' ok', candidata: ' ok', bocciata: ' warn', senza_storico: ' warn' };
+const TAG_CLASS = { confermata: ' ok', candidata: ' ok', vicina: ' warn', bocciata: ' warn', senza_storico: ' warn' };
 function statusTag(key) {
     const st = strategyStatus(key, lab);
     const txt = st === 'osservazione' ? 'osservazione' : STATUS_LABEL[st];
@@ -621,9 +623,11 @@ export async function saveAutoRisk() {
     }
     if (!changes.length) { closeAutoRisk(); return; }
     const NAMES = { risk_per_trade_pct: ['Rischio per trade', '%'], max_leverage: ['Leva massima', 'x'], max_exposure_x: ['Esposizione totale', 'x'], max_open_positions: ['Posizioni aperte', ''],
-        max_same_direction: ['Nello stesso verso', ''], max_daily_loss_pct: ['Perdita al giorno', '%'], portfolio_target_pct: ['Obiettivo di portafoglio', '%'], portfolio_stop_pct: ['Stop di portafoglio', '%'], real_follows_paper: ['Reale segue la carta', ''] };
-    const warn = changes.some(c => c.field === 'real_follows_paper' && c.value === '1')
-        ? 'ATTENZIONE: in Reale l\'esecutore aprirà ordini VERI anche per le strategie su carta non confermate dalla prova finale. Valgono tutti i limiti, ma puoi perdere soldi.\n\n' : '';
+        max_same_direction: ['Nello stesso verso', ''], max_daily_loss_pct: ['Perdita al giorno', '%'], portfolio_target_pct: ['Obiettivo di portafoglio', '%'], portfolio_stop_pct: ['Stop di portafoglio', '%'], real_follows_paper: ['Reale segue la carta', ''], near_candidates: ['Alto rischio, non candidate per poco', ''] };
+    const warn = (changes.some(c => c.field === 'real_follows_paper' && c.value === '1')
+        ? 'ATTENZIONE: in Reale l\'esecutore aprirà ordini VERI anche per le strategie su carta non confermate dalla prova finale. Valgono tutti i limiti, ma puoi perdere soldi.\n\n' : '')
+        + (changes.some(c => c.field === 'near_candidates' && c.value === '1')
+        ? 'ALTO RISCHIO: l\'agente terrà su carta le strategie che mancano la candidatura per poco (fino a 6, anche gemelle) e l\'esecutore le userà sia su carta sia in Reale, con tutti i limiti. Non hanno superato la prova finale: puoi perdere soldi.\n\n' : '');
     const summary = changes.map(c => { const [n, u] = NAMES[c.field] || [c.field, '']; return `${n}: ${fmtIt(Number(risk[c.field]), 2).replace(/,00$/, '')}${u} → ${fmtIt(Number(c.value), 2).replace(/,00$/, '')}${u}`; }).join('\n');
     // la finestra dei limiti resta aperta sotto: se annulli non perdi quello che hai scritto
     openAutoConfirm('Cambiare i limiti di rischio?', `${warn}${summary}\nValgono per l'esecutore, anche in Simulato.`, 'Conferma', async () => {
@@ -702,18 +706,13 @@ export function setSignalsView(view, manual = true) {
 }
 
 // --- Vista Agente: stato, impostazioni (autonomia, profilo, stile), cronologia delle decisioni ---
-const AG_DEFAULT = { autonomy: 'paper', profile: 'bilanciato', style: 'swing', observe: 'base' };
+const AG_DEFAULT = { autonomy: 'paper', profile: 'bilanciato', style: 'swing' };
 const AG_LABELS = {
     autonomy: { off: 'Spento', paper: 'Simulato', live: 'Reale' },
     profile: { prudente: 'Prudente', bilanciato: 'Bilanciato', aggressivo: 'Aggressivo' },
-    style: { swing: 'Swing', giornaliero: 'Giornaliero', misto: 'Misto' },
-    observe: { base: 'Base', vicine: 'Vicine' }
+    style: { swing: 'Swing', giornaliero: 'Giornaliero', misto: 'Misto' }
 };
-const AG_TITLES = { autonomy: 'Autonomia', profile: 'Rischio', style: 'Stile', observe: 'Osserva' };
-const OBSERVE_TEXT = {
-    base: 'Poche strategie in osservazione, una per idea (le gemelle restano fuori).',
-    vicine: 'Fino a 6 su carta: le più vicine alla candidatura, anche gemelle. Le gemelle aprono gli stessi trade e occupano posti.'
-};
+const AG_TITLES = { autonomy: 'Autonomia', profile: 'Rischio', style: 'Stile' };
 const AG_KIND = { observe: ['', 'In osservazione', 'text-ui'], on: ['', 'Su carta', 'text-ui'], off: ['', 'Spenta', ''], promote: ['', 'Al reale', 'text-warning'], demote: ['', 'Tornata su carta', 'text-danger'], proposal: ['', 'Proposta', 'text-warning'] };
 const agentPending = {};
 const PROFILE_TEXT = { prudente: '0,25% a trade, leva 2x, max 2 posizioni, obiettivo +1% e limite −2% al giorno, ogni strategia reale torna su carta oltre −3% dal suo massimo', bilanciato: '0,5% a trade, leva 3x, max 3 posizioni, obiettivo +2% e limite −3% al giorno, ogni strategia reale torna su carta oltre −5% dal suo massimo', aggressivo: '1% a trade, leva 5x, max 4 posizioni, obiettivo +3% e limite −5% al giorno, ogni strategia reale torna su carta oltre −8% dal suo massimo' };
@@ -749,7 +748,7 @@ export function renderAgentView() {
         Object.entries(AG_LABELS[field]).map(([v, l]) => `<button type="button" class="pill-btn${ag[field] === v ? ' active' : ''}${field === 'autonomy' && v === 'live' ? ' agent-live' : ''}" onclick="setAgent('${field}','${v}')">${l}</button>`).join('')
     }</div></div>`;
     $('agentSettings').innerHTML = setting('autonomy');
-    $('agentStyle').innerHTML = setting('style') + styleHint() + setting('observe') + `<div class="agent-hint agent-hint-1">${escapeHtml(OBSERVE_TEXT[ag.observe] || '')}</div>`;
+    $('agentStyle').innerHTML = setting('style') + styleHint();
     $('agentProfile').innerHTML = setting('profile') + `<div class="agent-hint agent-hint-1">${escapeHtml(PROFILE_TEXT[ag.profile] || '')}</div>`;
     const log = ((agentState && agentState.log) || []).slice().reverse();
     $('agentLogCount').textContent = log.length ? String(log.length) : '';
@@ -868,9 +867,6 @@ export function setAgent(field, value) {
     if (field === 'profile') {
         const P = PROFILE_TEXT;
         return openAutoConfirm(`Profilo ${AG_LABELS.profile[value].toLowerCase()}?`, `Imposta tutti i limiti di rischio: ${P[value]}.`, 'Imposta', go);
-    }
-    if (field === 'observe') {
-        return openAutoConfirm(`Osservazione ${AG_LABELS.observe[value].toLowerCase()}?`, `${OBSERVE_TEXT[value]} Solo carta: nessun ordine vero.`, 'Conferma', go);
     }
     openAutoConfirm('Cambiare l\'agente?', `${AG_TITLES[field]}: ${AG_LABELS[field][value].toLowerCase()}.`, 'Conferma', go);
 }
