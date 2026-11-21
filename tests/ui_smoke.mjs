@@ -41,7 +41,7 @@ try {
     const RUNS = ALL_RUNS.filter((_, i) => i % shardN === shardI);
     for (const { dev, mode, glass } of RUNS) {
         const tag = (mode === 'real' ? 'Reale' : 'Simulato') + (glass ? ', vetro dinamico chiaro' : '');
-        const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, isMobile: true, hasTouch: true, colorScheme: glass ? 'light' : 'dark' });
+        const ctx = await browser.newContext({ viewport: { width: dev.w, height: dev.h }, isMobile: true, hasTouch: true, deviceScaleFactor: process.env.SHOT_DIR ? 2 : 1, colorScheme: glass ? 'light' : 'dark' });
         await ctx.addInitScript(([pwa, glass, wide]) => {
             try {
                 localStorage.setItem('pt_gh_token', 'github_pat_' + 'x'.repeat(30));
@@ -81,6 +81,31 @@ try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`);
         await page.waitForTimeout(3500);
         const pages = await page.evaluate(() => [...document.querySelectorAll('section.page')].map(s => s.id.replace('page-', '')));
+        // Con SHOT_DIR=cartella salva gli screenshot delle schermate indicate in SHOT_VIEWS (es. "terminal:sig,home"): serve a guardare il layout
+        if (process.env.SHOT_DIR) {
+            const fs2 = await import('node:fs');
+            fs2.mkdirSync(process.env.SHOT_DIR, { recursive: true });
+            if (process.env.SHOT_SEED === 'signals') {
+                await page.evaluate(async () => {
+                    const { State } = await import('./src/core/state.js');
+                    const sig = (a, b, c) => ({ breakout: { signal: a, strength: 70 }, mean_reversion: { signal: b, strength: 60 }, ma_crossover: { signal: c, strength: 66 } });
+                    for (const a of ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'BNBUSDT', 'ADAUSDT', 'LINKUSDT']) for (const tf of ['1d', '4h', '1h']) {
+                        const strong = tf === '1d' && ['ETHUSDT', 'XRPUSDT', 'SOLUSDT'].includes(a);
+                        State.signalMatrix[`${a}_${tf}`] = strong ? sig('SHORT', 'NEUTRAL', 'SHORT') : sig('NEUTRAL', 'NEUTRAL', tf === '1h' ? 'SHORT' : 'NEUTRAL');
+                    }
+                    const now = Date.now();
+                    State.signalHistory = Array.from({ length: 12 }, (_, i) => ({ asset: ['SOLUSDT', 'BTCUSDT', 'ETHUSDT'][i % 3], tf: ['1h', '4h', '1d'][i % 3], consensus: i % 4 === 0 ? 'LONG' : 'SHORT', agreement: i % 5 === 0 ? 3 : 2,
+                        timestamp: now - i * 3600e3, strength: 68 - i, sources: { breakout: i % 4 === 0 ? 'LONG' : 'SHORT', mean_reversion: i % 2 ? 'NEUTRAL' : (i % 4 === 0 ? 'LONG' : 'SHORT'), ma_crossover: i % 4 === 0 ? 'LONG' : 'SHORT' } }));
+                    window.renderSignalGrid(); window.renderSignalHistory && window.renderSignalHistory();
+                });
+            }
+            for (const v of (process.env.SHOT_VIEWS || 'home').split(',')) {
+                const [tab, sub] = v.split(':');
+                await page.evaluate(([t, sv]) => { window.switchTab(t); if (sv && t === 'terminal') window.setMarketView(sv); if (sv && t === 'signals') window.setSignalsView(sv); }, [tab, sub]);
+                await page.waitForTimeout(1200);
+                await page.screenshot({ path: `${process.env.SHOT_DIR}/${dev.n.replace(/\s+/g, '_')}-${tag.replace(/[^A-Za-z]+/g, '_')}-${tab}${sub ? '-' + sub : ''}.png` });
+            }
+        }
         // barra in basso: centrata, staccata dal fondo, stesso margine interno sopra (puntini) e sotto (voci)
         const nav = await page.evaluate(() => { const n = document.querySelector('.nav-bar').getBoundingClientRect(), d = document.querySelector('.nav-dots').getBoundingClientRect(), it = document.querySelector('.nav-item').getBoundingClientRect();
             return { l: Math.round(n.left), r: Math.round(innerWidth - n.right), b: Math.round(innerHeight - n.bottom), fuori: Math.round(n.top - d.bottom), sopra: Math.round(it.top - n.top), sotto: Math.round(n.bottom - it.bottom) }; });
@@ -126,27 +151,32 @@ try {
                     const textNow = () => ((document.querySelector('.page.active') || {}).innerText || '');
                     let lastText = textNow();
                     const mo = new MutationObserver(ms => {
-                        let styleChange = false, changed = null;
+                        let changed = null;
                         for (const m of ms) {
-                            if (m.target === document.documentElement) {
-                                // conta solo se cambia lo zoom della pagina che si sta guardando (le altre pagine non si vedono)
-                                const pg = ((document.querySelector('.page.active') || {}).id || '').replace('page-', '');
-                                const zoomOf = st => (String(st || '').match(new RegExp('--fit-zoom-' + pg + ':\\s*([0-9.]+)')) || [])[1];
-                                if (zoomOf(m.oldValue) !== zoomOf(document.documentElement.getAttribute('style'))) styleChange = true;
-                                continue;
-                            }
+                            if (m.target === document.documentElement) continue;          // lo zoom si misura a ogni fotogramma (sotto)
                             if (m.target.closest && m.target.closest('.nav-wrap')) continue;     // la barra in basso non è contenuto
                             const el = m.target.nodeType === 1 ? m.target : m.target.parentElement;
                             if (el && el.getClientRects().length === 0) continue;               // elemento nascosto: non si vede
                             changed = el;
                         }
                         if (changed) { const t = textNow(); if (t !== lastText) { lastText = t; last = performance.now() - t0; what = desc(changed); } }
-                        if (styleChange) { last = performance.now() - t0; what = 'zoom di adattamento'; }
                     });
                     mo.observe(document.querySelector('main'), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['style', 'class', 'width', 'height'] });
-                    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['style'], attributeOldValue: true });   // zoom di adattamento
                     window[fn](arg);
-                    setTimeout(() => { mo.disconnect(); resolve([Math.round(last), what]); }, 1500);
+                    // Zoom di adattamento della pagina che si guarda, campionato a ogni fotogramma: un salto visibile lo cambia tra due fotogrammi
+                    // (i passaggi dentro lo stesso fotogramma, come azzerare e rimisurare, non si vedono e non contano)
+                    const pg = ((document.querySelector('.page.active') || {}).id || '').replace('page-', '');
+                    const zoomNow = () => getComputedStyle(document.documentElement).getPropertyValue('--fit-zoom-' + pg).trim();
+                    let prev = null, stop = false;
+                    const tick = () => {
+                        if (stop) return;
+                        const z = zoomNow();
+                        if (prev !== null && z !== prev) { last = performance.now() - t0; what = `zoom ${pg} ${prev}→${z}`; }
+                        prev = z;
+                        requestAnimationFrame(tick);
+                    };
+                    requestAnimationFrame(() => requestAnimationFrame(tick));      // dopo il primo fotogramma: lo stato di apertura è quello iniziale
+                    setTimeout(() => { stop = true; mo.disconnect(); resolve([Math.round(last), what]); }, 1500);
                 }), [fn, arg]);
                 ready.push([label, r[0], r[1]]);
             }
@@ -307,6 +337,51 @@ try {
             const on = await page.evaluate(() => document.getElementById('chartAlertModal').classList.contains('active'));
             await page.evaluate(() => window.closeChartAlert()); await page.click('#mainChartContainer .home-chart-fullscreen'); await page.waitForTimeout(300);
             return on;
+        });
+        // Segnali: struttura, schede dello storico e scorrimento (dati di prova messi nella memoria dell'app)
+        await step('segnali: stato su una riga per colonna, storico senza tagli e con aggancio, contatore e griglia a pagine', async () => {
+            await page.evaluate(async () => {
+                window.switchTab('terminal'); window.setMarketView('sig');
+                const { State } = await import('./src/core/state.js');
+                const sig = (a, b, c) => ({ breakout: { signal: a, strength: 70 }, mean_reversion: { signal: b, strength: 60 }, ma_crossover: { signal: c, strength: 66 } });
+                for (const a of ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'BNBUSDT', 'ADAUSDT', 'LINKUSDT']) for (const tf of ['1d', '4h', '1h']) State.signalMatrix[`${a}_${tf}`] = sig('SHORT', 'NEUTRAL', 'SHORT');
+                const now = Date.now();
+                State.signalHistory = Array.from({ length: 12 }, (_, i) => ({ asset: ['SOLUSDT', 'BTCUSDT', 'ETHUSDT'][i % 3], tf: ['1h', '4h', '1d'][i % 3], consensus: 'SHORT', agreement: 2, timestamp: now - i * 3600e3, strength: 68 - i,
+                    sources: { breakout: 'SHORT', mean_reversion: 'SHORT', ma_crossover: 'SHORT' } }));
+                const sm = await import('./src/ui/signals.js');
+                sm.renderSignalGrid(); sm.renderSignalHistory();
+            });
+            await page.waitForTimeout(500);
+            const r = await page.evaluate(async () => {
+                const wait = ms => new Promise(res => setTimeout(res, ms));
+                const out = {};
+                // stato della scansione: due colonne, nessuna delle due su più righe
+                const cells = [...document.querySelectorAll('#signalInfoBar .sib-cell')];
+                out.infoOk = cells.length === 2 && cells.every(c => [...c.children].every(e => e.getBoundingClientRect().height < 40));
+                // storico: la prima scheda sta al margine, la seconda si intravede, niente contenuto tagliato
+                const list = document.getElementById('signalHistoryList'), items = [...list.querySelectorAll('.log-item')];
+                const lr = list.getBoundingClientRect(), r0 = items[0].getBoundingClientRect(), r1 = items[1].getBoundingClientRect();
+                out.zoom = lr.width / (list.offsetWidth || lr.width);          // lo zoom di adattamento della pagina riduce tutte le misure
+                out.margin = Math.round(r0.left - lr.left); out.peek = Math.round(innerWidth - r1.left);
+                out.noClip = items.slice(0, 3).every(i => i.scrollHeight <= i.clientHeight + 1 && i.querySelector('.shi-strategies').getBoundingClientRect().bottom <= i.getBoundingClientRect().bottom);
+                // scorrimento: si aggancia alla seconda scheda e il contatore lo segue
+                const stride = items[1].offsetLeft - items[0].offsetLeft;
+                list.scrollTo({ left: stride, behavior: 'smooth' }); await wait(900);
+                out.snap = Math.abs(list.scrollLeft - stride) <= 2; out.counter = (document.querySelector('#signalHistoryDots .pager-count') || {}).textContent;
+                list.scrollTo({ left: 0, behavior: 'auto' }); await wait(200);
+                // griglia: pagina 2 agganciata e punto attivo
+                const grid = document.getElementById('signalGrid');
+                grid.scrollTo({ left: grid.clientWidth, behavior: 'smooth' }); await wait(900);
+                out.gridSnap = Math.abs(grid.scrollLeft - grid.clientWidth) <= 2;
+                out.dot = [...document.querySelectorAll('#signalDots .info-dot')].findIndex(d => d.classList.contains('active'));
+                grid.scrollTo({ left: 0, behavior: 'auto' }); await wait(100);
+                const { State } = await import('./src/core/state.js'); State.signalHistory = [];
+                (await import('./src/ui/signals.js')).renderSignalHistory();
+                return out;
+            });
+            const ok = r.infoOk && Math.abs(r.margin - 16 * r.zoom) <= 2 && r.peek > 8 * r.zoom && r.peek < 60 && r.noClip && r.snap && r.counter === '2 / 12' && r.gridSnap && r.dot === 1;
+            if (!ok) console.log('  segnali, dettagli:', JSON.stringify(r));
+            return ok;
         });
         await step('mercato: Nuovo avviso non apre la finestra', async () => {
             await page.evaluate(() => window.setMarketView('alerts')); await page.waitForTimeout(300);
