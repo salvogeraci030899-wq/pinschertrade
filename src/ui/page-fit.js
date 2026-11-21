@@ -29,7 +29,10 @@ function overshoot(page) {
     return Math.max(0, Math.ceil(pageBottom - limit));
 }
 
-const overflowing = page => page.scrollHeight > page.clientHeight + 1;
+// La pagina non ci sta se scorre, o se un suo blocco diretto (visibile, non a scorrimento) ha contenuto che esce dal proprio riquadro:
+// quel contenuto finirebbe nel margine in fondo (sulla barra), che lo scrollHeight della pagina non conta
+const overflowing = page => page.scrollHeight > page.clientHeight + 1
+    || [...page.children].some(c => c.scrollHeight > c.clientHeight + 1 && c.getClientRects().length && getComputedStyle(c).overflowY === 'visible');
 
 // Liste a scorrimento orizzontale che si restringono per riempire lo spazio rimasto (min-height: 0):
 // se una scheda non entra, il suo contenuto verrebbe tagliato senza che la pagina "deborda".
