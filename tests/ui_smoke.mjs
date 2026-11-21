@@ -202,6 +202,8 @@ try {
         // Risultati: cambiando periodo (Oggi, Settimana, ...) e fonte (Reale, Carta) nulla si sposta né cambia misura
         await page.evaluate(() => window.switchTab('journal'));
         await page.waitForTimeout(700);
+        const openedOn = await page.evaluate(() => (document.getElementById('res-src-real').classList.contains('active') ? 'real' : document.getElementById('res-src-paper').classList.contains('active') ? 'paper' : 'nessuna'));
+        if (openedOn !== (mode === 'real' ? 'real' : 'paper')) problems.push(`${dev.n}, ${tag}: Risultati si apre su ${openedOn}, deve aprirsi su ${mode === 'real' ? 'Reale' : 'Carta'}`);
         const resSig = async () => page.evaluate(() => {
             const r = e => { const b = e.getBoundingClientRect(); return [b.top, b.left, b.width, b.height].map(Math.round).join(','); };
             const parts = [document.querySelector('#page-journal .header-row'), document.getElementById('resTabs'), ...document.getElementById('resBody').children];
