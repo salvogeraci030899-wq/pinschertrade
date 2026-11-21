@@ -324,7 +324,7 @@ try {
             // assistente generale, dall'icona in Home
             await page.evaluate(() => window.switchTab('home'));
             await page.waitForTimeout(400);
-            await step('assistente: si apre dall\'icona in Home', async () => { await page.click('.header-icon-btn[title="Assistente"]'); await page.waitForTimeout(400); return page.evaluate(() => document.getElementById('assistModal').classList.contains('active')); });
+            await step('assistente: si apre dall\'icona in Home, senza tasto audio e senza rettangolo nel campo di testo', async () => { await page.click('.header-icon-btn[title="Assistente"]'); await page.waitForTimeout(500); return page.evaluate(() => { const i = document.getElementById('assistInput'); i.focus(); return document.getElementById('assistModal').classList.contains('active') && !document.getElementById('assistSpeak') && getComputedStyle(i).outlineStyle === 'none'; }); });
             await step('assistente: la X chiude', async () => { await page.click('.assist-head [title="Chiudi"]'); await page.waitForTimeout(300); return page.evaluate(() => !document.getElementById('assistModal').classList.contains('active')); });
         }
         await page.evaluate(() => { window.switchTab('terminal'); window.setMarketView('chart'); });

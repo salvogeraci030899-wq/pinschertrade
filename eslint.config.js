@@ -6,7 +6,7 @@ const browser = ['window', 'document', 'navigator', 'location', 'localStorage', 
     'TextDecoder', 'atob', 'btoa', 'Blob', 'File', 'FileReader', 'FormData', 'Image', 'Audio', 'MediaRecorder', 'AbortController', 'performance',
     'alert', 'confirm', 'prompt', 'history', 'screen', 'caches', 'self', 'Notification', 'PublicKeyCredential', 'structuredClone', 'queueMicrotask',
     'HTMLElement', 'Node', 'DOMParser', 'XMLHttpRequest', 'WebSocket', 'indexedDB', 'visualViewport', 'innerWidth', 'innerHeight', 'devicePixelRatio',
-    'LightweightCharts', 'html2canvas', 'speechSynthesis', 'SpeechSynthesisUtterance', 'globalThis'];
+    'LightweightCharts', 'html2canvas', 'globalThis'];
 const node = ['process', 'console', 'fetch', 'Response', 'Request', 'Headers', 'URL', 'URLSearchParams', 'setTimeout', 'clearTimeout', 'setInterval',
     'clearInterval', 'crypto', 'TextEncoder', 'TextDecoder', 'atob', 'btoa', 'Blob', 'FormData', 'AbortController', 'globalThis', 'Buffer', 'structuredClone'];
 const globals = names => Object.fromEntries(names.map(n => [n, 'readonly']));
