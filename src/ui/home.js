@@ -151,32 +151,32 @@ const tone = v => (v > 0 ? ' safe' : v < 0 ? ' danger' : '');
 
 // In modalità Reale la scheda mostra il conto Bitget (letto dal bot ogni 15 minuti), in Simulato
 // il conto della carta (l'esecutore simulato, live_trades.json). Il titolo dice sempre quale dei due si sta guardando.
-function renderAccount() {
-    const set = (id, text, cls) => { const el = $(id); put(el, text); putCls(el, 'home-kpi-value' + (cls || '')); };
-    const label = (id, text) => put($(id), text);
-    if (tradingMode().mode === 'on') {
-        const acc = bot && bot.live && bot.live.account;
-        label('homeAccTitle', 'Conto Bitget · reale · USDT');
-        label('homePnlLabel', 'Variazione oggi');
-        if (!acc || !acc.connected) {
-            set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—');
-            return;
-        }
-        set('homeEquity', money(acc.total_usdt != null ? acc.total_usdt : acc.equity));
-        const ch = acc.day_change != null ? acc.day_change : 0;
-        set('homePnlToday', signed(ch), tone(ch));
-        // posizioni futures e coin spot (BTC, ETH, SOL); PnL al prezzo attuale dove l'acquisto è noto
-        const all = realPositions(), n = all.length;
-        set('homeOpenCount', String(n));
-        const upl = all.reduce((s, p) => s + (liveUpl(p) || 0), 0);
-        set('homeOpenPnl', n ? signed(upl) : '—', n ? tone(upl) : '');
-        const lbl = $('homeOpenPnlLabel');
-        put(lbl, n && hasLiveMarks() ? 'PnL live' : 'PnL aperto');
+const parallel = () => tradingMode().mode === 'on' && Number(bot && bot.cfg && bot.cfg.risk && bot.cfg.risk.real_follows_paper) === 1;
+
+// Conto Bitget (letto dal bot ogni 15 minuti) nelle tessere con suffisso sfx
+function fillReal(sfx) {
+    const set = (id, text, cls) => { const el = $(id + sfx); put(el, text); putCls(el, 'home-kpi-value' + (cls || '')); };
+    const acc = bot && bot.live && bot.live.account;
+    put($('homePnlLabel' + sfx), 'Variazione oggi');
+    if (!acc || !acc.connected) {
+        set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—');
         return;
     }
-    label('homeAccTitle', 'Conto Simulato · carta');
-    label('homeOpenPnlLabel', 'PnL aperto');
-    label('homePnlLabel', 'PnL oggi');
+    set('homeEquity', money(acc.total_usdt != null ? acc.total_usdt : acc.equity));
+    const ch = acc.day_change != null ? acc.day_change : 0;
+    set('homePnlToday', signed(ch), tone(ch));
+    // posizioni futures e coin spot (BTC, ETH, SOL); PnL al prezzo attuale dove l'acquisto è noto
+    const all = realPositions(), n = all.length;
+    set('homeOpenCount', String(n));
+    const upl = all.reduce((s, p) => s + (liveUpl(p) || 0), 0);
+    set('homeOpenPnl', n ? signed(upl) : '—', n ? tone(upl) : '');
+    put($('homeOpenPnlLabel' + sfx), n && hasLiveMarks() ? 'PnL live' : 'PnL aperto');
+}
+// Conto della carta (l'esecutore simulato, live_trades.json)
+function fillPaper(sfx) {
+    const set = (id, text, cls) => { const el = $(id + sfx); put(el, text); putCls(el, 'home-kpi-value' + (cls || '')); };
+    put($('homeOpenPnlLabel' + sfx), 'PnL aperto');
+    put($('homePnlLabel' + sfx), 'PnL oggi');
     const live = bot && bot.live, sim = live && live.simulated;
     if (!sim || !Number.isFinite(Number(sim.equity))) { set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—'); return; }
     set('homeEquity', money(sim.equity));
@@ -187,6 +187,18 @@ function renderAccount() {
     set('homePnlToday', signed(todayPnl), tone(todayPnl));
     set('homeOpenCount', String(open.length));
     set('homeOpenPnl', open.length ? signed(floating) : '—', open.length ? tone(floating) : '');
+}
+
+// Reale con "Reale segue la carta": la carta gira in parallelo, quindi la scheda mostra sempre entrambi i conti.
+// Reale da solo: solo Bitget. Simulato: solo la carta.
+function renderAccount() {
+    const both = parallel();
+    const show = (id, on) => { const el = $(id); if (el) el.style.display = on ? '' : 'none'; };
+    show('homeKpis2', both); show('homeAccTitle2', both);
+    if (both) { put($('homeAccTitle'), 'Conto Bitget · reale'); fillReal(''); fillPaper('2'); return; }
+    if (tradingMode().mode === 'on') { put($('homeAccTitle'), 'Conto Bitget · reale · $'); fillReal(''); return; }
+    put($('homeAccTitle'), 'Conto Simulato · carta');
+    fillPaper('');
 }
 
 // Il tocco su una coin in alto apre il suo grafico in Mercato
@@ -202,19 +214,23 @@ export function openHomeCoin(tile) {
 // Le righe che non entrano nello spazio rimasto si nascondono: niente scorrimento e niente righe tagliate a metà.
 const RECENT_MAX = 6;
 function recentTrades() {
-    if (tradingMode().mode === 'on') {
-        return realHistory().filter(h => h.closedAt).map(h => ({ t: typeof h.closedAt === 'number' ? h.closedAt : Date.parse(h.closedAt), symbol: h.symbol, side: h.type, pnl: h.pnl }));
+    if (parallel()) return [...recentOf('real'), ...recentOf('paper')];
+    return recentOf(tradingMode().mode === 'on' ? 'real' : 'paper');
+}
+function recentOf(which) {
+    if (which === 'real') {
+        return realHistory().filter(h => h.closedAt).map(h => ({ t: typeof h.closedAt === 'number' ? h.closedAt : Date.parse(h.closedAt), symbol: h.symbol, side: h.type, pnl: h.pnl, src: 'reale' }));
     }
     const live = bot && bot.live;
     return Object.values((live && live.positions) || {}).filter(p => p && p.status === 'closed' && p.net != null && p.closed_at)
-        .map(p => ({ t: Date.parse(p.closed_at), symbol: p.symbol, side: String(p.side).toUpperCase(), pnl: Number(p.net) }));
+        .map(p => ({ t: Date.parse(p.closed_at), symbol: p.symbol, side: String(p.side).toUpperCase(), pnl: Number(p.net), src: 'carta' }));
 }
 function renderRecent() {
     const list = $('homeRecentList');
     if (!list) return;
-    put($('homeRecentTitle'), tradingMode().mode === 'on' ? 'Ultime chiuse · reale' : 'Ultime chiuse · carta');
+    put($('homeRecentTitle'), parallel() ? 'Ultime chiuse · reale e carta' : tradingMode().mode === 'on' ? 'Ultime chiuse · reale' : 'Ultime chiuse · carta');
     const rows = recentTrades().filter(x => x.t > 0).sort((a, b) => b.t - a.t).slice(0, RECENT_MAX);
-    const html = rows.length ? rows.map(x => `<div class="home-line"><span>${SYM(x.symbol)} ${x.side === 'SHORT' ? 'SHORT' : 'LONG'} <small>${ago((Date.now() - x.t) / 60000)}</small></span><b class="${tone(x.pnl)}">${signed(x.pnl)}</b></div>`).join('')
+    const html = rows.length ? rows.map(x => `<div class="home-line"><span>${SYM(x.symbol)} ${x.side === 'SHORT' ? 'SHORT' : 'LONG'} <small>${ago((Date.now() - x.t) / 60000)}${parallel() ? ' · ' + x.src : ''}</small></span><b class="${tone(x.pnl)}">${signed(x.pnl)}</b></div>`).join('')
         : '<div class="home-line home-empty"><span>Nessuna operazione chiusa ancora</span></div>';
     if (list.dataset.sig !== html) { list.dataset.sig = html; list.innerHTML = html; }
     fitRecent(list);
