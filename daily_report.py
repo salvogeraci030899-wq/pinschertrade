@@ -57,7 +57,7 @@ def _paper_return(paper, risk_pct):
 def build(frames, now, paths=None):
     """frames: {"SYMBOL_1d": DataFrame candele chiuse} del giro corrente (può mancare qualcosa)."""
     p = {"futures": "futures_data.json", "paper": "paper_trades.json", "live": "live_trades.json",
-         "automation": "automation.json", "lab": "lab_summary.json", "agent": "agent_state.json", **(paths or {})}
+         "automation": "automation.json", "lab": "lab_summary.json", "agent": "agent_state.json", "paper_account": "paper_account.json", **(paths or {})}
     lines = [f"📊 RIEPILOGO {now:%d/%m/%Y}"]
 
     prices = []
@@ -144,6 +144,17 @@ def build(frames, now, paths=None):
         lines.append(txt)
     else:
         lines.append("Esecutore: nessuna attività (nessuna strategia in Reale).")
+
+    # conto della carta (sempre acceso): patrimonio, trade aperti e chiusi
+    pa = _read(p["paper_account"]) or {}
+    sim = pa.get("simulated") or {}
+    if sim.get("equity") is not None:
+        pos = (pa.get("positions") or {}).values()
+        closed = [x for x in pos if x.get("status") == "closed" and x.get("net") is not None]
+        n_open = sum(1 for x in pos if x.get("status") == "open")
+        start = sim.get("start") or sim["equity"]
+        lines.append(f"Conto carta: {_it(sim['equity'])} USDT ({_it(sim['equity'] - start, sign=True)} da {_it(start, 0)}), {n_open} aperte, "
+                     f"{len(closed)} chiuse (netto {_it(sum(float(x['net']) for x in closed), sign=True)} USDT)")
 
     lab = _read(p["lab"]) or {}
     confirmed = lab.get("confirmed") or []
