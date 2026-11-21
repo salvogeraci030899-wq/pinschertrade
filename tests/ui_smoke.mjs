@@ -74,6 +74,10 @@ try {
             if (dataDelay) await new Promise(res => setTimeout(res, dataDelay));
             const name = new URL(r.request().url()).pathname.split('/').pop();
             const j = structuredClone(name === 'paper_account.json' ? { ...FIX['live_trades.json'], mode: 'simulata' } : FIX[name]);
+            if (name === 'paper_trades.json' && process.env.MANY_OPEN) {         // prova di layout: tanti trade su carta aperti (come nei dati veri)
+                const coins = ['ADAUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'LINKUSDT', 'AVAXUSDT', 'DOTUSDT', 'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT'];
+                j.strategies.many_open = { mode: 'paper', stats: { n: 0, open: coins.length }, trades: coins.map((symbol, i) => ({ id: `many_open:1d:${symbol}:${i}`, symbol, t: 1790000000 + i, t_entry: 1790086400 + i, dir: -1, entry: 100 + i, stop: 110 + i, open: true, gross: 0 })) };
+            }
             if (name === 'automation.json') j.risk = { ...(j.risk || {}), trading_enabled: mode === 'real', real_follows_paper: mode === 'real' ? 1 : 0 };
             return r.fulfill({ contentType: 'application/json', body: JSON.stringify(j) });
         });
