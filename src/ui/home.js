@@ -1,7 +1,7 @@
 import { State } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
 import { $, SYM, fetchT, fmtIt, fmtPrice, fetchData, getGhToken } from '../utils/helpers.js';
-import { bitgetAccountText, isRemovingAlert, paperPerformance, priceAlerts, getAutoState, portfolioLine } from './automation.js';
+import { isRemovingAlert, paperPerformance, priceAlerts, getAutoState, portfolioLine } from './automation.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 import { updateModePills, tradingMode } from './account.js';
 import { liveUpl, hasLiveMarks } from './trade.js';
@@ -301,9 +301,6 @@ function renderAutomationCard() {
     setLine('homeAgent', agText, props || ag.autonomy === 'live' ? 'text-warning' : 'text-ui');
     const trading = !!(cfg && cfg.risk && cfg.risk.trading_enabled);
     setLine('homeAutoOrders', trading ? 'abilitati' : 'spenti', trading ? 'text-warning' : '');
-    const acc = bitgetAccountText(live && live.account);
-    setLine('homeAutoBitget', acc.text, acc.cls);
-    setLine('homeAutoBitgetDetail', acc.detail || '—');
 }
 
 // ---------- Stato ----------
