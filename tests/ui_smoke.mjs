@@ -74,7 +74,7 @@ try {
             if (dataDelay) await new Promise(res => setTimeout(res, dataDelay));
             const name = new URL(r.request().url()).pathname.split('/').pop();
             const j = structuredClone(FIX[name]);
-            if (name === 'automation.json') j.risk = { ...(j.risk || {}), trading_enabled: mode === 'real' };
+            if (name === 'automation.json') j.risk = { ...(j.risk || {}), trading_enabled: mode === 'real', real_follows_paper: mode === 'real' ? 1 : 0 };
             return r.fulfill({ contentType: 'application/json', body: JSON.stringify(j) });
         });
         await page.route(/api\.github\.com|workers\.dev|api\.telegram\.org/, r => r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' } }));
@@ -194,6 +194,10 @@ try {
         // Home: schede una sotto l'altra, tutte sopra la barra in basso e senza righe tagliate; l'ultima riempie lo spazio rimasto
         await page.evaluate(() => window.switchTab('home'));
         await page.waitForTimeout(700);
+        // Reale con "Reale segue la carta": Home mostra insieme conto reale e conto carta; in Simulato solo la carta
+        const both = await page.evaluate(() => { const v = id => { const e = document.getElementById(id); return !!e && e.getClientRects().length > 0; }; return { two: v('homeKpis2'), title: document.getElementById('homeAccTitle').textContent }; });
+        if (mode === 'real' && !both.two) problems.push(`${dev.n}, ${tag}: Reale con Reale segue la carta: la Home deve mostrare anche il conto carta`);
+        if (mode !== 'real' && both.two) problems.push(`${dev.n}, ${tag}: in Simulato la Home non deve mostrare il secondo conto`);
         const home = await page.evaluate(() => {
             const top = document.querySelector('.nav-wrap').getBoundingClientRect().top;
             const kids = [...document.querySelectorAll('#page-home .home-container > *')].filter(e => e.getClientRects().length);
