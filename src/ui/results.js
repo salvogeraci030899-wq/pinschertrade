@@ -6,7 +6,7 @@
 // Periodi: oggi, settimana (da lunedì), mese, anno, tutto. Elenchi a scorrimento orizzontale.
 // In Reale i trade si dividono in A mano e Agente: è dell'agente un trade chiuso su Bitget che corrisponde
 // (coin, lato, apertura entro 10 minuti) a una posizione aperta dall'esecutore (live_trades.json).
-import { $, SYM, escapeHtml, fmtIt, fetchData, markChosen, chosenRecently } from '../utils/helpers.js';
+import { $, SYM, escapeHtml, fmtIt, fetchData, markChosen } from '../utils/helpers.js';
 import { isRealMode, realHistory, realAccount } from './history.js';
 import { getAutoState, loadAutomation } from './automation.js';
 
@@ -119,18 +119,10 @@ function spark(curve) {
 
 export function setResultsSource(s) { markChosen('resSrc'); src = SRC[s] ? s : 'real'; renderResults(); }
 
-// All'apertura della pagina (se non hai scelto tu negli ultimi 30 minuti): la fonte che ha dati nel periodo,
-// nell'ordine Reale, Carta; se nessuna ne ha, quella della modalità attiva
-export function autoResultsSource() { if (!chosenRecently('resSrc')) src = null; }
-function pickSource() {
-    const start = periodStart(period).getTime();
-    const has = s => trades(s).some(x => x.t && x.t >= start);
-    const from = new Date(start).toISOString().slice(0, 10);
-    const realDays = equity && equity.days && Object.entries(equity.days).some(([d, r]) => d >= from && r.pnl);
-    if (realDays || has('real')) return 'real';
-    if (has('paper')) return 'paper';
-    return isRealMode() ? 'real' : 'paper';
-}
+// All'apertura della pagina si parte sempre dalla modalità attiva: Reale acceso -> Reale, Reale spento -> Carta
+// (poi puoi cambiare con il selettore, fino alla prossima apertura)
+export function autoResultsSource() { src = isRealMode() ? 'real' : 'paper'; }
+function pickSource() { return isRealMode() ? 'real' : 'paper'; }
 export function setResultsPeriod(p) { period = PERIODS[p] ? p : 'month'; renderResults(); }
 export function setResultsWho(w) { who = WHO[w] ? w : 'all'; renderResults(); }
 
