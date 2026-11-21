@@ -173,11 +173,11 @@ export function startSignalAutoScan() {
 export function renderSignalGrid() {
     const grid = $('signalGrid');
     if (!grid) return;
-    // pagine da 3 coin (3 timeframe ciascuna) che scorrono di lato
+    // pagine da 9 celle (3 × 3) che scorrono di lato, le più accese per prime
     const pages = [];
-    for (let i = 0; i < signalOrder.length; i += 3) pages.push(signalOrder.slice(i, i + 3));
+    for (let i = 0; i < cellOrder.length; i += CELLS_PER_PAGE) pages.push(cellOrder.slice(i, i + CELLS_PER_PAGE));
     const prevPage = grid.clientWidth ? Math.round(grid.scrollLeft / gridStride(grid)) : 0;
-    const html = pages.map(assets => `<div class="signal-page">${assets.map(cells).join('')}</div>`).join('');
+    const html = pages.map(list => `<div class="signal-page">${list.map(c => cellHtml(c.asset, c.tf)).join('')}</div>`).join('');
     // niente ridisegno se non è cambiato nulla, né mentre scorri col dito (la pagina saltava all'inizio)
     if (grid.dataset.sig === html) return;
     if (gridTouching() && grid.dataset.sig) { clearTimeout(renderSignalGrid.retry); renderSignalGrid.retry = setTimeout(renderSignalGrid, 400); return; }
@@ -197,14 +197,25 @@ document.addEventListener('touchend', e => { if (e.target.closest && e.target.cl
 
 // Ordine delle coin nelle pagine: prima quelle con il segnale più forte, poi posizione aperta o avviso vicino.
 // Si decide quando si apre la scheda Segnali (e dopo una scansione se la scheda non è in vista), mai mentre la guardi.
-let signalOrder = CONFIG.SIGNAL_ASSETS.slice();
+// Ordine delle 24 celle (coin × timeframe): prima i segnali accesi (accordo di almeno 2 strategie, i più forti per primi),
+// poi quelli parziali (una sola strategia), poi i neutri. A parità conta la coin che ti interessa (posizione, avviso) e il timeframe più alto.
+// Si ricalcola solo all'apertura della scheda o dopo una scansione a scheda chiusa, mai mentre la guardi.
+const CELLS_PER_PAGE = 9;
+const defaultCells = () => CONFIG.SIGNAL_ASSETS.flatMap(asset => CONFIG.SIGNAL_TFS.map(tf => ({ asset, tf })));
+let cellOrder = defaultCells();
+
+export function cellScore(asset, tf) {
+    const agg = aggregateCellSignals(asset, tf);
+    if (!agg) return -1;
+    const rel = window.coinRelevance ? window.coinRelevance(asset) : 0;
+    if (agg.consensus !== 'NEUTRAL') return 2000 + agg.agreement * 100 + (agg.avgStrength || 0) / 10 + rel * 5;
+    if (agg.longs + agg.shorts > 0) return 1000 + (agg.avgStrength || 0) / 10 + rel * 5;
+    return rel * 5;
+}
+
 export function orderSignalAssets() {
-    const strength = asset => Math.max(0, ...CONFIG.SIGNAL_TFS.map(tf => {
-        const agg = aggregateCellSignals(asset, tf);
-        return agg && agg.consensus !== 'NEUTRAL' ? agg.agreement * 10 + (agg.avgStrength || 0) / 10 : 0;
-    }));
-    const rel = asset => (window.coinRelevance ? window.coinRelevance(asset) : 0);
-    signalOrder = CONFIG.SIGNAL_ASSETS.slice().sort((a, b) => (strength(b) + rel(b) * 5) - (strength(a) + rel(a) * 5));
+    const tfRank = tf => CONFIG.SIGNAL_TFS.indexOf(tf), assetRank = a => CONFIG.SIGNAL_ASSETS.indexOf(a);
+    cellOrder = defaultCells().sort((a, b) => (cellScore(b.asset, b.tf) - cellScore(a.asset, a.tf)) || (tfRank(a.tf) - tfRank(b.tf)) || (assetRank(a.asset) - assetRank(b.asset)));
     const g = $('signalGrid');
     if (g) g.scrollLeft = 0;
 }
@@ -228,32 +239,27 @@ export function updateSignalDots() {
     });
 }
 
-function cells(asset) {
-    let html = '';
-    for (const tf of CONFIG.SIGNAL_TFS) {
-        const agg = aggregateCellSignals(asset, tf);
-        const key = `${asset}_${tf}`;
-        if (!agg) {
-            html += `<div class="signal-cell loading"><div class="sc-head"><span class="sc-asset">${SYM(asset)}</span><span class="sc-tf">${tf}</span></div><div class="sc-badge neutral">—</div><div class="sc-foot"><div class="sc-agree">—</div></div></div>`;
-            continue;
-        }
-        const cls = agg.consensus.toLowerCase();
-        const m = State.signalMatrix[key];
-        const sDots = CONFIG.SIGNAL_STRATEGIES.map(s => {
-            const st = m[s];
-            const on = st && st.signal !== 'NEUTRAL';
-            const sideCls = st && st.signal === 'SHORT' ? 'short' : (st && st.signal === 'LONG' ? 'long' : '');
-            return `<span class="sc-agree-dot ${on ? 'on ' + sideCls : ''}"></span>`;
-        }).join('');
-        html += `<div class="signal-cell ${cls}" onclick="openSignalDetail('${asset}','${tf}')">
-            <div class="sc-head"><span class="sc-asset">${SYM(asset)}</span><span class="sc-tf">${tf}</span></div>
-            <div class="sc-badge ${cls}">${agg.consensus === 'NEUTRAL' ? '—' : agg.consensus + ' ' + agg.agreement + '/3'}</div>
-            <div class="sc-foot">
-                <div class="sc-agree">${sDots}</div>
-            </div>
-        </div>`;
+function cellHtml(asset, tf) {
+    const agg = aggregateCellSignals(asset, tf);
+    const key = `${asset}_${tf}`;
+    if (!agg) {
+        return `<div class="signal-cell loading"><div class="sc-head"><span class="sc-asset">${SYM(asset)}</span><span class="sc-tf">${tf}</span></div><div class="sc-badge neutral">—</div><div class="sc-foot"><div class="sc-agree">—</div></div></div>`;
     }
-    return html;
+    const cls = agg.consensus.toLowerCase();
+    const m = State.signalMatrix[key];
+    const sDots = CONFIG.SIGNAL_STRATEGIES.map(s => {
+        const st = m[s];
+        const on = st && st.signal !== 'NEUTRAL';
+        const sideCls = st && st.signal === 'SHORT' ? 'short' : (st && st.signal === 'LONG' ? 'long' : '');
+        return `<span class="sc-agree-dot ${on ? 'on ' + sideCls : ''}"></span>`;
+    }).join('');
+    return `<div class="signal-cell ${cls}" onclick="openSignalDetail('${asset}','${tf}')">
+        <div class="sc-head"><span class="sc-asset">${SYM(asset)}</span><span class="sc-tf">${tf}</span></div>
+        <div class="sc-badge ${cls}">${agg.consensus === 'NEUTRAL' ? '—' : agg.consensus + ' ' + agg.agreement + '/3'}</div>
+        <div class="sc-foot">
+            <div class="sc-agree">${sDots}</div>
+        </div>
+    </div>`;
 }
 
 export function renderSignalHistory() {
