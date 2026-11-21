@@ -197,6 +197,8 @@ try {
         // Reale con "Reale segue la carta": Home mostra insieme conto reale e conto carta; in Simulato solo la carta
         const both = await page.evaluate(() => { const v = id => { const e = document.getElementById(id); return !!e && e.getClientRects().length > 0; }; return { two: v('homeKpis2'), title: document.getElementById('homeAccTitle').textContent }; });
         if (!both.two) problems.push(`${dev.n}, ${tag}: la Home deve mostrare anche il conto carta (Reale spento, o Reale che segue la carta)`);
+        const glow = await page.evaluate(() => document.documentElement.classList.contains('mode-real'));
+        if (glow !== (mode === 'real')) problems.push(`${dev.n}, ${tag}: il bordo dell'icona del titolo si illumina solo in Reale (acceso: ${glow})`);
         if (!/Bitget/.test(both.title)) problems.push(`${dev.n}, ${tag}: la Home deve sempre mostrare il conto Bitget`);
         const home = await page.evaluate(() => {
             const top = document.querySelector('.nav-wrap').getBoundingClientRect().top;
