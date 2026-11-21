@@ -138,8 +138,20 @@ export function initPageFit() {
         // Contenuto che cambia (liste, griglie, testi, elementi mostrati/nascosti con una classe)
         new MutationObserver(muts => { if (muts.some(relevant)) schedule(false, false); }).observe(page, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
     }
-    window.addEventListener('resize', () => schedule(true));
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', () => schedule(true));
+    // Con la tastiera aperta (un campo di testo ha il focus) l'area visibile si accorcia: le pagine dietro non si rimisurano,
+    // sennò si adattano a uno spazio che sparisce subito dopo. Alla chiusura della tastiera si ripristina lo scorrimento
+    // (iOS sposta la pagina per mostrare il campo e può lasciare uno spazio vuoto) e si rimisura una volta sola.
+    const typing = () => { const a = document.activeElement; return !!a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName); };
+    const onResize = () => { if (!typing()) schedule(true); };
+    window.addEventListener('resize', onResize);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', onResize);
+    document.addEventListener('focusout', () => setTimeout(() => {
+        if (typing()) return;
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0; document.body.scrollTop = 0;
+        const main = document.querySelector('main'); if (main) main.scrollTop = 0;
+        schedule(true);
+    }, 120));
     schedule(true);
 }
 

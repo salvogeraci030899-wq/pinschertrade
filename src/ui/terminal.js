@@ -18,7 +18,25 @@ function getTFLabel(tf) {
 }
 
 // --- INIZIALIZZAZIONE ---
+// L'ultima coin e l'ultimo timeframe scelti si ricordano sul telefono e si rimettono prima di disegnare il grafico (nessuno scatto all'avvio)
+const CHART_KEY = 'pt_chart';
+function saveChartChoice() { try { localStorage.setItem(CHART_KEY, JSON.stringify({ a: State.currentAsset, t: State.currentTF })); } catch (e) { /* senza memoria: vale fino alla chiusura */ } }
+function restoreChartChoice() {
+    let v = null;
+    try { v = JSON.parse(localStorage.getItem(CHART_KEY) || 'null'); } catch (e) { v = null; }
+    if (!v) return;
+    if (TRADE_SYMBOLS.includes(v.a)) State.currentAsset = v.a;
+    if (['1d', '4h', '1h'].includes(v.t)) State.currentTF = v.t;
+    TRADE_SYMBOLS.forEach(a => { const b = document.getElementById(`btn-${a}`); if (b) b.classList.toggle('active', a === State.currentAsset); });
+    ['1d', '4h', '1h'].forEach(t => { const b = document.getElementById(`btn-${t}`); if (b) b.classList.toggle('active', t === State.currentTF); });
+    const lbl = document.getElementById('current-asset-label');
+    if (lbl) lbl.textContent = `${State.currentAsset.replace('USDT', '')} / USDT · ${getTFLabel(State.currentTF)}`;
+    const active = document.getElementById(`btn-${State.currentAsset}`);
+    if (active) active.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+}
+
 export function initTerminal() {
+    restoreChartChoice();
     try { initChart(); } catch (e) { Logger.log('ERROR', 'TERMINAL', 'Errore chart init', e); }
     loadData();
     startPricePoll();
@@ -302,6 +320,7 @@ export function updateCoinFade() {
 export function setAsset(asset, manual = true) {
     if (manual) markChosen('asset');
     State.currentAsset = asset;
+    saveChartChoice();
     State.lastHeaderPrice = null;
     TRADE_SYMBOLS.forEach(a => { const b = document.getElementById(`btn-${a}`); if (b) b.classList.toggle('active', a === asset); });
     const active = document.getElementById(`btn-${asset}`);
@@ -316,6 +335,7 @@ export function setAsset(asset, manual = true) {
 
 export function setTF(tf) {
     State.currentTF = tf;
+    saveChartChoice();
     ['1d', '4h', '1h'].forEach(t => document.getElementById(`btn-${t}`).classList.toggle('active', t === tf));
     document.getElementById('current-asset-label').textContent = `${State.currentAsset.replace('USDT', '')} / USDT · ${getTFLabel(tf)}`;
     syncFsHeader();

@@ -191,6 +191,14 @@ try {
             // Posizioni resta fuori: i prezzi dal vivo arrivano dalla rete dopo l'apertura, non sono dati in memoria.
             for (const [l, t, w] of ready) if ((l.startsWith('Agente') || /^pagina (log|signals|journal)$/.test(l)) && t > 300) problems.push(`${dev.n}, ${tag}: ${l} pronta dopo ${t} ms (${w}): deve disegnarsi subito dai dati in memoria`);
         }
+        // Mercato: l'ultima coin e l'ultimo timeframe si ricordano dopo il riavvio, con i tasti già giusti
+        await page.evaluate(() => { window.switchTab('terminal'); window.setAsset('ETHUSDT'); window.setTF('4h'); });
+        await page.waitForTimeout(300);
+        await page.reload({ waitUntil: 'load' });
+        await page.waitForTimeout(1200);
+        const chartMem = await page.evaluate(() => ({ a: document.getElementById('btn-ETHUSDT').classList.contains('active'), t: document.getElementById('btn-4h').classList.contains('active'), b: document.getElementById('btn-BTCUSDT').classList.contains('active'), l: document.getElementById('current-asset-label').textContent }));
+        if (!chartMem.a || !chartMem.t || chartMem.b) problems.push(`${dev.n}, ${tag}: Mercato non ricorda l'ultima coin e l'ultimo timeframe (${JSON.stringify(chartMem)})`);
+        await page.evaluate(() => { window.setAsset('BTCUSDT'); window.setTF('1d'); });
         // Risultati: cambiando periodo (Oggi, Settimana, ...) e fonte (Reale, Carta) nulla si sposta né cambia misura
         await page.evaluate(() => window.switchTab('journal'));
         await page.waitForTimeout(700);

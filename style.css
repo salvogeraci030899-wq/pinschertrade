@@ -566,7 +566,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 /* --- HOME ---
    Gerarchia: mercato (3 riquadri) → conto simulato (3 indicatori) → automazione → stato → grafici.
    Le schede hanno altezza naturale; i grafici prendono tutto lo spazio che resta (flex: 1). */
-.home-container { flex: 1; display: flex; flex-direction: column; gap: var(--sp-3); min-height: 0; }
+.home-container { flex: 1; display: flex; flex-direction: column; gap: var(--sp-4); min-height: 0; }
 
 .home-market { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); flex-shrink: 0; }
 .home-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-card-sm); padding: var(--sp-3) var(--sp-3); min-height: var(--touch-min); display: flex; flex-direction: column; align-items: flex-start; gap: 1px; color: var(--text); font: inherit; text-align: left; cursor: pointer; min-width: 0; transition: border-color var(--dur-fast); }
@@ -620,7 +620,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 
 /* Schermi bassi (iPhone SE, Safari con la barra): schede più compatte */
 @media (max-height: 720px) {
-    .home-container { gap: var(--sp-2); }
+    .home-container { gap: var(--sp-3); }
     .home-tile { padding: var(--sp-2) var(--sp-3); }
     .home-tile-px { font-size: var(--fs-md); }
     .home-card { padding: var(--sp-3) var(--sp-4); gap: var(--sp-2); border-radius: var(--r-card-sm); }
@@ -1358,3 +1358,4 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 
 /* Margine laterale della pagina Mercato misurato dentro lo zoom di adattamento: le liste a scorrimento arrivano al bordo dello schermo anche rimpicciolite */
 #page-terminal { --bleed: calc(var(--page-gutter) / var(--fit-zoom-terminal, 1)); }
+#homeAccTitle2 { margin-top: var(--sp-2); }
