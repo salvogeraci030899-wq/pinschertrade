@@ -102,6 +102,7 @@ try {
             for (const v of (process.env.SHOT_VIEWS || 'home').split(',')) {
                 const [tab, sub] = v.split(':');
                 await page.evaluate(([t, sv]) => { window.switchTab(t); if (sv && t === 'terminal') window.setMarketView(sv); if (sv && t === 'signals') window.setSignalsView(sv); }, [tab, sub]);
+                if (process.env.SHOT_JS) await page.evaluate(process.env.SHOT_JS);
                 await page.waitForTimeout(1200);
                 await page.screenshot({ path: `${process.env.SHOT_DIR}/${dev.n.replace(/\s+/g, '_')}-${tag.replace(/[^A-Za-z]+/g, '_')}-${tab}${sub ? '-' + sub : ''}.png` });
             }
@@ -383,6 +384,38 @@ try {
             if (!ok) console.log('  segnali, dettagli:', JSON.stringify(r));
             return ok;
         });
+        // Scorrimento col dito (eventi di tocco veri, non scrollTo): griglia dei segnali e storico devono muoversi e agganciarsi
+        await step('segnali: scorrimento col dito su griglia e storico', async () => {
+            await page.evaluate(async () => {
+                window.switchTab('terminal'); window.setMarketView('sig');
+                const { State } = await import('./src/core/state.js');
+                const sig = (a, b, c) => ({ breakout: { signal: a, strength: 70 }, mean_reversion: { signal: b, strength: 60 }, ma_crossover: { signal: c, strength: 66 } });
+                for (const a of ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'BNBUSDT', 'ADAUSDT', 'LINKUSDT']) for (const tf of ['1d', '4h', '1h']) State.signalMatrix[`${a}_${tf}`] = sig('SHORT', 'NEUTRAL', 'SHORT');
+                const now = Date.now();
+                State.signalHistory = Array.from({ length: 12 }, (_, i) => ({ asset: ['SOLUSDT', 'BTCUSDT', 'ETHUSDT'][i % 3], tf: ['1h', '4h', '1d'][i % 3], consensus: 'SHORT', agreement: 2, timestamp: now - i * 3600e3, strength: 68 - i, sources: { breakout: 'SHORT', mean_reversion: 'SHORT', ma_crossover: 'SHORT' } }));
+                const sm = await import('./src/ui/signals.js'); sm.renderSignalGrid(); sm.renderSignalHistory();
+            });
+            await page.waitForTimeout(500);
+            const cdp = await page.context().newCDPSession(page);
+            const swipe = async (x1, x2, y) => {
+                await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x1, y }] });
+                for (let i = 1; i <= 8; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x1 + (x2 - x1) * i / 8, y }] }); await page.waitForTimeout(16); }
+                await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+                await page.waitForTimeout(700);
+            };
+            const pos = sel => page.evaluate(sel => { const e = document.querySelector(sel), r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2, w: r.width, sl: e.scrollLeft, cw: e.clientWidth }; }, sel);
+            const g0 = await pos('#signalGrid');
+            await swipe(g0.x + g0.w * 0.35, g0.x - g0.w * 0.35, g0.y);                    // sulle celle: da destra a sinistra
+            const g1 = await pos('#signalGrid');
+            const h0 = await pos('#signalHistoryList');
+            await swipe(h0.x + h0.w * 0.35, h0.x - h0.w * 0.35, h0.y);
+            const h1 = await pos('#signalHistoryList');
+            await page.evaluate(() => { document.getElementById('signalGrid').scrollLeft = 0; document.getElementById('signalHistoryList').scrollLeft = 0; });
+            const rem = g1.sl % g1.cw;
+            const ok = g1.sl > g0.sl + 20 && Math.min(rem, g1.cw - rem) <= 2 && h1.sl > h0.sl + 20;
+            if (!ok) console.log('  scorrimento col dito:', JSON.stringify({ g0: g0.sl, g1: g1.sl, cw: g1.cw, h0: h0.sl, h1: h1.sl }));
+            return ok;
+        });
         await step('mercato: Nuovo avviso non apre la finestra', async () => {
             await page.evaluate(() => window.setMarketView('alerts')); await page.waitForTimeout(300);
             await page.click('.mkt-new-alert'); await page.waitForTimeout(300);
@@ -431,7 +464,7 @@ try {
             await page.waitForTimeout(300);
             const m = await page.evaluate(() => ({ on: document.getElementById('autoConfirmModal').classList.contains('active'), t: document.getElementById('autoConfirmMsg').innerText }));
             await page.evaluate(() => { window.closeAutoConfirm(); window.closeAutoRisk(); });
-            return has && m.on && /ALTO RISCHIO/.test(m.t) && /sia su carta sia in Reale/.test(m.t);
+            return has && m.on && /ALTO RISCHIO/.test(m.t) && /su carta e in Reale/.test(m.t);
         });
         await step('agente: Reale senza la conferma', async () => {
             await page.click('#agentSettings .pill-btn:has-text("Reale")'); await page.waitForTimeout(300);
