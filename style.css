@@ -354,7 +354,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .btn-generic-tight { padding: var(--sp-3); font-size: var(--fs-md); margin-top: 0; }
 
 /* --- SEGNALI --- */
-#sigView .log-list { display: flex; flex-direction: row; align-items: flex-start; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding: 0 var(--page-gutter); -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; gap: var(--sp-3); padding: 0 var(--page-gutter) var(--sp-2); margin: 0 calc(-1 * var(--page-gutter)); scrollbar-width: none; -ms-overflow-style: none; flex: 0 0 auto; }
+#sigView .log-list { display: flex; flex-direction: row; align-items: flex-start; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding: 0 var(--bleed, var(--page-gutter)); -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; gap: var(--sp-3); padding: 0 var(--bleed, var(--page-gutter)) var(--sp-2); margin: 0 calc(-1 * var(--bleed, var(--page-gutter))); scrollbar-width: none; -ms-overflow-style: none; flex: 0 0 auto; }
 #sigView .log-list::-webkit-scrollbar { display: none; }
 #sigView .log-item { flex: 0 0 calc(100% - 28px); scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; }
 /* Automazione (pagina Segnali, vista Auto) */
@@ -399,7 +399,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .settings-hint { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; margin: 0 var(--sp-2) var(--sp-3); }
 .signal-actions { display: flex; gap: var(--sp-3); margin-bottom: var(--sp-3); flex-shrink: 0; }
 .signal-actions button { flex: 1; margin-top: 0; padding: var(--sp-4); font-size: var(--fs-md); }
-.signal-grid { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; margin-bottom: var(--sp-2); flex-shrink: 0; }
+.signal-grid { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding: 0 var(--bleed, var(--page-gutter)); scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; gap: var(--sp-5); padding: 0 var(--bleed, var(--page-gutter)); margin: 0 calc(-1 * var(--bleed, var(--page-gutter))) var(--sp-2); flex-shrink: 0; }
 .signal-grid::-webkit-scrollbar { display: none; }
 .signal-page { flex: 0 0 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); scroll-snap-align: start; scroll-snap-stop: always; }
 .signal-dots { margin-bottom: var(--sp-3); }
@@ -1340,3 +1340,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: var
 .field-title { font-size: var(--fs-sm); font-weight: var(--fw-bold); color: var(--text); margin-bottom: var(--sp-3); }
 .stack { display: flex; flex-direction: column; gap: var(--sp-4); }
 .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-5); border-bottom: 1px solid var(--border); padding-bottom: var(--sp-4); }
+
+/* Margine laterale della pagina Mercato misurato dentro lo zoom di adattamento: le liste a scorrimento arrivano al bordo dello schermo anche rimpicciolite */
+#page-terminal { --bleed: calc(var(--page-gutter) / var(--fit-zoom-terminal, 1)); }

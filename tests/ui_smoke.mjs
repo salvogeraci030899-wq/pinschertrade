@@ -372,15 +372,16 @@ try {
                 list.scrollTo({ left: 0, behavior: 'auto' }); await wait(200);
                 // griglia: pagina 2 agganciata e punto attivo
                 const grid = document.getElementById('signalGrid');
-                grid.scrollTo({ left: grid.clientWidth, behavior: 'smooth' }); await wait(900);
-                out.gridSnap = Math.abs(grid.scrollLeft - grid.clientWidth) <= 2;
+                const gp = grid.querySelectorAll('.signal-page'), gstride = gp[1].offsetLeft - gp[0].offsetLeft;
+                grid.scrollTo({ left: gstride, behavior: 'smooth' }); await wait(900);
+                out.gridSnap = Math.abs(grid.scrollLeft - gstride) <= 2;
                 out.dot = [...document.querySelectorAll('#signalDots .info-dot')].findIndex(d => d.classList.contains('active'));
                 grid.scrollTo({ left: 0, behavior: 'auto' }); await wait(100);
                 const { State } = await import('./src/core/state.js'); State.signalHistory = [];
                 (await import('./src/ui/signals.js')).renderSignalHistory();
                 return out;
             });
-            const ok = r.infoOk && Math.abs(r.margin - 16 * r.zoom) <= 2 && r.peek > 8 * r.zoom && r.peek < 60 && r.noClip && r.snap && r.counter === '2 / 12' && r.gridSnap && r.dot === 1;
+            const ok = r.infoOk && Math.abs(r.margin - 16) <= 2 && r.peek > 8 * r.zoom && r.peek < 60 && r.noClip && r.snap && r.counter === '2 / 12' && r.gridSnap && r.dot === 1;
             if (!ok) console.log('  segnali, dettagli:', JSON.stringify(r));
             return ok;
         });
@@ -411,9 +412,13 @@ try {
             await swipe(h0.x + h0.w * 0.35, h0.x - h0.w * 0.35, h0.y);
             const h1 = await pos('#signalHistoryList');
             await page.evaluate(() => { document.getElementById('signalGrid').scrollLeft = 0; document.getElementById('signalHistoryList').scrollLeft = 0; });
-            const rem = g1.sl % g1.cw;
-            const ok = g1.sl > g0.sl + 20 && Math.min(rem, g1.cw - rem) <= 2 && h1.sl > h0.sl + 20;
-            if (!ok) console.log('  scorrimento col dito:', JSON.stringify({ g0: g0.sl, g1: g1.sl, cw: g1.cw, h0: h0.sl, h1: h1.sl }));
+            const geo = await page.evaluate(() => {
+                const g = document.getElementById('signalGrid'), pgs = g.querySelectorAll('.signal-page');
+                return { stride: pgs[1].offsetLeft - pgs[0].offsetLeft, w: pgs[0].offsetWidth, left: Math.round(g.getBoundingClientRect().left), gap: pgs[1].offsetLeft - pgs[0].offsetLeft - pgs[0].offsetWidth };
+            });
+            // la griglia scorre a tutto schermo e fra una pagina e l'altra c'è uno spazio: non sembrano incollate
+            const ok = g1.sl > g0.sl + 20 && Math.abs(g1.sl - geo.stride) <= 2 && h1.sl > h0.sl + 20 && geo.gap >= 12 && geo.left <= 1;
+            if (!ok) console.log('  scorrimento col dito:', JSON.stringify({ g0: g0.sl, g1: g1.sl, cw: g1.cw, h0: h0.sl, h1: h1.sl, geo }));
             return ok;
         });
         await step('mercato: Nuovo avviso non apre la finestra', async () => {
