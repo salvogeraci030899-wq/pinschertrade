@@ -80,6 +80,13 @@ def automation_step(frames, notify=None):
     except Exception as e:
         print(f"Conto della carta non aggiornato: {e}")
     try:
+        # confronto: stesso conto carta ma senza chiusura totale del portafoglio (solo se la chiusura totale è accesa)
+        risk = executor.risk_config(cfg)
+        if (risk.get("portfolio_target_pct") or 0) > 0 or (risk.get("portfolio_stop_pct") or 0) > 0:
+            executor.run_paper_account_senza_chiusura(cfg, paper_ledger, near_keys=automation.near_keys(), candidate_keys=automation.candidate_keys())
+    except Exception as e:
+        print(f"Conto carta di confronto non aggiornato: {e}")
+    try:
         executor.account_snapshot(notify=notify)
     except Exception as e:
         print(f"Lettura del conto Bitget non riuscita: {e}")

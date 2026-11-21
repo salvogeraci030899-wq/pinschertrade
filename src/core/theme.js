@@ -36,6 +36,7 @@ export function setThemePref(pref) {
 
 export function initTheme() {
     applyTheme();
+    applyWall();
     if (media) {
         const onChange = () => { if (getThemePref() === 'auto') applyTheme(); };
         if (media.addEventListener) media.addEventListener('change', onChange);
@@ -59,6 +60,36 @@ export function setGlassPref(pref) {
     document.documentElement.classList.toggle('glass-anim', pref === 'anim');
     applyTheme();      // i grafici si ridipingono (sfondo trasparente col vetro)
     requestAnimationFrame(syncWalls);
+}
+
+// Colori sfondo (Opzioni → Aspetto): tre luci tenui, ognuna del colore scelto, su nero o bianco che restano predominanti.
+// Ogni pallino cicla: colore di base della luce → colori → nessuna luce. Si salva anche il valore CSS, così il primo disegno (script nell'head) non lampeggia.
+const WALL_KEY = 'pt_wall';
+export const WALL_COLORS = [['base', 'Base', null], ['blu', 'Blu', 'rgb(10 132 255)'], ['verde', 'Verde', 'rgb(48 209 88)'], ['viola', 'Viola', 'rgb(191 90 242)'],
+    ['rosa', 'Rosa', 'rgb(255 55 95)'], ['arancio', 'Arancio', 'rgb(255 159 10)'], ['ciano', 'Ciano', 'rgb(100 210 255)'], ['giallo', 'Giallo', 'rgb(255 214 10)'],
+    ['rosso', 'Rosso', 'rgb(255 69 58)'], ['nessuno', 'Nessuna luce', 'transparent']];
+export function getWallPref() {
+    try {
+        const v = JSON.parse(localStorage.getItem(WALL_KEY) || 'null');
+        if (v && Array.isArray(v.ids) && v.ids.length === 3 && v.ids.every(id => WALL_COLORS.some(c => c[0] === id))) return v.ids;
+    } catch (e) { /* senza memoria: colori di base */ }
+    return ['base', 'base', 'base'];
+}
+export function applyWall(ids = getWallPref()) {
+    const root = document.documentElement;
+    ids.forEach((id, i) => {
+        const css = (WALL_COLORS.find(c => c[0] === id) || [])[2];
+        if (css) root.style.setProperty(`--wall-c${i + 1}`, css); else root.style.removeProperty(`--wall-c${i + 1}`);
+    });
+    root.classList.toggle('tint', ids.some(id => id !== 'base'));
+}
+export function cycleWallColor(i) {
+    const ids = getWallPref();
+    const at = WALL_COLORS.findIndex(c => c[0] === ids[i]);
+    ids[i] = WALL_COLORS[(at + 1) % WALL_COLORS.length][0];
+    try { localStorage.setItem(WALL_KEY, JSON.stringify({ ids, css: ids.map(id => (WALL_COLORS.find(c => c[0] === id) || [])[2] || null) })); } catch (e) { /* vale fino alla chiusura */ }
+    applyWall(ids);
+    return ids;
 }
 
 // Sfondo dinamico: ogni schermata intera (app, finestre, Assistente, blocco) ha le sue luci. Tutte agganciate allo

@@ -44,9 +44,9 @@ function onModeData() {
     if (window.updateHome) window.updateHome();
 }
 // Conto della carta: sempre acceso, in un file suo (paper_account.json); in mancanza (primo avvio dopo l'aggiornamento) vale quello dell'esecutore simulato
-let paperAcct = null;
+let paperAcct = null, paperB = null;     // paperB: conto carta di confronto, senza chiusura totale (paper_account_senza_chiusura.json)
 export const paperLive = () => (paperAcct && paperAcct.simulated ? paperAcct : (live && live.mode === 'simulata' && live.simulated ? live : null));
-export const getAutoState = () => ({ cfg, ledger, lab, live, paper: paperLive(), loaded, pendingTrading });
+export const getAutoState = () => ({ cfg, ledger, lab, live, paper: paperLive(), paperB, loaded, pendingTrading });
 // Con gli ordini simulati la carta è l'esecutore simulato (stessi limiti del reale): le statistiche di una strategia contano solo i trade
 // che ha davvero aperto; quelli che i limiti avrebbero rifiutato si contano a parte ("non aperti").
 export const simStatsOn = () => !!paperLive();
@@ -286,9 +286,9 @@ export async function loadAutomation() {
     if (loading) return;
     loading = true;
     let alertsState, quickState;
-    [cfg, ledger, lab, live, paperAcct, alertsState, quickState, agentState, guardState] = await Promise.all([getJson('automation.json'), getJson('paper_trades.json'), getJson('lab_summary.json'), getJson('live_trades.json'), getJson('paper_account.json'), getJson('alerts_state.json'), getJson('quick_state.json'), getJson('agent_state.json'), getJson('guard_state.json')]);
+    [cfg, ledger, lab, live, paperAcct, paperB, alertsState, quickState, agentState, guardState] = await Promise.all([getJson('automation.json'), getJson('paper_trades.json'), getJson('lab_summary.json'), getJson('live_trades.json'), getJson('paper_account.json'), getJson('paper_account_senza_chiusura.json'), getJson('alerts_state.json'), getJson('quick_state.json'), getJson('agent_state.json'), getJson('guard_state.json')]);
     firedAlerts = [...((alertsState && alertsState._price_alerts_fired) || []), ...((quickState && quickState._price_alerts_fired) || [])];
-    const sig = JSON.stringify([cfg, ledger, lab, live, paperAcct, alertsState, quickState, agentState, guardState]);
+    const sig = JSON.stringify([cfg, ledger, lab, live, paperAcct, paperB, alertsState, quickState, agentState, guardState]);
     const unchanged = loaded && sig === loadedSig;
     loadedSig = sig;
     loaded = true;

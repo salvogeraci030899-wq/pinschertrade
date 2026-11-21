@@ -57,7 +57,7 @@ def _paper_return(paper, risk_pct):
 def build(frames, now, paths=None):
     """frames: {"SYMBOL_1d": DataFrame candele chiuse} del giro corrente (può mancare qualcosa)."""
     p = {"futures": "futures_data.json", "paper": "paper_trades.json", "live": "live_trades.json",
-         "automation": "automation.json", "lab": "lab_summary.json", "agent": "agent_state.json", "paper_account": "paper_account.json", **(paths or {})}
+         "automation": "automation.json", "lab": "lab_summary.json", "agent": "agent_state.json", "paper_account": "paper_account.json", "paper_b": "paper_account_senza_chiusura.json", **(paths or {})}
     lines = [f"📊 RIEPILOGO {now:%d/%m/%Y}"]
 
     prices = []
@@ -156,6 +156,17 @@ def build(frames, now, paths=None):
         lines.append(f"Conto carta: {_it(sim['equity'])} USDT ({_it(sim['equity'] - start, sign=True)} da {_it(start, 0)}), {n_open} aperte, "
                      f"{len(closed)} chiuse (netto {_it(sum(float(x['net']) for x in closed), sign=True)} USDT)"
                      + (f", partite perse {len(pa['rounds'])} (capitale esaurito)" if pa.get("rounds") else ""))
+        # confronto con il conto carta senza chiusura totale (stessi segnali): solo se esiste e la chiusura totale è accesa
+        pb = _read(p["paper_b"]) or {}
+        since = pb.get("first_run")
+        if since and pb.get("simulated"):
+            def net_n(acc):
+                rows = [x for x in (acc.get("positions") or {}).values()
+                        if x.get("status") == "closed" and x.get("net") is not None and str(x.get("opened_at") or "") >= since]
+                return sum(float(x["net"]) for x in rows), len(rows)
+            (na, ka), (nb, kb) = net_n(pa), net_n(pb)
+            lines.append(f"Confronto chiusura totale dal {since[8:10]}/{since[5:7]}: con {_it(na, sign=True)} USDT ({ka} chiusi), senza {_it(nb, sign=True)} USDT ({kb} chiusi)"
+                         + ("" if min(ka, kb) >= 30 else f". Troppo pochi trade ({min(ka, kb)} su 30) per dire quale conviene"))
 
     lab = _read(p["lab"]) or {}
     confirmed = lab.get("confirmed") or []

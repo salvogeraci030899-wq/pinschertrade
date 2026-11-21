@@ -117,6 +117,45 @@ function spark(curve) {
     return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="agent-spark"><line x1="0" x2="${W}" y1="${Y(0).toFixed(1)}" y2="${Y(0).toFixed(1)}" class="zero"/><polyline points="${pts}" class="${curve[curve.length - 1][1] >= 0 ? 'up' : 'down'}"/></svg>`;
 }
 
+// --- Confronto chiusura totale: il conto carta (con) e il suo gemello senza chiusura totale, stessi segnali, dal giorno in cui il gemello è partito ---
+const CMP_MIN = 30;
+function cmpStats(acc, sinceMs) {
+    const rows = Object.values((acc && acc.positions) || {}).filter(p => p && p.status === 'closed' && p.net != null && (Date.parse(p.opened_at) || 0) >= sinceMs)
+        .sort((a, b) => (Date.parse(a.closed_at) || 0) - (Date.parse(b.closed_at) || 0));
+    let cum = 0, peak = 0, dd = 0;
+    for (const p of rows) { cum += Number(p.net); peak = Math.max(peak, cum); dd = Math.max(dd, peak - cum); }
+    const exits = ((acc && acc.events) || []).filter(e => e && e.kind === 'portfolio_exit' && (Date.parse(e.at) || 0) >= sinceMs).length;
+    return { n: rows.length, net: cum, dd, exits, base: Number(acc && acc.simulated && acc.simulated.start) || 1000 };
+}
+export function cmpAvailable() {
+    const { cfg, paper, paperB } = getAutoState();
+    const r = (cfg && cfg.risk) || {};
+    return !!(paper && paperB && paperB.simulated && paperB.first_run && ((Number(r.portfolio_target_pct) || 0) > 0 || (Number(r.portfolio_stop_pct) || 0) > 0));
+}
+export function openCompare() {
+    const { paper, paperB } = getAutoState();
+    const box = $('cmpBody');
+    if (!box || !cmpAvailable()) return;
+    const since = Date.parse(paperB.first_run) || 0;
+    const a = cmpStats(paper, since), b = cmpStats(paperB, since);
+    const usd = v => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtIt(Math.abs(v), 2)} $`;
+    const row = (l, x, y, cls = '') => `<tr><th>${l}</th><td class="${cls}">${x}</td><td class="${cls}">${y}</td></tr>`;
+    const min = Math.min(a.n, b.n), diff = a.net - b.net;
+    let verdict;
+    if (min < CMP_MIN) verdict = `Per ora troppo pochi trade (${min} su ${CMP_MIN}) per dire quale conviene.`;
+    else if (Math.abs(diff) < a.base * 0.005) verdict = 'La differenza è troppo piccola per dire quale conviene.';
+    else verdict = `${diff > 0 ? 'Con' : 'Senza'} la chiusura totale: ${usd(Math.abs(diff))} in più` + (a.dd !== b.dd ? `, calo massimo ${(diff > 0 ? a.dd < b.dd : b.dd < a.dd) ? 'minore' : 'maggiore'}.` : '.');
+    box.innerHTML = `<p class="cmp-note">Stessi segnali e stesse regole, dal ${new Date(since).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })}. Con = come la carta, Senza = nessuna chiusura totale.</p>
+        <table class="cmp-table"><thead><tr><th></th><th>Con</th><th>Senza</th></tr></thead><tbody>
+        ${row('Netto chiusi', usd(a.net), usd(b.net), 'mono')}
+        ${row('Trade chiusi', a.n, b.n, 'mono')}
+        ${row('Calo massimo', `−${fmtIt(a.dd, 2)} $`, `−${fmtIt(b.dd, 2)} $`, 'mono')}
+        ${row('Chiusure totali', a.exits, '—', 'mono')}</tbody></table>
+        <p class="cmp-verdict">${verdict}</p><p class="cmp-note">Pochi trade: indicativo, non una prova.</p>`;
+    $('cmpModal').classList.add('active');
+}
+export function closeCompare() { $('cmpModal').classList.remove('active'); }
+
 export function setResultsSource(s) { markChosen('resSrc'); src = SRC[s] ? s : 'real'; renderResults(); }
 
 // All'apertura della pagina si parte sempre dalla modalità attiva: Reale acceso -> Reale, Reale spento -> Carta
@@ -162,6 +201,6 @@ export async function renderResults() {
         <div class="section-title"><span>Da dove viene</span></div>
         <div class="res-hlist">${coinCards || `<div class="res-mini res-ghost" aria-hidden="true"><b>BTC</b><b>0</b><small>0 trade</small></div><div class="empty-hint res-empty">Nessun trade chiuso nel periodo.</div>`}</div>
         <div class="section-title"><span>Trade chiusi <small class="auto-count">${s.list.length || ''}</small></span>
-            <span class="section-actions">${src === 'real' ? Object.entries(WHO).map(([k, l]) => `<button class="btn-link-secondary${k === who ? ' on' : ''}" onclick="setResultsWho('${k}')">${l}</button>`).join('') : ''}</span></div>
+            <span class="section-actions">${src === 'real' ? Object.entries(WHO).map(([k, l]) => `<button class="btn-link-secondary${k === who ? ' on' : ''}" onclick="setResultsWho('${k}')">${l}</button>`).join('') : (cmpAvailable() ? '<button class="btn-link-secondary" onclick="openCompare()">Confronto chiusura totale</button>' : '')}</span></div>
         <div class="res-hlist res-trades">${tradeCards || `<div class="res-trade res-ghost" aria-hidden="true"><div class="res-trade-h"><b>BTC</b><small>00/00</small></div><small>0 → 0</small><b>0</b></div><div class="empty-hint res-empty">Nessun trade chiuso nel periodo.</div>`}</div>`;
 }

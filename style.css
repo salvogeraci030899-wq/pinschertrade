@@ -1191,14 +1191,14 @@ html.glass[data-theme="light"] .pos-views button.active, html.glass[data-theme="
    (sul nero pieno il vetro non si vedrebbe). La sfocatura vera solo sulle schede grandi, per non appesantire. */
 html.glass { --surface: rgba(255, 255, 255, 0.06); --surface-2: rgba(255, 255, 255, 0.04); --surface-hover: rgba(255, 255, 255, 0.13);
     --border: rgba(255, 255, 255, 0.11); --chart-bg: transparent;
-    --wall: radial-gradient(60% 45% at 0% 0%, color-mix(in srgb, var(--ui) 28%, transparent), transparent 70%),
-            radial-gradient(55% 40% at 100% 45%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
-            radial-gradient(65% 45% at 20% 100%, rgba(191, 90, 242, 0.20), transparent 70%), var(--wall-solid); }
+    --wall: radial-gradient(60% 45% at 0% 0%, color-mix(in srgb, var(--wall-c1, var(--ui)) 28%, transparent), transparent 70%),
+            radial-gradient(55% 40% at 100% 45%, color-mix(in srgb, var(--wall-c2, var(--accent)) 16%, transparent), transparent 70%),
+            radial-gradient(65% 45% at 20% 100%, color-mix(in srgb, var(--wall-c3, rgb(191 90 242)) 20%, transparent), transparent 70%), var(--wall-solid); }
 html.glass[data-theme="light"] { --surface: rgba(255, 255, 255, 0.66); --surface-2: rgba(255, 255, 255, 0.5); --surface-hover: rgba(255, 255, 255, 0.9);
     --border: rgba(255, 255, 255, 0.9);
-    --wall: radial-gradient(60% 45% at 0% 0%, color-mix(in srgb, var(--ui) 22%, transparent), transparent 70%),
-            radial-gradient(55% 40% at 100% 45%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
-            radial-gradient(65% 45% at 20% 100%, rgba(191, 90, 242, 0.18), transparent 70%), var(--wall-solid); }
+    --wall: radial-gradient(60% 45% at 0% 0%, color-mix(in srgb, var(--wall-c1, var(--ui)) 22%, transparent), transparent 70%),
+            radial-gradient(55% 40% at 100% 45%, color-mix(in srgb, var(--wall-c2, var(--accent)) 16%, transparent), transparent 70%),
+            radial-gradient(65% 45% at 20% 100%, color-mix(in srgb, var(--wall-c3, rgb(191 90 242)) 18%, transparent), transparent 70%), var(--wall-solid); }
 html.glass body, html.glass #app, html.glass .assist-box, html.glass .lock-screen, html.glass .modal-overlay,
 html.glass .modal-overlay .modal-box { background: var(--wall); }
 /* Sfondo dinamico (Vetro → Dinamico): tre luci tenui, ognuna su un livello a parte, che si spostano per tutto lo
@@ -1211,12 +1211,12 @@ html.glass-anim[data-theme="light"] .wall-anim { background: var(--wall-solid); 
 .wall-anim i { position: absolute; left: 50%; top: 50%; width: 130vw; height: 95vh; margin: -47.5vh 0 0 -65vw; border-radius: 50%;
     background: radial-gradient(closest-side, var(--c), transparent 70%); will-change: transform, opacity;
     animation: pt-wall-a 67s ease-in-out infinite alternate, pt-wall-fade 43s ease-in-out infinite alternate; }
-.wall-anim i:nth-child(1) { --c: color-mix(in srgb, var(--ui) 34%, transparent); animation-delay: -10s, -5s; }
-.wall-anim i:nth-child(2) { --c: color-mix(in srgb, var(--accent) 20%, transparent); animation-name: pt-wall-b, pt-wall-fade; animation-duration: 79s, 53s; animation-delay: -40s, -30s; }
-.wall-anim i:nth-child(3) { --c: rgba(191, 90, 242, 0.26); animation-name: pt-wall-c, pt-wall-fade; animation-duration: 89s, 61s; animation-delay: -25s, -12s; }
-html.glass-anim[data-theme="light"] .wall-anim i:nth-child(1) { --c: color-mix(in srgb, var(--ui) 26%, transparent); }
-html.glass-anim[data-theme="light"] .wall-anim i:nth-child(2) { --c: color-mix(in srgb, var(--accent) 20%, transparent); }
-html.glass-anim[data-theme="light"] .wall-anim i:nth-child(3) { --c: rgba(191, 90, 242, 0.22); }
+.wall-anim i:nth-child(1) { --c: color-mix(in srgb, var(--wall-c1, var(--ui)) 34%, transparent); animation-delay: -10s, -5s; }
+.wall-anim i:nth-child(2) { --c: color-mix(in srgb, var(--wall-c2, var(--accent)) 20%, transparent); animation-name: pt-wall-b, pt-wall-fade; animation-duration: 79s, 53s; animation-delay: -40s, -30s; }
+.wall-anim i:nth-child(3) { --c: color-mix(in srgb, var(--wall-c3, rgb(191 90 242)) 26%, transparent); animation-name: pt-wall-c, pt-wall-fade; animation-duration: 89s, 61s; animation-delay: -25s, -12s; }
+html.glass-anim[data-theme="light"] .wall-anim i:nth-child(1) { --c: color-mix(in srgb, var(--wall-c1, var(--ui)) 26%, transparent); }
+html.glass-anim[data-theme="light"] .wall-anim i:nth-child(2) { --c: color-mix(in srgb, var(--wall-c2, var(--accent)) 20%, transparent); }
+html.glass-anim[data-theme="light"] .wall-anim i:nth-child(3) { --c: color-mix(in srgb, var(--wall-c3, rgb(191 90 242)) 22%, transparent); }
 /* stesse posizioni di partenza dello sfondo di prima (blu in alto a sinistra, verde a destra, viola in basso), poi piccoli giri lenti */
 @keyframes pt-wall-a { 0% { transform: translate3d(-28vw, -30vh, 0); } 50% { transform: translate3d(-6vw, -18vh, 0) scale(1.1); } 100% { transform: translate3d(-20vw, -6vh, 0) scale(0.95); } }
 @keyframes pt-wall-b { 0% { transform: translate3d(28vw, -2vh, 0); } 50% { transform: translate3d(14vw, -20vh, 0) scale(1.1); } 100% { transform: translate3d(24vw, 14vh, 0) scale(0.95); } }
@@ -1359,3 +1359,24 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 /* Margine laterale della pagina Mercato misurato dentro lo zoom di adattamento: le liste a scorrimento arrivano al bordo dello schermo anche rimpicciolite */
 #page-terminal { --bleed: calc(var(--page-gutter) / var(--fit-zoom-terminal, 1)); }
 #homeAccTitle2 { margin-top: var(--sp-2); }
+
+/* Confronto chiusura totale (Risultati, Carta) */
+.cmp-table { width: 100%; border-collapse: collapse; margin: var(--sp-3) 0; font-size: var(--fs-md); }
+.cmp-table th, .cmp-table td { padding: var(--sp-2) var(--sp-3); text-align: right; border-bottom: 1px solid var(--border); }
+.cmp-table th:first-child { text-align: left; font-weight: 600; color: var(--text-secondary); }
+.cmp-table thead th { color: var(--text-muted); font-size: var(--fs-sm); text-transform: uppercase; }
+.cmp-table .mono { font-family: var(--mono); }
+.cmp-note { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; }
+.cmp-verdict { font-size: var(--fs-md); font-weight: 600; margin: var(--sp-3) 0; }
+
+/* Colori sfondo (Opzioni → Aspetto): tre luci tenui su nero o bianco, ognuna del colore scelto. Con il Vetro spento compaiono solo se ne hai scelto uno */
+html.tint:not(.glass) body, html.tint:not(.glass) #app {
+    background: radial-gradient(60% 45% at 0% 0%, color-mix(in srgb, var(--wall-c1, transparent) 24%, transparent), transparent 70%),
+                radial-gradient(55% 40% at 100% 45%, color-mix(in srgb, var(--wall-c2, transparent) 18%, transparent), transparent 70%),
+                radial-gradient(65% 45% at 20% 100%, color-mix(in srgb, var(--wall-c3, transparent) 22%, transparent), transparent 70%), var(--bg); }
+.wall-dots { display: flex; gap: var(--sp-2); }
+.wall-dot { width: var(--touch-min); height: var(--touch-min); background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.wall-dot::before { content: ''; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--text-muted); background: var(--dot, transparent); }
+.wall-dot[data-i="0"] { --dot: var(--wall-c1, var(--ui)); }
+.wall-dot[data-i="1"] { --dot: var(--wall-c2, var(--accent)); }
+.wall-dot[data-i="2"] { --dot: var(--wall-c3, rgb(191 90 242)); }

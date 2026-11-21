@@ -1,4 +1,4 @@
-import { getThemePref, setThemePref, getGlassPref, setGlassPref } from '../core/theme.js';
+import { getThemePref, setThemePref, getGlassPref, setGlassPref, getWallPref, cycleWallColor, WALL_COLORS } from '../core/theme.js';
 import { $, getApiBase, getGhToken, commandMode, getDataKey, setDataKey } from '../utils/helpers.js';
 import { isEncrypted, decryptText, newDataKey } from '../core/datacrypt.js';
 import { getAutoState, riskCfg, loadAutomation, bitgetAccountText } from './automation.js';
@@ -103,9 +103,14 @@ export function setTheme(pref) {
 }
 
 export function setGlass(pref) { setGlassPref(pref); renderSettings(); }
+export function setWallColor(i) { cycleWallColor(i); renderSettings(); }
 
 export function renderSettings() {
     const glass = getGlassPref();
+    getWallPref().forEach((id, i) => {
+        const b = document.querySelector(`#wallDots .wall-dot[data-i="${i}"]`), name = (WALL_COLORS.find(c => c[0] === id) || WALL_COLORS[0])[1];
+        if (b) { b.title = `Luce ${i + 1}: ${name}. Tocca per cambiare`; b.setAttribute('aria-label', b.title); }
+    });
     document.querySelectorAll('#glassToggle button').forEach(b => b.classList.toggle('active', b.dataset.glass === glass));
     const pref = getThemePref();
     document.querySelectorAll('#themeToggle button').forEach(b => b.classList.toggle('active', b.dataset.pref === pref));

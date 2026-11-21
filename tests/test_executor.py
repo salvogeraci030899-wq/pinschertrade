@@ -6,7 +6,7 @@ import json
 import os
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import automation as au  # noqa: E402
@@ -100,6 +100,31 @@ def test_capitale_della_carta_esaurito_partita_persa():
         assert any("Capitale della carta esaurito" in n and "partite perse: 1" in n for n in notes), notes
         ex.run(cfg, ledger, None, "simulata", path, now=NOW, notify=notes.append, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
         assert len(json.load(open(path))["rounds"]) == 1                         # una volta sola: il conto è ripartito
+
+
+def test_conto_di_confronto_senza_chiusura_totale():
+    """Stessi segnali e regole del conto carta, ma obiettivo e stop di portafoglio a zero; ricorda quando è partito."""
+    seen = {}
+    real_run = ex.run
+
+    def spy(cfg, *a, **k):
+        seen["risk"] = cfg["risk"]
+        return real_run(cfg, *a, **k)
+    ex.run = spy
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "senza.json")
+            cfg, ledger = setup([trade()], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "portfolio_target_pct": 2, "portfolio_stop_pct": 3}})
+            ex.run_paper_account_senza_chiusura(cfg, ledger, state_path=path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
+            st = json.load(open(path))
+            assert seen["risk"]["portfolio_target_pct"] == 0 and seen["risk"]["portfolio_stop_pct"] == 0 and seen["risk"]["shadow_paper"] is True
+            assert cfg["risk"]["portfolio_target_pct"] == 2                              # la configurazione vera non si tocca
+            assert st["first_run"] == NOW.isoformat(timespec="seconds") and st["mode"] == "simulata"
+            first = st["first_run"]
+            ex.run_paper_account_senza_chiusura(cfg, ledger, state_path=path, now=NOW + timedelta(hours=1), specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
+            assert json.load(open(path))["first_run"] == first                           # resta quello del primo giro
+    finally:
+        ex.run = real_run
 
 
 def test_solo_strategie_live():

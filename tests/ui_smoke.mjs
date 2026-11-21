@@ -70,10 +70,10 @@ try {
         });
         // dati personali inventati (quelli veri nel repository sono cifrati): conto, posizioni, carta, agente, storico
         const FIX = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'ui_data.json'), 'utf8'));
-        await page.route(/\/(automation|live_trades|paper_account|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state|lab_summary)\.json/, async r => {
+        await page.route(/\/(automation|live_trades|paper_account_senza_chiusura|paper_account|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state|lab_summary)\.json/, async r => {
             if (dataDelay) await new Promise(res => setTimeout(res, dataDelay));
             const name = new URL(r.request().url()).pathname.split('/').pop();
-            const j = structuredClone(name === 'paper_account.json' ? { ...FIX['live_trades.json'], mode: 'simulata' } : FIX[name]);
+            const j = structuredClone(name === 'paper_account.json' ? { ...FIX['live_trades.json'], mode: 'simulata' } : name === 'paper_account_senza_chiusura.json' ? { ...FIX['live_trades.json'], mode: 'simulata', first_run: '2026-11-01T00:00:00+00:00' } : FIX[name]);
             if (name === 'paper_trades.json' && process.env.MANY_OPEN) {         // prova di layout: tanti trade su carta aperti (come nei dati veri)
                 const coins = ['ADAUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'LINKUSDT', 'AVAXUSDT', 'DOTUSDT', 'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT'];
                 j.strategies.many_open = { mode: 'paper', stats: { n: 0, open: coins.length }, trades: coins.map((symbol, i) => ({ id: `many_open:1d:${symbol}:${i}`, symbol, t: 1790000000 + i, t_entry: 1790086400 + i, dir: -1, entry: 100 + i, stop: 110 + i, open: true, gross: 0 })) };
@@ -203,6 +203,16 @@ try {
         const chartMem = await page.evaluate(() => ({ a: document.getElementById('btn-ETHUSDT').classList.contains('active'), t: document.getElementById('btn-4h').classList.contains('active'), b: document.getElementById('btn-BTCUSDT').classList.contains('active'), l: document.getElementById('current-asset-label').textContent }));
         if (!chartMem.a || !chartMem.t || chartMem.b) problems.push(`${dev.n}, ${tag}: Mercato non ricorda l'ultima coin e l'ultimo timeframe (${JSON.stringify(chartMem)})`);
         await page.evaluate(() => { window.setAsset('BTCUSDT'); window.setTF('1d'); });
+        // Colori sfondo: ogni pallino cicla i colori (la luce compare), alla fine torna al colore di base e le luci spariscono
+        const wall = await page.evaluate(() => {
+            const root = document.documentElement, out = {};
+            window.setWallColor(1); out.on = root.classList.contains('tint') && root.style.getPropertyValue('--wall-c2') !== '';
+            out.saved = !!(JSON.parse(localStorage.getItem('pt_wall') || 'null') || {}).css;
+            for (let i = 0; i < 9; i++) window.setWallColor(1);
+            out.off = !root.classList.contains('tint') && root.style.getPropertyValue('--wall-c2') === '';
+            return out;
+        });
+        if (!wall.on || !wall.saved || !wall.off) problems.push(`${dev.n}, ${tag}: i colori sfondo non cambiano o non tornano alla base (${JSON.stringify(wall)})`);
         // Risultati: cambiando periodo (Oggi, Settimana, ...) e fonte (Reale, Carta) nulla si sposta né cambia misura
         await page.evaluate(() => window.switchTab('journal'));
         await page.waitForTimeout(700);
@@ -213,6 +223,18 @@ try {
             const parts = [document.querySelector('#page-journal .header-row'), document.getElementById('resTabs'), ...document.getElementById('resBody').children];
             return parts.map(r).join(' | ') + ' | zoom ' + document.documentElement.style.getPropertyValue('--fit-zoom-journal');
         });
+        // Confronto chiusura totale: il tasto c'è solo su Carta e apre la tabella (Con/Senza); si chiude
+        await page.evaluate(() => { window.setResultsSource('paper'); });
+        await page.waitForTimeout(300);
+        const cmpBtn = await page.evaluate(() => !![...document.querySelectorAll('#resBody .btn-link-secondary')].find(b => /Confronto chiusura totale/.test(b.textContent)));
+        if (!cmpBtn) problems.push(`${dev.n}, ${tag}: Risultati (Carta) deve avere il tasto Confronto chiusura totale`);
+        else {
+            await page.evaluate(() => window.openCompare());
+            await page.waitForTimeout(300);
+            const cmp = await page.evaluate(() => ({ on: document.getElementById('cmpModal').classList.contains('active'), rows: document.querySelectorAll('#cmpBody .cmp-table tbody tr').length, verdict: !!document.querySelector('#cmpBody .cmp-verdict') }));
+            if (!cmp.on || cmp.rows !== 4 || !cmp.verdict) problems.push(`${dev.n}, ${tag}: il confronto chiusura totale non si apre bene (${JSON.stringify(cmp)})`);
+            await page.evaluate(() => window.closeCompare());
+        }
         const resSigs = {};
         for (const sv of ['real', 'paper']) for (const pv of ['day', 'week', 'month', 'year', 'all']) {
             await page.evaluate(([a, b]) => { window.setResultsSource(a); window.setResultsPeriod(b); }, [sv, pv]);
