@@ -113,6 +113,8 @@ window.setLogFilter = Log.setLogFilter;
 window.logDay = Log.logDay;
 window.setResultsPeriod = Results.setResultsPeriod;
 window.setResultsWho = Results.setResultsWho;
+window.openCompare = Results.openCompare;
+window.closeCompare = Results.closeCompare;
 window.renderBreakEven = CalculatorUI.renderBreakEven;
 window.syncTradeMode = CalculatorUI.syncTradeMode;
 

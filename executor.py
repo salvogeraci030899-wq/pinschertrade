@@ -46,7 +46,8 @@ from market_data import TF_DELTA, TRADE_ASSETS
 
 STATE_PATH = "live_trades.json"
 RUIN_PCT = 10.0                     # conto carta: patrimonio sotto questa quota del capitale di partenza = capitale esaurito, partita persa
-PAPER_PATH = "paper_account.json"   # conto della carta: sempre acceso, anche quando gli ordini veri sono attivi
+PAPER_PATH = "paper_account.json"
+PAPER_NOBASKET_PATH = "paper_account_senza_chiusura.json"   # conto carta di confronto: stessi segnali e regole, ma senza chiusura totale del portafoglio   # conto della carta: sempre acceso, anche quando gli ordini veri sono attivi
 EQUITY_PATH = "equity_history.json"     # un record al giorno: apertura, chiusura, versamenti/prelievi, guadagno
 DEFAULT_RISK = {
     "trading_enabled": False,
@@ -175,10 +176,22 @@ def size_position(equity, entry, stop, risk, open_notional, specs):
     return size, ""
 
 
-def run_paper_account(cfg, ledger, state_path=PAPER_PATH, notify=None, **kw):
+def run_paper_account_senza_chiusura(cfg, ledger, state_path=PAPER_NOBASKET_PATH, **kw):
+    """Conto di confronto: identico al conto carta ma con obiettivo e stop di portafoglio spenti. Nessun avviso, mai Bitget.
+    Ricorda quando è partito (first_run): il confronto conta solo i trade da allora."""
+    now = kw.get("now") or datetime.now(timezone.utc)
+    changed = run_paper_account(cfg, ledger, state_path=state_path, notify=None, risk_override={"portfolio_target_pct": 0, "portfolio_stop_pct": 0}, **kw)
+    state = _load(state_path)
+    if not state.get("first_run"):
+        state["first_run"] = now.isoformat(timespec="seconds")
+        _save(state, state_path)
+    return changed
+
+
+def run_paper_account(cfg, ledger, state_path=PAPER_PATH, notify=None, risk_override=None, **kw):
     """Conto della carta, SEMPRE acceso: l'esecutore simulato segue le strategie su carta con gli stessi limiti del reale,
     in un file suo (paper_account.json), anche quando gli ordini veri sono accesi. Non tocca mai Bitget."""
-    pcfg = {**cfg, "risk": {**(cfg.get("risk") or {}), "shadow_paper": True}}
+    pcfg = {**cfg, "risk": {**(cfg.get("risk") or {}), "shadow_paper": True, **(risk_override or {})}}
     now = kw.get("now") or datetime.now(timezone.utc)
     changed = run(pcfg, ledger, None, "simulata", state_path=state_path, notify=notify, **kw)
     # marca dell'ultimo giro: il controllo di salute (watchdog.py) avvisa se la carta non si aggiorna

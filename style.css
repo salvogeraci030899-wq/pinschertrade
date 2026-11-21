@@ -1359,3 +1359,12 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: non
 /* Margine laterale della pagina Mercato misurato dentro lo zoom di adattamento: le liste a scorrimento arrivano al bordo dello schermo anche rimpicciolite */
 #page-terminal { --bleed: calc(var(--page-gutter) / var(--fit-zoom-terminal, 1)); }
 #homeAccTitle2 { margin-top: var(--sp-2); }
+
+/* Confronto chiusura totale (Risultati, Carta) */
+.cmp-table { width: 100%; border-collapse: collapse; margin: var(--sp-3) 0; font-size: var(--fs-md); }
+.cmp-table th, .cmp-table td { padding: var(--sp-2) var(--sp-3); text-align: right; border-bottom: 1px solid var(--border); }
+.cmp-table th:first-child { text-align: left; font-weight: 600; color: var(--text-secondary); }
+.cmp-table thead th { color: var(--text-muted); font-size: var(--fs-sm); text-transform: uppercase; }
+.cmp-table .mono { font-family: var(--mono); }
+.cmp-note { font-size: var(--fs-sm); color: var(--text-secondary); line-height: 1.4; }
+.cmp-verdict { font-size: var(--fs-md); font-weight: 600; margin: var(--sp-3) 0; }
