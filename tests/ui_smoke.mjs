@@ -203,6 +203,16 @@ try {
         const chartMem = await page.evaluate(() => ({ a: document.getElementById('btn-ETHUSDT').classList.contains('active'), t: document.getElementById('btn-4h').classList.contains('active'), b: document.getElementById('btn-BTCUSDT').classList.contains('active'), l: document.getElementById('current-asset-label').textContent }));
         if (!chartMem.a || !chartMem.t || chartMem.b) problems.push(`${dev.n}, ${tag}: Mercato non ricorda l'ultima coin e l'ultimo timeframe (${JSON.stringify(chartMem)})`);
         await page.evaluate(() => { window.setAsset('BTCUSDT'); window.setTF('1d'); });
+        // Colori sfondo: ogni pallino cicla i colori (la luce compare), alla fine torna al colore di base e le luci spariscono
+        const wall = await page.evaluate(() => {
+            const root = document.documentElement, out = {};
+            window.setWallColor(1); out.on = root.classList.contains('tint') && root.style.getPropertyValue('--wall-c2') !== '';
+            out.saved = !!(JSON.parse(localStorage.getItem('pt_wall') || 'null') || {}).css;
+            for (let i = 0; i < 9; i++) window.setWallColor(1);
+            out.off = !root.classList.contains('tint') && root.style.getPropertyValue('--wall-c2') === '';
+            return out;
+        });
+        if (!wall.on || !wall.saved || !wall.off) problems.push(`${dev.n}, ${tag}: i colori sfondo non cambiano o non tornano alla base (${JSON.stringify(wall)})`);
         // Risultati: cambiando periodo (Oggi, Settimana, ...) e fonte (Reale, Carta) nulla si sposta né cambia misura
         await page.evaluate(() => window.switchTab('journal'));
         await page.waitForTimeout(700);

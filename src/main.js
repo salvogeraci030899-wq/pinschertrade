@@ -38,6 +38,7 @@ window.KState = State;
 window.openAccount = AccountUI.openAccount;
 window.setTheme = AccountUI.setTheme;
 window.setGlass = AccountUI.setGlass;
+window.setWallColor = AccountUI.setWallColor;
 window.renderAccount = AccountUI.renderAccount;
 window.setTradingMode = AutoUI.setTradingMode;
 window.openConnections = AccountUI.openConnections;

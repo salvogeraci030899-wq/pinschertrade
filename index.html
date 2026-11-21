@@ -46,6 +46,12 @@
             try { if (localStorage.getItem('pt_title_icon') === '0') document.documentElement.classList.add('title-icon-off'); } catch (e) {}
             // Vetro (Opzioni → Aspetto): spento finché non lo accendi
             try { var g = localStorage.getItem('pt_glass'); if (g === 'on' || g === 'anim') document.documentElement.classList.add('glass'); if (g === 'anim') document.documentElement.classList.add('glass-anim'); } catch (e) {}
+            // Colori sfondo (Opzioni → Aspetto): le tre luci scelte, già al primo disegno
+            try {
+                var w = JSON.parse(localStorage.getItem('pt_wall') || 'null'), any = false;
+                if (w && w.css && w.css.length === 3) w.css.forEach(function(c, i) { if (c) { document.documentElement.style.setProperty('--wall-c' + (i + 1), c); any = true; } });
+                if (any) document.documentElement.classList.add('tint');
+            } catch (e) {}
             if (light) document.getElementById('metaThemeColor').setAttribute('content', '#f2f2f7');
             // Barra di stato di iOS, sempre integrata: la pagina passa sotto l'ora e la batteria (black-translucent, testo bianco).
             // In chiaro c'è solo "default" (barra piena, testo scuro): black-translucent avrebbe il testo bianco.
@@ -268,6 +274,13 @@
                             <button type="button" data-glass="off" onclick="setGlass('off')">No</button>
                             <button type="button" data-glass="on" onclick="setGlass('on')">Statico</button>
                             <button type="button" data-glass="anim" onclick="setGlass('anim')">Dinamico</button>
+                        </div>
+                    </div>
+                    <div class="set-row set-static"><span class="set-label">Colori sfondo</span>
+                        <div class="wall-dots" id="wallDots">
+                            <button type="button" class="wall-dot" data-i="0" onclick="setWallColor(0)" aria-label="Luce 1"></button>
+                            <button type="button" class="wall-dot" data-i="1" onclick="setWallColor(1)" aria-label="Luce 2"></button>
+                            <button type="button" class="wall-dot" data-i="2" onclick="setWallColor(2)" aria-label="Luce 3"></button>
                         </div>
                     </div>
                 </div>
