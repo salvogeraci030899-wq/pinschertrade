@@ -730,6 +730,26 @@ def test_precedenza_alle_candidate_e_posto_riservato():
         assert sorted(p["status"] for p in json.load(open(path))["positions"].values()) == ["open", "open"]
 
 
+def test_la_carta_esegue_solo_le_migliori():
+    """Il conto carta (e il reale che lo segue) esegue candidate/live e, a opzione accesa, le quasi candidate; le strategie solo in osservazione no."""
+    def opened(near_on, cand_keys, near_keys, mode="simulata", follow=0):
+        cfg, ledger, cand, near = _due_strategie(max_pos=4, extra_risk={"near_candidates": near_on, "real_follows_paper": follow, "max_same_direction": 4})
+        obs = "tsmom_combo:1d"                                                  # una terza, solo in osservazione
+        tobs = dict(trade("SOLUSDT", entry=150.0, stop=140.0, t=T_SIGNAL + 30), id=f"{obs}:SOLUSDT:{T_SIGNAL + 30}")
+        cfg["strategies"][obs] = "paper"
+        ledger["strategies"][obs] = {"mode": "paper", "trades": [tobs]}
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "s.json")
+            ex.run(cfg, ledger, bg.DryRunClient(10_000), mode, path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {},
+                   near_keys=near_keys, candidate_keys=cand_keys)
+            return sorted(p["key"] for p in json.load(open(path))["positions"].values() if p["status"] == "open")
+    cand, near, obs = "big_candle_trail:1d", "tsmom30:1d", "tsmom_combo:1d"
+    assert opened(0, {cand}, {near}) == [cand]                                   # solo la candidata
+    assert opened(1, {cand}, {near}) == sorted([cand, near])                     # alto rischio: anche la quasi candidata, mai l'osservazione
+    assert opened(1, {cand}, {near}, mode="reale", follow=1) == sorted([cand, near])   # il reale che segue la carta fa lo stesso
+    assert opened(0, None, set()) == sorted([cand, near, obs])                   # senza filtro (vecchio comportamento): tutte
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
