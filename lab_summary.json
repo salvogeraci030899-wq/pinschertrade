@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-20T16:23:54+00:00",
+ "generated_at": "2026-11-21T23:53:06+00:00",
  "holdout_start": "2025-11-11",
  "trials_registered": 60,
  "fdr": 0.1,
@@ -12508,50 +12508,50 @@
    "significant": false,
    "candidate": false,
    "holdout": {
-    "n": 73,
-    "win_rate": 35.6,
-    "avg_gross_pct": 1.723,
-    "avg_net_pct": 1.396,
+    "n": 74,
+    "win_rate": 35.1,
+    "avg_gross_pct": 1.648,
+    "avg_net_pct": 1.323,
     "avg_net_ci": [
      -3.4766,
-     7.0014
+     6.7923
     ],
-    "p_value": 0.30990643986676275,
+    "p_value": 0.31510913540709623,
     "avg_bars": 10.3,
-    "net_per_year_per_coin_pct": 12.8,
-    "after_tax_per_year_per_coin_pct": 8.5,
+    "net_per_year_per_coin_pct": 12.2,
+    "after_tax_per_year_per_coin_pct": 8.2,
     "by_coin": {
      "ADAUSDT": 1.239,
-     "BNBUSDT": 3.805,
-     "BTCUSDT": 1.414,
-     "DOGEUSDT": -3.13,
-     "ETHUSDT": 0.566,
+     "BNBUSDT": 3.4,
+     "BTCUSDT": 1.36,
+     "DOGEUSDT": -3.339,
+     "ETHUSDT": 0.472,
      "LINKUSDT": 3.357,
      "SOLUSDT": 6.575,
      "XRPUSDT": -1.548
     },
-    "excess_avg_pct": 1.28,
+    "excess_avg_pct": 1.204,
     "excess_ci": [
-     -3.622,
-     6.9797
+     -3.6147,
+     6.7608
     ],
-    "excess_p": 0.32581484866715055,
+    "excess_p": 0.331843513751031,
     "excess_by_coin": {
-     "ADAUSDT": 0.012,
-     "BNBUSDT": 3.511,
-     "BTCUSDT": 1.392,
-     "DOGEUSDT": -2.871,
-     "ETHUSDT": 0.555,
-     "LINKUSDT": 3.227,
-     "SOLUSDT": 6.093,
-     "XRPUSDT": -0.85
+     "ADAUSDT": 0.051,
+     "BNBUSDT": 3.123,
+     "BTCUSDT": 1.327,
+     "DOGEUSDT": -3.115,
+     "ETHUSDT": 0.451,
+     "LINKUSDT": 3.236,
+     "SOLUSDT": 6.116,
+     "XRPUSDT": -0.865
     },
     "portfolio": {
-     "n": 37,
+     "n": 38,
      "skipped": 36,
-     "final_equity": 106.1,
-     "total_return_pct": 6.1,
-     "annual_return_pct": 6.1,
+     "final_equity": 106.01,
+     "total_return_pct": 6.0,
+     "annual_return_pct": 6.0,
      "max_drawdown_pct": -4.9,
      "years": 1.0,
      "curve": [
@@ -12700,8 +12700,12 @@
        103.724
       ],
       [
-       1795190400,
-       106.097
+       1795276800,
+       106.032
+      ],
+      [
+       1795276800,
+       106.013
       ]
      ]
     },
