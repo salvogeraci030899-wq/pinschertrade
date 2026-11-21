@@ -354,7 +354,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .btn-generic-tight { padding: var(--sp-3); font-size: var(--fs-md); margin-top: 0; }
 
 /* --- SEGNALI --- */
-#sigView .log-list { display: flex; flex-direction: row; align-items: flex-start; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding: 0 var(--bleed, var(--page-gutter)); -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; gap: var(--sp-3); padding: 0 var(--bleed, var(--page-gutter)) var(--sp-2); margin: 0 calc(-1 * var(--bleed, var(--page-gutter))); scrollbar-width: none; -ms-overflow-style: none; flex: 0 0 auto; }
+#sigView .log-list { display: flex; flex-direction: row; align-items: stretch; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding: 0 var(--bleed, var(--page-gutter)); -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; gap: var(--sp-3); padding: 0 var(--bleed, var(--page-gutter)) var(--sp-2); margin: 0 calc(-1 * var(--bleed, var(--page-gutter))); scrollbar-width: none; -ms-overflow-style: none; flex: 0 0 auto; }
 #sigView .log-list::-webkit-scrollbar { display: none; }
 #sigView .log-item { flex: 0 0 calc(100% - 28px); scroll-snap-align: start; scroll-snap-stop: always; display: flex; flex-direction: column; }
 /* Automazione (pagina Segnali, vista Auto) */
@@ -401,8 +401,9 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .signal-actions button { flex: 1; margin-top: 0; padding: var(--sp-4); font-size: var(--fs-md); }
 .signal-grid { display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scroll-padding: 0 var(--bleed, var(--page-gutter)); scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; gap: var(--sp-5); padding: 0 var(--bleed, var(--page-gutter)); margin: 0 calc(-1 * var(--bleed, var(--page-gutter))) var(--sp-2); flex-shrink: 0; }
 .signal-grid::-webkit-scrollbar { display: none; }
-.signal-page { flex: 0 0 100%; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); scroll-snap-align: start; scroll-snap-stop: always; }
+.signal-page { flex: 0 0 100%; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: var(--sp-3); scroll-snap-align: start; scroll-snap-stop: always; }
 .signal-dots { margin-bottom: var(--sp-3); }
+.signal-dots, #signalHistoryDots { min-height: 16px; align-items: center; }
 .signal-cell { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-item); padding: var(--sp-3) var(--sp-2); text-align: center; cursor: pointer; transition: all var(--dur); display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-1); }
 .signal-cell.long { border-color: color-mix(in srgb, var(--accent) 50%, transparent); background: color-mix(in srgb, var(--accent) 5%, transparent); }
 .signal-cell.short { border-color: color-mix(in srgb, var(--danger) 50%, transparent); background: color-mix(in srgb, var(--danger) 5%, transparent); }
@@ -445,7 +446,7 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .btn-link-danger { color: var(--danger); }
 .section-actions { display: flex; align-items: center; gap: var(--sp-1); }
 
-.signal-history-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-item); padding: var(--sp-4); font-size: var(--fs-md); display: flex; flex-direction: column; gap: var(--sp-3); box-sizing: border-box; }
+.signal-history-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-item); padding: var(--sp-4); font-size: var(--fs-md); display: flex; flex-direction: column; gap: var(--sp-3); box-sizing: border-box; flex: 1; }
 .shi-tf { font-size: var(--fs-sm); color: var(--text-secondary); }
 .pager-count { font-size: var(--fs-xs); font-weight: 700; color: var(--text-secondary); font-variant-numeric: tabular-nums; letter-spacing: 0.3px; }
 .shi-row1 { display: flex; justify-content: space-between; align-items: center; }

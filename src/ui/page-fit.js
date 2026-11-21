@@ -35,7 +35,7 @@ const overflowing = page => page.scrollHeight > page.clientHeight + 1;
 // se una scheda non entra, il suo contenuto verrebbe tagliato senza che la pagina "deborda".
 // Do alla lista l'altezza minima che serve alla scheda più alta; così, se lo spazio non basta,
 // la pagina deborda e interviene lo zoom. #activeTradesList ha due righe di schede: conta doppio.
-const SHRINKING_LISTS = '.log-list, #activeTradesList';
+const SHRINKING_LISTS = '.log-list:not(#signalHistoryList), #activeTradesList';
 
 function reserveListHeights(page) {
     const lists = [...page.querySelectorAll(SHRINKING_LISTS)];
