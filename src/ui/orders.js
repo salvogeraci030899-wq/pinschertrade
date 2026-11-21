@@ -196,7 +196,7 @@ function simAccount() {
         + `<div class="bot-acc-main"><b>${fmtIt(total, 2)} $</b><span class="${tone(total - start)}">${usd(total - start)}</span></div>`
         + `<small>chiusi ${closed.length}: <span class="${tone(netClosed)}">${usd(netClosed)}</span> · aperti ${nOpen}: <span class="${tone(unreal)}">${usd(unreal)}</span>`
         + `<br>base ${fmtIt(start, 2)} $ (capitale di prova) · commissioni comprese · stesse regole del reale: ${lim}`
-        + (skipped.length ? `<br>${skipped.length} segnali non aperti dal conto: ${why}` : '') + dayTxt + '</small></div>';
+        + (skipped.length ? `<br>${skipped.length} segnali non aperti dal conto: ${why}` : '') + ((simSrc().rounds || []).length ? `<br><span class="text-danger">partite perse: ${(simSrc().rounds || []).length} (capitale esaurito, il conto è ripartito)</span>` : '') + dayTxt + '</small></div>';
 }
 // Righe dei trade delle strategie su carta (paper_trades.json), anche quelli che il conto non ha aperto
 function paperRows(list) {

@@ -45,6 +45,7 @@ from fmt_it import it, it_g
 from market_data import TF_DELTA, TRADE_ASSETS
 
 STATE_PATH = "live_trades.json"
+RUIN_PCT = 10.0                     # conto carta: patrimonio sotto questa quota del capitale di partenza = capitale esaurito, partita persa
 PAPER_PATH = "paper_account.json"   # conto della carta: sempre acceso, anche quando gli ordini veri sono attivi
 EQUITY_PATH = "equity_history.json"     # un record al giorno: apertura, chiusura, versamenti/prelievi, guadagno
 DEFAULT_RISK = {
@@ -62,7 +63,7 @@ DEFAULT_RISK = {
     "dry_run_equity": 1000.0,
     "near_candidates": 0,           # 1 = alto rischio: anche le strategie non candidate per poco (automation.near_keys) vengono eseguite, su carta e in REALE, con tutti i limiti
     "real_follows_paper": 0,        # 1 = anche in REALE l'esecutore segue le strategie su carta (non confermate), con tutti i limiti: scelta esplicita, spenta di default
-    "shadow_paper": True,           # con gli ordini simulati l'esecutore segue anche le strategie su carta, con gli STESSI limiti del reale
+    "shadow_paper": True,           # la carta esegue le strategie migliori (live, candidate, quasi candidate a opzione accesa), con gli STESSI limiti del reale
 }
 # Valori ammessi per ogni limite (anche dall'app): fuori da qui il comando viene rifiutato
 RISK_BOUNDS = {
@@ -217,7 +218,7 @@ def make_client(cfg):
 
 
 def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=None, notify=None, specs_fn=contract_specs,
-        guard_path=None, prices_fn=public_prices, epoch_path=None, funding_fn=public_funding, near_keys=frozenset(), candidate_keys=frozenset()):
+        guard_path=None, prices_fn=public_prices, epoch_path=None, funding_fn=public_funding, near_keys=frozenset(), candidate_keys=None):
     """Un giro dell'esecutore. Ritorna True se lo stato è cambiato."""
     now = now or datetime.now(timezone.utc)
     now_ts, today = int(now.timestamp()), now.strftime("%Y-%m-%d")
@@ -344,6 +345,24 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     if state["halted"]:
         return _finish(state, before, state_path, client, mode)
 
+    # --- capitale esaurito (solo conto simulato): il bot ha perso la partita e ricomincia, la perdita resta registrata ---
+    if isinstance(client, DryRunClient) and mode == "simulata":
+        base = float((state.get("simulated") or {}).get("start") or risk["dry_run_equity"])
+        if base > 0 and equity <= base * RUIN_PCT / 100:
+            for p in list(ours.values()):
+                before = client._equity
+                try:
+                    client.close_position(p["symbol"], p["side"])
+                except Exception:       # noqa: BLE001
+                    pass
+                p.update(status="closed", closed_at=now.isoformat(timespec="seconds"), close_reason="CAPITALE ESAURITO", net=round(client._equity - before, 4))
+            state.setdefault("rounds", []).append({"ended": now.isoformat(timespec="seconds"), "result": "capitale esaurito", "equity": round(equity, 2), "start": base})
+            log("ruin", equity=round(equity, 2), start=base)
+            client._equity, client._positions, equity, ours = base, {}, base, {}
+            state["day"] = {}
+            say(f"Capitale della carta esaurito ({it(state['rounds'][-1]['equity'])} su {it(base, 0)}): il bot ha perso questa partita. "
+                f"Riparte da {it(base, 0)} (partite perse: {len(state['rounds'])}).")
+
     # --- perdita massima del giorno ---
     if state["day"].get("date") != today:
         state["day"] = {"date": today, "start_equity": equity, "blocked": False}
@@ -398,10 +417,19 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     wanted, exits = {}, {}
     # Alto rischio (near_candidates = 1): anche le strategie su carta non candidate per poco, in REALE come in simulata
     near_on = int(risk.get("near_candidates") or 0) == 1
+    # Chi esegue davvero (con candidate_keys passato dal bot): le strategie live, le candidate del laboratorio e, se l'opzione è accesa,
+    # le quasi candidate. Le altre strategie su carta (in osservazione) restano solo nel registro per raccogliere dati: il conto non le esegue.
+    # Il reale che segue la carta usa la stessa regola, quindi fa in parallelo esattamente ciò che fa la carta.
+    # candidate_keys=None: nessun filtro (comportamento di prima, per i test).
+    only_best = candidate_keys is not None
     for key, entry in (ledger.get("strategies") or {}).items():
-        near_paper = near_on and key in near_keys and entry.get("mode") == "paper" and (cfg.get("strategies") or {}).get(key) == "paper"
-        if not near_paper and (entry.get("mode") not in follow or (cfg.get("strategies") or {}).get(key) not in follow):
-            continue
+        cfg_mode = (cfg.get("strategies") or {}).get(key)
+        near_paper = near_on and key in near_keys and entry.get("mode") == "paper" and cfg_mode == "paper"
+        if not near_paper:
+            if entry.get("mode") not in follow or cfg_mode not in follow:
+                continue
+            if only_best and entry.get("mode") == "paper" and cfg_mode == "paper" and key not in candidate_keys:
+                continue
         for t in entry.get("trades", []):
             if t.get("open"):
                 wanted[t["id"]] = dict(t, key=key)
@@ -444,7 +472,7 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     strategies_cfg = cfg.get("strategies") or {}
 
     def rank(key):
-        if strategies_cfg.get(key) == "live" or key in candidate_keys:
+        if strategies_cfg.get(key) == "live" or key in (candidate_keys or ()):
             return 0
         return 1 if key in near_keys else 2
     reserve = 1 if risk["max_open_positions"] >= 2 and any(m != "off" and rank(k) == 0 for k, m in strategies_cfg.items()) else 0

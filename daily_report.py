@@ -154,7 +154,8 @@ def build(frames, now, paths=None):
         n_open = sum(1 for x in pos if x.get("status") == "open")
         start = sim.get("start") or sim["equity"]
         lines.append(f"Conto carta: {_it(sim['equity'])} USDT ({_it(sim['equity'] - start, sign=True)} da {_it(start, 0)}), {n_open} aperte, "
-                     f"{len(closed)} chiuse (netto {_it(sum(float(x['net']) for x in closed), sign=True)} USDT)")
+                     f"{len(closed)} chiuse (netto {_it(sum(float(x['net']) for x in closed), sign=True)} USDT)"
+                     + (f", partite perse {len(pa['rounds'])} (capitale esaurito)" if pa.get("rounds") else ""))
 
     lab = _read(p["lab"]) or {}
     confirmed = lab.get("confirmed") or []
