@@ -95,6 +95,7 @@ const prices = {};
 const paperAll = () => {
     const out = [];
     for (const [key, e] of Object.entries((paper && paper.strategies) || {})) {
+        if (e && e.mode === 'off') continue;              // strategia spenta: i suoi vecchi trade non contano (come in Mercato)
         for (const t of (e && e.trades) || []) out.push({ ...t, key });
     }
     return out;
@@ -243,15 +244,15 @@ function botAccount() {
 }
 // Tanti trade: a pagine, ognuna piena di righe fino in fondo allo schermo, da scorrere di lato
 let perPage = 5;
-const pagesOf = rows => { const pages = []; for (let i = 0; i < rows.length; i += perPage) pages.push(`<div class="ord-page">${rows.slice(i, i + perPage).join('')}</div>`); return pages; };
+const pagesOf = (rows, per = perPage) => { const pages = []; for (let i = 0; i < rows.length; i += per) pages.push(`<div class="ord-page">${rows.slice(i, i + per).join('')}</div>`); return pages; };
 const botHtml = () => {
     const rows = botRows(), extra = extraPaperRows();
-    return botAccount() + section('Bot su carta · nessun ordine reale', pagesOf(rows), paper || simActive() ? 'Nessun trade su carta aperto nel conto: le strategie aprono solo quando arriva un segnale recente e i limiti lo permettono.' : 'Caricamento…', rows.length)
+    return botAccount() + section('Bot su carta · nessun ordine reale', pagesOf(rows, extra.length ? 2 : perPage), paper || simActive() ? 'Nessun trade aperto nel conto: aprono solo i segnali recenti, entro i limiti.' : 'Caricamento…', rows.length)
         + (extra.length ? section('Strategie su carta · non nel conto', pagesOf(extra), '', extra.length) : '');
 };
 // righe che stanno in una pagina, misurate sullo schermo (una volta disegnata la prima)
 function fitPerPage(box) {
-    const list = box.querySelector('.ord-list'), sec = list && list.closest('.ord-sec'), r = list && list.querySelector('.ord-row');
+    const lists = box.querySelectorAll('.ord-list'), list = lists[lists.length - 1], sec = list && list.closest('.ord-sec'), r = list && list.querySelector('.ord-row');   // l'ultima lista riempie lo spazio che resta
     if (!r) return false;
     // spazio dall'inizio della lista al fondo della vista, meno il margine interno della scheda sotto la lista
     const free = box.getBoundingClientRect().bottom - list.getBoundingClientRect().top - (sec.getBoundingClientRect().bottom - list.getBoundingClientRect().bottom) - 4;
