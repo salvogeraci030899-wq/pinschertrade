@@ -3,6 +3,7 @@
 # Senza la chiave DATA_KEY restano in chiaro come prima.
 automation.json filter=ptenc merge=ptenc
 live_trades.json filter=ptenc merge=ptenc
+paper_account.json filter=ptenc merge=ptenc
 paper_trades.json filter=ptenc merge=ptenc
 agent_state.json filter=ptenc merge=ptenc
 alerts_state.json filter=ptenc merge=ptenc

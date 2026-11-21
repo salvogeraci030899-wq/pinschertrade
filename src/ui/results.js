@@ -49,14 +49,14 @@ async function loadEquity() {
 function trades(source) {
     if (source === 'real') return realHistory().map(h => { const k = agentKey(h); return { t: h.closedAt, symbol: h.symbol, side: h.type, pnl: h.pnl, fees: h.fees || 0, entry: h.entry, exit: h.exit, market: h.market, by: k ? 'agent' : 'manual', key: k || undefined }; })
         .filter(x => who === 'all' || x.by === who);
-    const { ledger, cfg, live } = getAutoState();
+    const { ledger, cfg, paper: pa } = getAutoState();
     const risk = Number(cfg && cfg.risk && cfg.risk.risk_per_trade_pct) || 0.5;
     const out = [];
     // Con gli ordini simulati la Carta è l'esecutore simulato: gli stessi limiti del reale (posizioni massime, stesso verso, perdita del giorno),
     // la stessa dimensione e le commissioni. Ogni trade in % del patrimonio al momento dell'apertura.
-    if (live && live.mode === 'simulata' && live.simulated && !(cfg && cfg.risk && cfg.risk.shadow_paper === false)) {
-        const start = Number(live.simulated.start) || Number(cfg && cfg.risk && cfg.risk.dry_run_equity) || 1000;
-        for (const p of Object.values(live.positions || {})) {
+    if (pa) {
+        const start = Number(pa.simulated.start) || Number(cfg && cfg.risk && cfg.risk.dry_run_equity) || 1000;
+        for (const p of Object.values(pa.positions || {})) {
             if (!p || p.status !== 'closed' || p.net == null) continue;
             out.push({ t: Date.parse(p.closed_at) || 0, symbol: p.symbol, side: String(p.side).toUpperCase(), pnl: Number(p.net) / (Number(p.equity_at_open) || start) * 100, fees: 0, entry: p.entry, exit: p.exit, key: p.key });
         }

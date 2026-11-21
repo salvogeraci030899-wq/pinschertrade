@@ -74,6 +74,20 @@ def test_ciclo_apertura_e_chiusura_simulato():
         assert st["positions"][trade()["id"]]["status"] == "closed" and st["simulated"]["positions"] == {} and "Chiusa BTCUSDT" in notes[-1]
 
 
+def test_carta_sempre_accesa_anche_con_il_reale():
+    """Conto della carta in un file suo: lavora anche quando gli ordini veri sono accesi e non tocca mai il client vero."""
+    with tempfile.TemporaryDirectory() as d:
+        real_path, paper_path = os.path.join(d, "live.json"), os.path.join(d, "paper_account.json")
+        cfg, ledger = setup([trade()], mode="paper", cfg_extra={"risk": {"dry_run_equity": 10_000, "trading_enabled": True, "shadow_paper": False}})
+        # il reale (client demo finto, non segue la carta): non apre nulla
+        go(cfg, ledger, real_path, client=ex.DryRunClient(10_000, {}))
+        assert not [p for p in json.load(open(real_path)).get("positions", {}).values() if p["status"] == "open"]
+        # la carta apre comunque, anche con shadow_paper spento nelle impostazioni
+        assert ex.run_paper_account(cfg, ledger, state_path=paper_path, now=NOW, specs_fn=SPECS, prices_fn=lambda syms: {}, funding_fn=lambda syms: {}) is True
+        st = json.load(open(paper_path))
+        assert st["mode"] == "simulata" and st["positions"][trade()["id"]]["status"] == "open" and "BTCUSDT" in st["simulated"]["positions"]
+
+
 def test_solo_strategie_live():
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "live.json")

@@ -203,7 +203,7 @@ def set_trading(cfg, value):
 
 # --- Agente (agent.py): autonomia, profilo di rischio, stile ---
 AGENT_DEFAULT = {"autonomy": "paper", "profile": "bilanciato", "style": "swing"}
-AUTONOMY = ("off", "paper", "live")
+AUTONOMY = ("paper", "live")      # la carta non si spegne mai: l'agente lavora sempre almeno su carta
 # Ogni profilo imposta tutti i limiti dell'esecutore insieme (restano modificabili uno per uno)
 PROFILES = {
     "prudente":   {"risk_per_trade_pct": 0.25, "max_leverage": 2, "max_exposure_x": 1.0, "max_open_positions": 2, "max_same_direction": 1, "max_daily_loss_pct": 2.0, "daily_target_pct": 1.0, "max_strategy_dd_pct": 3.0},
@@ -214,7 +214,10 @@ STYLES = {"swing": ("1d",), "giornaliero": ("4h", "1h"), "misto": ("1d", "4h", "
 
 
 def agent_config(cfg):
-    return {**AGENT_DEFAULT, **(cfg.get("agent") or {})}
+    ag = {**AGENT_DEFAULT, **(cfg.get("agent") or {})}
+    if ag.get("autonomy") not in AUTONOMY:       # "spento" non esiste più (vecchie impostazioni): si lavora su carta
+        ag["autonomy"] = "paper"
+    return ag
 
 
 def agent_live_keys(cfg):

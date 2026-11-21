@@ -84,10 +84,17 @@ def test_stile_giornaliero_sceglie_solo_4h_e_1h():
     assert cfg["strategies"] == {} and any("giornaliera" in f for f in st["facts"])
 
 
-def test_autonomia_spenta_non_tocca_nulla():
+def test_agente_sempre_acceso_su_carta():
+    """La carta non si spegne: una vecchia autonomia "off" vale "paper" e non si può più impostare."""
+    assert automation.agent_config({"agent": {"autonomy": "off"}})["autonomy"] == "paper"
+    try:
+        automation.set_agent({"emergency": False, "history": [], "strategies": {}, "agent": {}}, "autonomy", "off")
+        raise AssertionError("autonomia off accettata")
+    except automation.CommandError:
+        pass
     p = _setup(candidates=[A], agent_cfg={"autonomy": "off"})
     st, cfg, _ = _run(p, full=True)
-    assert cfg["strategies"] == {} and any("Autonomia spenta" in f for f in st["facts"])
+    assert not any("Autonomia spenta" in f for f in st["facts"])
 
 
 def test_emergenza_nessuna_accensione():

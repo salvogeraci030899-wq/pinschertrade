@@ -174,12 +174,13 @@ function fillReal(sfx) {
     set('homeOpenPnl', n ? signed(upl) : '—', n ? tone(upl) : '');
     put($('homeOpenPnlLabel' + sfx), n && hasLiveMarks() ? 'PnL live' : 'PnL aperto');
 }
-// Conto della carta (l'esecutore simulato, live_trades.json)
+// Conto della carta (l'esecutore simulato, sempre acceso: paper_account.json; in mancanza live_trades.json se simulato)
+const paperOf = () => { const l = bot && bot.live; return bot && bot.paperAcct && bot.paperAcct.simulated ? bot.paperAcct : (l && l.mode === 'simulata' && l.simulated ? l : null); };
 function fillPaper(sfx) {
     const set = (id, text, cls) => { const el = $(id + sfx); put(el, text); putCls(el, 'home-kpi-value' + (cls || '')); };
     put($('homeOpenPnlLabel' + sfx), 'PnL aperto');
     put($('homePnlLabel' + sfx), 'PnL oggi');
-    const live = bot && bot.live, sim = live && live.simulated;
+    const live = paperOf(), sim = live && live.simulated;
     if (!sim || !Number.isFinite(Number(sim.equity))) { set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—'); return; }
     set('homeEquity', money(sim.equity));
     const dayStart = Number(live.day && live.day.start_equity) || Number(sim.start) || Number(sim.equity);
@@ -222,8 +223,8 @@ function recentOf(which) {
     if (which === 'real') {
         return realHistory().filter(h => h.closedAt).map(h => ({ t: typeof h.closedAt === 'number' ? h.closedAt : Date.parse(h.closedAt), symbol: h.symbol, side: h.type, pnl: h.pnl, src: 'reale' }));
     }
-    const live = bot && bot.live;
-    return Object.values((live && live.positions) || {}).filter(p => p && p.status === 'closed' && p.net != null && p.closed_at)
+    const pl = paperOf();
+    return Object.values((pl && pl.positions) || {}).filter(p => p && p.status === 'closed' && p.net != null && p.closed_at)
         .map(p => ({ t: Date.parse(p.closed_at), symbol: p.symbol, side: String(p.side).toUpperCase(), pnl: Number(p.net), src: 'carta' }));
 }
 function renderRecent() {
@@ -257,8 +258,8 @@ async function refreshBotFiles() {
     if (botInFlight) return;
     botInFlight = true;
     try {
-        const [cfg, ledger, live, alerts, quick, agent] = await Promise.all([getJson('automation.json'), getJson('paper_trades.json'), getJson('live_trades.json'), getJson('alerts_state.json'), getJson('quick_state.json'), getJson('agent_state.json')]);
-        bot = { cfg, ledger, live, agent, fired: [...((alerts && alerts._price_alerts_fired) || []), ...((quick && quick._price_alerts_fired) || [])] };
+        const [cfg, ledger, live, paperAcct, alerts, quick, agent] = await Promise.all([getJson('automation.json'), getJson('paper_trades.json'), getJson('live_trades.json'), getJson('paper_account.json'), getJson('alerts_state.json'), getJson('quick_state.json'), getJson('agent_state.json')]);
+        bot = { cfg, ledger, live, paperAcct, agent, fired: [...((alerts && alerts._price_alerts_fired) || []), ...((quick && quick._price_alerts_fired) || [])] };
     } finally { botInFlight = false; }
     renderAutomationCard();
     renderAccount();
@@ -273,11 +274,13 @@ function setLine(id, text, cls = '') {
 
 function renderAutomationCard() {
     if (!bot) return;
-    const { cfg, ledger, live } = bot;
+    const { cfg, ledger } = bot;
+    const pl = paperOf();
     const modes = Object.values((cfg && cfg.strategies) || {});
     const paper = modes.filter(m => m === 'paper').length, real = modes.filter(m => m === 'live').length;
-    const simOn = !!(live && live.mode === 'simulata' && live.simulated && !(cfg && cfg.risk && cfg.risk.shadow_paper === false));
-    const stats = simOn ? Object.values(live.strategy_stats || {}) : Object.values((ledger && ledger.strategies) || {}).map(s => s.stats || {});
+    const live = bot.live;
+    const simOn = !!pl;
+    const stats = simOn ? Object.values(pl.strategy_stats || {}) : Object.values((ledger && ledger.strategies) || {}).map(s => s.stats || {});
     const closed = stats.reduce((s, x) => s + (x.n || 0), 0), opened = stats.reduce((s, x) => s + (x.open || 0), 0);
     if (cfg && cfg.emergency) setLine('homeAutoStrategies', 'EMERGENZA: tutto bloccato', 'text-danger');
     else if (live && live.halted) setLine('homeAutoStrategies', 'esecutore bloccato', 'text-danger');

@@ -90,7 +90,7 @@ function realOrders(market) {
 // Importi in $: ogni trade dimensionato come farebbe l'esecutore con i soldi veri, cioè sul conto Bitget di oggi
 // (o sul capitale di prova se il conto non è collegato) con il rischio per trade attuale: se tocca lo stop iniziale
 // perde quella percentuale del conto. Su carta si prendono però tutti i segnali, senza i limiti di posizioni.
-let paper = null, live = null, riskCfg = {}, paperAt = 0, pricesAt = 0, base = { capital: 1000, risk: 0.5, real: false };
+let paper = null, live = null, paperAcct = null, riskCfg = {}, paperAt = 0, pricesAt = 0, base = { capital: 1000, risk: 0.5, real: false };
 const prices = {};
 const paperAll = () => {
     const out = [];
@@ -101,8 +101,10 @@ const paperAll = () => {
 };
 // Con gli ordini simulati l'esecutore segue la carta con gli STESSI limiti del reale (posizioni massime, stesso verso, perdita del giorno,
 // dimensione, leva): quel conto è la "carta" che precede il reale. Le posizioni e il conto stanno in live_trades.json.
-export const simActive = () => !!(live && live.mode === 'simulata' && live.simulated && riskCfg.shadow_paper !== false);
-const simPositions = () => Object.entries((live && live.positions) || {}).map(([id, p]) => ({ id, ...p }));
+// il conto della carta sta in paper_account.json (sempre acceso); prima del primo giro dopo l'aggiornamento vale quello dell'esecutore simulato
+const simSrc = () => (paperAcct && paperAcct.simulated ? paperAcct : (live && live.mode === 'simulata' && live.simulated ? live : null));
+export const simActive = () => !!simSrc();
+const simPositions = () => Object.entries((simSrc() && simSrc().positions) || {}).map(([id, p]) => ({ id, ...p }));
 const simOpen = () => (simActive() ? simPositions().filter(p => p.status === 'open').sort((a, b) => String(b.opened_at).localeCompare(String(a.opened_at))) : []);
 const paperOpen = () => paperAll().filter(t => t.open).sort((a, b) => (b.t_entry || b.t || 0) - (a.t_entry || a.t || 0));
 // Un solo caricamento alla volta: chi arriva mentre è in corso aspetta lo stesso (e trova anche i prezzi)
@@ -115,9 +117,10 @@ async function fetchPaper(force) {
     if (force || !paper || Date.now() - paperAt > 60000) {
         paperAt = Date.now();
         const get = async n => { try { const r = await fetchData(n); return r.ok ? await r.json() : null; } catch (e) { return null; } };
-        const [p, cfg, lv] = await Promise.all([get('paper_trades.json'), get('automation.json'), get('live_trades.json')]);
+        const [p, cfg, lv, pa] = await Promise.all([get('paper_trades.json'), get('automation.json'), get('live_trades.json'), get('paper_account.json')]);
         if (p) paper = p;
         if (lv) live = lv;
+        if (pa) paperAcct = pa;
         riskCfg = (cfg && cfg.risk) || riskCfg;
         const eq = Number(lv && lv.account && lv.account.connected && lv.account.equity);
         const risk = Number(cfg && cfg.risk && cfg.risk.risk_per_trade_pct);
@@ -177,7 +180,7 @@ function simRows() {
 }
 // Conto della carta con i limiti del reale: cassa + guadagno non realizzato ai prezzi di adesso
 function simAccount() {
-    const sim = live.simulated, pos = simPositions(), start = Number(sim.start) || Number(riskCfg.dry_run_equity) || 1000;
+    const sim = simSrc().simulated, pos = simPositions(), start = Number(sim.start) || Number(riskCfg.dry_run_equity) || 1000;
     let unreal = 0, nOpen = 0;
     for (const p of pos.filter(x => x.status === 'open')) { const pct = simPct(p), u = simUsd(p, pct); if (u != null) { unreal += u; nOpen++; } else nOpen++; }
     if (!nOpen) unreal = 0; else if (!Object.keys(prices).length) unreal = Number(sim.unrealized) || 0;

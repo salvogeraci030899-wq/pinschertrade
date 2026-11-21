@@ -45,6 +45,7 @@ from fmt_it import it, it_g
 from market_data import TF_DELTA, TRADE_ASSETS
 
 STATE_PATH = "live_trades.json"
+PAPER_PATH = "paper_account.json"   # conto della carta: sempre acceso, anche quando gli ordini veri sono attivi
 EQUITY_PATH = "equity_history.json"     # un record al giorno: apertura, chiusura, versamenti/prelievi, guadagno
 DEFAULT_RISK = {
     "trading_enabled": False,
@@ -171,6 +172,13 @@ def size_position(equity, entry, stop, risk, open_notional, specs):
     if size < specs["min_size"]:
         return 0.0, "quantità sotto il minimo del contratto"
     return size, ""
+
+
+def run_paper_account(cfg, ledger, state_path=PAPER_PATH, notify=None, **kw):
+    """Conto della carta, SEMPRE acceso: l'esecutore simulato segue le strategie su carta con gli stessi limiti del reale,
+    in un file suo (paper_account.json), anche quando gli ordini veri sono accesi. Non tocca mai Bitget."""
+    pcfg = {**cfg, "risk": {**(cfg.get("risk") or {}), "shadow_paper": True}}
+    return run(pcfg, ledger, None, "simulata", state_path=state_path, notify=notify, **kw)
 
 
 def _load(path):

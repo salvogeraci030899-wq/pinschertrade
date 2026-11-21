@@ -109,7 +109,7 @@ export async function command(body, env, fetchFn) {
         }
         case 'set_agent': {
             // agente: autonomia, profilo di rischio, stile (ricontrollati in automation.py)
-            const allowed = { autonomy: ['off', 'paper', 'live'], profile: ['prudente', 'bilanciato', 'aggressivo'], style: ['swing', 'giornaliero', 'misto'] };
+            const allowed = { autonomy: ['paper', 'live'], profile: ['prudente', 'bilanciato', 'aggressivo'], style: ['swing', 'giornaliero', 'misto'] };
             if (!allowed[b.field] || !allowed[b.field].includes(b.value)) return json(400, { error: 'Impostazione dell\'agente non valida' });
             return dispatch(env, fetchFn, 'automation.yml', { action: 'agent', key: b.field, mode: b.value });
         }

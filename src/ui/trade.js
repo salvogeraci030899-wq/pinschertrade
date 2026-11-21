@@ -78,7 +78,7 @@ export function refreshCapitalUI() {
     const el = document.getElementById('simCapitalDisplay');
     const real = true, acc = bitgetAccount();
     const total = acc && acc.connected ? (acc.total_usdt != null ? acc.total_usdt : acc.equity) : null;
-    const st = getAutoState(), sim = st.live && st.live.simulated;
+    const st = getAutoState(), sim = st.paper && st.paper.simulated;
     const paper = sim && Number.isFinite(Number(sim.equity)) ? Number(sim.equity) : null;
     if (el) el.textContent = real ? (total != null ? fmtUsdt(total) : '—') : (paper != null ? fmtUsdt(paper) : '—');
     const lbl = document.getElementById('capitalLabel'), sub = document.getElementById('tradeSubtitle');
