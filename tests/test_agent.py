@@ -392,6 +392,33 @@ def test_regola_quasi_candidata():
     assert agent.strategy_status("tsmom_combo:1d", {"results": {"tsmom_combo:1d": ok}}) == "quasi candidata"
 
 
+def test_alto_rischio_le_candidate_hanno_la_precedenza():
+    """Sei strategie accese, due quasi candidate messe dall'agente: arriva una candidata, una di loro cede il posto."""
+    summary = _near_summary()
+    summary["results"].update({"app_breakout_trail:1d": {"n": 300, "excess_avg_pct": 2.0, "excess_p": 0.5, "stable": True},
+                               "ema_pullback:1d": {"n": 300, "excess_avg_pct": 2.0, "excess_p": 0.001, "stable": True},
+                               "tsmom30:1d": {"n": 300, "excess_avg_pct": 2.0, "excess_p": 0.001, "stable": True}})
+    summary["candidates"] = ["ema_pullback:1d"]
+    base = {"big_candle_trail:1d": "paper", "donchian20_calm:1d": "paper", "tsmom_combo:1d": "paper",
+            "r_breakout_80_4:1d": "paper", "app_breakout_trail:1d": "paper", "r_breakout_80_3:1d": "paper"}
+    cfg = {"strategies": base, "emergency": False, "history": [], "risk": {"near_candidates": 1}}
+    observing = {"donchian20_calm:1d", "tsmom_combo:1d"}
+    d = agent.decide(cfg, summary, {"strategies": {}}, set(observing), set(observing))
+    assert [k for k, _ in d["on"]] == ["ema_pullback:1d"], d["notes"]
+    off = {k: w for k, w in d["off"]}
+    assert "tsmom_combo:1d" in off and "lascia il posto alla candidata" in off["tsmom_combo:1d"]      # la più lontana (p 0,0865) cede
+    assert "donchian20_calm:1d" not in off                                                              # una sola serve
+    # una candidata gemella di una quasi candidata dell'agente: cede la gemella, non resta fuori
+    summary["candidates"] = ["tsmom30:1d"]
+    d = agent.decide(cfg, summary, {"strategies": {}}, set(observing), set(observing))
+    assert [k for k, _ in d["on"]] == ["tsmom30:1d"] and "tsmom_combo:1d" in dict(d["off"]), (d["on"], d["off"], d["notes"])
+    # senza alto rischio non cede nessuno: la candidata aspetta
+    cfg["risk"]["near_candidates"] = 0
+    summary["candidates"] = ["ema_pullback:1d"]
+    d = agent.decide(cfg, summary, {"strategies": {}}, set(observing), set(observing))
+    assert d["on"] == [] and any("ci sono già" in n for n in d["notes"])
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
