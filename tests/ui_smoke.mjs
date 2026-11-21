@@ -442,6 +442,46 @@ try {
             if (!ok) console.log('  ordine celle:', JSON.stringify(r.map(c => c.t + (c.lit ? '*' : ''))));
             return ok;
         });
+        // Stabilità: con i segnali aperti, prezzi che cambiano e una nuova scansione, niente deve spostarsi o ridimensionarsi
+        await step('segnali: nessun ridimensionamento in 6 secondi con prezzi e scansione che cambiano', async () => {
+            const r = await page.evaluate(async () => {
+                const { State } = await import('./src/core/state.js');
+                const sm = await import('./src/ui/signals.js');
+                window.switchTab('terminal'); window.setMarketView('sig');
+                const sig = (a, b, c) => ({ breakout: { signal: a, strength: 70 }, mean_reversion: { signal: b, strength: 60 }, ma_crossover: { signal: c, strength: 66 } });
+                for (const a of ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'BNBUSDT', 'ADAUSDT', 'LINKUSDT']) for (const tf of ['1d', '4h', '1h']) State.signalMatrix[`${a}_${tf}`] = sig('SHORT', 'NEUTRAL', 'SHORT');
+                const mk = i => ({ asset: ['SOLUSDT', 'BTCUSDT', 'ETHUSDT'][i % 3], tf: ['1h', '4h', '1d'][i % 3], consensus: 'SHORT', agreement: i % 3 ? 2 : 3, timestamp: Date.now() - i * 3600e3, strength: 60 + (i % 9),
+                    sources: i % 3 ? { breakout: 'SHORT', mean_reversion: 'NEUTRAL', ma_crossover: 'SHORT' } : { breakout: 'SHORT', mean_reversion: 'SHORT', ma_crossover: 'SHORT' } });
+                State.signalHistory = Array.from({ length: 30 }, (_, i) => mk(i));
+                sm.orderSignalAssets(); sm.renderSignalGrid(); sm.renderSignalHistory();
+                await new Promise(res => setTimeout(res, 800));
+                const price = document.getElementById('live-price'), seen = {}, mark = (k, v) => { (seen[k] = seen[k] || new Set()).add(v); };
+                let n = 0, stop = false, t0 = performance.now();
+                const frame = () => {
+                    if (stop) return;
+                    if (performance.now() - t0 > 300) {          // dopo l'assestamento iniziale
+                        mark('zoom', getComputedStyle(document.documentElement).getPropertyValue('--fit-zoom-terminal').trim());
+                        for (const [k, sel] of [['griglia', '#signalGrid'], ['storico', '#signalHistoryList'], ['stato', '#signalInfoBar'], ['pagina', '#mktSig']]) { const e = document.querySelector(sel); if (e) mark(k, Math.round(e.getBoundingClientRect().height * 10) / 10 + '@' + Math.round(e.getBoundingClientRect().top)); }
+                    }
+                    requestAnimationFrame(frame);
+                };
+                requestAnimationFrame(frame);
+                // prezzi che cambiano (ogni mezzo secondo, anche la larghezza del testo) e una nuova scansione a metà
+                const tick = setInterval(() => { n++; if (price) price.textContent = (n % 2 ? '9.999,10' : '70.500,00') + ' $'; }, 500);
+                await new Promise(res => setTimeout(res, 3000));
+                State.signalHistory.unshift(mk(31)); State.signalMatrix['LINKUSDT_1h'] = sig('SHORT', 'SHORT', 'SHORT'); sm.renderSignalGrid(); sm.renderSignalHistory();
+                await new Promise(res => setTimeout(res, 3000));
+                stop = true; clearInterval(tick);
+                // tutte le celle della griglia e tutte le schede dello storico hanno la stessa altezza, da una pagina all'altra
+                const h = sel => [...new Set([...document.querySelectorAll(sel)].map(e => Math.round(e.getBoundingClientRect().height)))];
+                const sizes = { celle: h('#signalGrid .signal-page:nth-child(-n+2) .signal-cell'), schede: h('#signalHistoryList .log-item') };
+                return { seen: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, [...v]])), sizes, uniform: sizes.celle.length === 1 && sizes.schede.length === 1 };
+            });
+            const moving = Object.entries(r.seen).filter(([, v]) => v.length > 1);
+            if (moving.length) console.log('  si muovono:', JSON.stringify(Object.fromEntries(moving)));
+            if (!r.uniform) console.log('  altezze diverse:', JSON.stringify(r.sizes));
+            return moving.length === 0 && r.uniform;
+        });
         await step('mercato: Nuovo avviso non apre la finestra', async () => {
             await page.evaluate(() => window.setMarketView('alerts')); await page.waitForTimeout(300);
             await page.click('.mkt-new-alert'); await page.waitForTimeout(300);
