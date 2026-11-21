@@ -227,6 +227,7 @@ try {
                 const scrollable = el => { for (let e = el.parentElement; e; e = e.parentElement) { if (e.classList && e.classList.contains('nav-scroll')) return true; const o = getComputedStyle(e).overflowX; if ((o === 'auto' || o === 'scroll') && e.scrollWidth > e.clientWidth + 1) return true; } return false; };
                 for (const root of roots) for (const el of root.querySelectorAll('*')) {
                     if (!el.getClientRects().length || getComputedStyle(el).visibility === 'hidden') continue;
+                    if (el.closest('.mq-on')) continue;                    // testo che scorre da solo: non è tagliato
                     const nodes = [...el.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
                     const txt = nodes.map(n => n.textContent).join(' ').replace(/\s+/g, ' ').trim();
                     if (!txt) continue;
@@ -313,6 +314,26 @@ try {
             const on = await page.evaluate(() => document.getElementById('chartAlertModal').classList.contains('active') && document.querySelectorAll('#caCoins .pill-btn').length === 8);
             await page.evaluate(() => window.closeChartAlert());
             return on;
+        });
+        await step('home: un testo più lungo della riga scorre da solo, uno corto resta fermo', async () => {
+            await page.evaluate(() => window.switchTab('home')); await page.waitForTimeout(500);
+            const r = await page.evaluate(async () => {
+                const card = document.querySelector('#page-home .home-card');
+                const line = document.createElement('div');
+                line.className = 'home-line';
+                line.innerHTML = '<span>Prova</span><b id="mqTest">Agente: simulato · carta: ancora nessun trade chiuso e un testo davvero molto lungo da leggere</b>';
+                card.appendChild(line);
+                await new Promise(res => setTimeout(res, 400));
+                const b = document.getElementById('mqTest'), inner = b.querySelector('.mq-inner');
+                const long = { on: b.classList.contains('mq-on'), anim: getComputedStyle(inner).animationName, startVisible: inner.getBoundingClientRect().left >= b.getBoundingClientRect().left - 1,
+                    shift: Number(b.style.getPropertyValue('--mq-shift')) };
+                inner.textContent = 'ok';
+                await new Promise(res => setTimeout(res, 400));
+                const short = { on: b.classList.contains('mq-on'), anim: getComputedStyle(inner).animationName };
+                line.remove();
+                return { long, short };
+            });
+            return r.long.on && r.long.anim === 'mq-scroll' && r.long.startVisible && r.long.shift > 10 && !r.short.on && r.short.anim === 'none';
         });
         await page.evaluate(() => { window.switchTab('signals'); window.setSignalsView('agent'); });
         await page.waitForTimeout(800);

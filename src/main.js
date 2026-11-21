@@ -19,6 +19,7 @@ import * as Lock from './ui/lock.js';
 import * as Orders from './ui/orders.js';
 import { initPageFit, refitPages } from './ui/page-fit.js';
 import { initA11y } from './ui/a11y.js';
+import { initMarquee } from './ui/marquee.js';
 import { normalizeWindows } from './ui/windows.js';
 import * as Market from './ui/market.js';
 import * as Results from './ui/results.js';
@@ -353,6 +354,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initManual();
     initPageFit();
     initA11y();
+    initMarquee();
     setTimeout(() => Log.prefetchLog(), 1500);          // il Registro si apre già pronto
 
     CalculatorUI.setMarket('SPOT');

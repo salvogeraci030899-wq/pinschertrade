@@ -576,6 +576,12 @@ body.snapshot-mode .btn-fullscreen, body.snapshot-mode .chart-fs-tools, body.sna
 .home-line { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); font-size: var(--fs-md); min-height: 22px; }
 .home-line > span { color: var(--text-secondary); flex-shrink: 0; }
 .home-line > b { font-weight: 600; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-3); min-width: 0; }
+/* Testo più lungo della riga: scorre da solo (src/ui/marquee.js) */
+.mq-inner { display: inline-flex; align-items: center; gap: var(--sp-3); flex: none; white-space: nowrap; }
+.home-line > b.mq-on { justify-content: flex-start; }
+.home-line > b.mq-on > .mq-inner { animation: mq-scroll var(--mq-dur, 8s) ease-in-out infinite; will-change: transform; }
+@keyframes mq-scroll { 0%, 14% { transform: translateX(0); } 50%, 64% { transform: translateX(calc(var(--mq-shift) * -1px)); } 100% { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .home-line > b.mq-on > .mq-inner { animation: none; } }
 .home-line .sc-badge { font-size: var(--fs-xs); font-weight: 800; padding: var(--sp-2) var(--sp-3); border-radius: var(--r-xs); letter-spacing: 0.3px; }
 .home-version { font-family: var(--mono); text-transform: none; letter-spacing: 0; color: var(--text-secondary); }
 .home-line.home-sub { min-height: 16px; margin-top: -4px; }
