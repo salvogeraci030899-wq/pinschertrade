@@ -37,6 +37,7 @@ function onModeData() {
     if (window.renderHistory) window.renderHistory();
     if (window.renderBreakEven) window.renderBreakEven();
     if (window.refreshMarkers) window.refreshMarkers();
+    if (window.updatePriceLines) window.updatePriceLines();
     if (window.syncTradeMode) window.syncTradeMode();
     if (window.refreshCapitalUI) window.refreshCapitalUI();
     if (window.renderActiveTrades) window.renderActiveTrades();

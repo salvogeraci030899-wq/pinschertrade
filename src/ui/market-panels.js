@@ -38,7 +38,7 @@ const since = ts => {
     return h < 1 ? `${Math.max(1, Math.round(h * 60))} min` : h < 48 ? `${Math.round(h)} h` : `${Math.round(h / 24)} giorni`;
 };
 
-function paperTrades(asset) {
+export function paperTrades(asset) {
     const { ledger } = getAutoState();
     const out = [];
     for (const [key, e] of Object.entries((ledger && ledger.strategies) || {})) {

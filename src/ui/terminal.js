@@ -5,7 +5,7 @@ import { journalTrades, realPositions } from './history.js';
 import { $, SYM, fetchT, apiPost, fmtUsd, fmtIt, analyzeTrend, buildRiskData, calcEMA, parseBitgetCandles, fetchData, markChosen } from '../utils/helpers.js';
 import { createChart, setCandles, setMarkers, setPriceLines, relayout } from './chart.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
-import { renderLevels, renderPaperOnCoin } from './market-panels.js';
+import { renderLevels, renderPaperOnCoin, paperTrades } from './market-panels.js';
 
 const chartContainer = document.getElementById('chart');
 const mainChartContainer = document.getElementById('mainChartContainer');
@@ -242,6 +242,10 @@ export function refreshMarkers() {
         if (h.entryTime) add(h.entryTime, { position: 'belowBar', color: '#30d158', shape: 'arrowUp', text: 'In' });
         if (h.exitTime) add(h.exitTime, { position: 'aboveBar', color: '#ff453a', shape: 'circle', text: 'Out' });
     });
+    // trade su carta ancora aperti su questa coin: freccia blu all'ingresso (come in "Carta su questa coin")
+    paperTrades(State.currentAsset).filter(t => t.open && (t.t_entry || t.t)).forEach(t => {
+        add((t.t_entry || t.t) * 1000, { position: t.dir > 0 ? 'belowBar' : 'aboveBar', color: '#0a84ff', shape: t.dir > 0 ? 'arrowUp' : 'arrowDown', text: 'Carta' });
+    });
     out.sort((a, b) => a.time - b.time);
     setMarkers(chartHandle, out);
 }
@@ -255,6 +259,16 @@ export function updatePriceLines() {
         if (pos.entry) lines.push({ price: pos.entry, color: 'rgba(142,142,147,0.7)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'ENTRY' });
         if (pos.sl) lines.push({ price: pos.sl, color: 'rgba(255,69,58,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'SL' });
         if (pos.tp) lines.push({ price: pos.tp, color: 'rgba(48,209,88,0.8)', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'TP' });
+    }
+        // trade su carta aperti su questa coin: ingresso e stop in blu (uno per prezzo, anche se più strategie sono entrate allo stesso livello)
+    const seen = new Set();
+    for (const t of paperTrades(State.currentAsset).filter(x => x.open)) {
+        for (const [price, title, style] of [[t.entry, 'CARTA', LightweightCharts.LineStyle.Dashed], [t.stop, 'CARTA SL', LightweightCharts.LineStyle.Dotted]]) {
+            const k = `${title}|${price}`;
+            if (!price || seen.has(k)) continue;
+            seen.add(k);
+            lines.push({ price, color: 'rgba(10,132,255,0.8)', lineWidth: 1, lineStyle: style, axisLabelVisible: true, title });
+        }
     }
         setPriceLines(chartHandle, lines);
 }
