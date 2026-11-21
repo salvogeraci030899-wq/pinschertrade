@@ -84,12 +84,15 @@ function fitActive() {
 
 // Cambi di misura e apertura pagina: subito (un fotogramma). Cambi di contenuto (testi e liste che si aggiornano ogni pochi
 // secondi): al massimo una volta ogni 80 ms, e mai con l'app in background.
-let lastRun = 0, timer = null;
+let lastRun = 0, timer = null, scrollUntil = 0;
+// Mentre un elenco a scorrimento di lato si muove (dito o inerzia) la pagina non si rimisura: azzerare lo zoom e rimetterlo
+// sposta la posizione di scorrimento e lo interrompe (su iPhone rendeva impossibile scorrere i Segnali).
+const moving = () => Date.now() < scrollUntil;
 function schedule(urgent = true) {
     if (document.hidden) return;
     if (!urgent) {
         if (timer) return;
-        timer = setTimeout(() => { timer = null; schedule(true); }, Math.max(0, 80 - (Date.now() - lastRun)));
+        timer = setTimeout(() => { timer = null; schedule(true); }, Math.max(80 - (Date.now() - lastRun), moving() ? scrollUntil - Date.now() : 0, 0));
         return;
     }
     if (scheduled) return;
@@ -97,13 +100,25 @@ function schedule(urgent = true) {
     requestAnimationFrame(() => { scheduled = false; lastRun = Date.now(); fitActive(); });
 }
 
+// Puntini e contatori delle liste a scorrimento cambiano a ogni scheda: non sono contenuto che cambia la misura della pagina
+const INDICATORS = '.info-dots, .nav-dots, .pager-count';
+function relevant(m) {
+    const el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
+    return !(el && el.closest && el.closest(INDICATORS));
+}
+
 export function initPageFit() {
+    const touching = e => { const t = e.target; if (t && t.closest && t.closest('.signal-grid, #signalHistoryList, .mkt-pager, .auto-pages, .res-hlist, .ord-list, .agent-log')) scrollUntil = Date.now() + 700; };
+    document.addEventListener('touchstart', touching, { passive: true, capture: true });
+    document.addEventListener('touchmove', touching, { passive: true, capture: true });
+    document.addEventListener('scroll', e => { const t = e.target; if (t && t !== document && t.scrollWidth > t.clientWidth + 1 && t.scrollHeight <= t.clientHeight + 1) scrollUntil = Date.now() + 500; }, { passive: true, capture: true });
+
     for (const id of PAGES) {
         const page = document.getElementById(`page-${id}`);
         if (!page) continue;
         if ('ResizeObserver' in window) new ResizeObserver(() => schedule(true)).observe(page);
         // Contenuto che cambia (liste, griglie, testi, elementi mostrati/nascosti con una classe)
-        new MutationObserver(() => schedule(false)).observe(page, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+        new MutationObserver(muts => { if (muts.some(relevant)) schedule(false); }).observe(page, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
     }
     window.addEventListener('resize', () => schedule(true));
     if (window.visualViewport) window.visualViewport.addEventListener('resize', () => schedule(true));

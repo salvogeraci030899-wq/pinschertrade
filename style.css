@@ -1285,7 +1285,8 @@ html.glass .lock-link { background: var(--glass-bg); border: 1px solid var(--gla
 #autoConfirmMsg { white-space: pre-line; }
 
 /* Tocchi immediati: niente attesa del doppio tocco e niente evidenziazione grigia sui tasti */
-button, .nav-item, .pill-btn, .lock-key, .signal-cell, .home-card.clickable, .home-line.clickable, [onclick] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button, .nav-item, .pill-btn, .lock-key { touch-action: manipulation; }
+[onclick], .signal-cell { -webkit-tap-highlight-color: transparent; }
 /* Schermata di blocco: sfondo fermo (le luci in movimento sotto i tasti rallentano il tastierino) */
 .lock-screen .wall-anim i { animation: none !important; }
 .lock-key { transition: none; }
