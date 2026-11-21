@@ -51,15 +51,24 @@ function reserveListHeights(page) {
     }
 }
 
-function fit(page, id) {
+// full = apertura della pagina o cambio di misura: si ricalcola da zero. Altrimenti (testi, prezzi, elenchi che cambiano) lo zoom
+// attuale si tiene finché la pagina ci sta e al massimo si rimpicciolisce: non si ingrandisce mai da solo. Così, quando il contenuto è al
+// limite dello spazio, una misura che oscilla di 1 px non fa più passare la pagina da zoom 1 a 0,97 a ogni aggiornamento del prezzo.
+const ENLARGE_MIN = 0.04;      // anche in un ricalcolo completo, uno zoom già buono si ingrandisce solo se guadagna almeno il 4%
+
+function fit(page, id, full = true) {
     const zoomVar = `--fit-zoom-${id}`;
     setVar(`--fit-extra-bottom-${id}`, overshoot(page) + 'px');
-    // percorso veloce: zoom già a 1 e la pagina entra -> niente da rifare (evita il va e vieni 1 → zoom → 1 a ogni cambio di testo)
-    if ((root.style.getPropertyValue(zoomVar) || '1') === '1' && root.style.getPropertyValue(`--fit-overflow-${id}`) !== 'auto' && !overflowing(page)) { reserveListHeights(page); return; }
+    const cur = parseFloat(root.style.getPropertyValue(zoomVar)) || 1;
+    const fitsNow = root.style.getPropertyValue(`--fit-overflow-${id}`) !== 'auto' && !overflowing(page);
+    if (fitsNow && (cur === 1 || !full)) { if (cur === 1) reserveListHeights(page); return; }
     setVar(zoomVar, '1');
     setVar(`--fit-overflow-${id}`, 'hidden');
     reserveListHeights(page);
-    if (!overflowing(page)) return;
+    if (!overflowing(page)) {
+        if (!full && cur < 1) { setVar(zoomVar, String(cur)); reserveListHeights(page); }      // cambio di contenuto: mai ingrandire da soli
+        return;
+    }
 
     // Lo zoom cambia la larghezza delle schede (e quindi dove va a capo il testo): l'altezza minima
     // delle liste si ricalcola a ogni passo
@@ -73,38 +82,44 @@ function fit(page, id) {
     }
     // Ultima risorsa: anche al minimo non entra (schermi molto bassi) -> la pagina scorre invece di tagliare
     if (overflowing(page)) setVar(`--fit-overflow-${id}`, 'auto');
+    else if (!full && zoom > cur) { setVar(zoomVar, String(cur)); reserveListHeights(page); }
+    // Lo zoom di prima andava già bene e il nuovo è di poco più grande: si tiene quello di prima
+    else if (fitsNow && cur < 1 && zoom > cur && zoom - cur < ENLARGE_MIN) { setVar(zoomVar, String(cur)); reserveListHeights(page); }
 }
 
-function fitActive() {
+function fitActive(full = true) {
     for (const id of PAGES) {
         const page = document.getElementById(`page-${id}`);
-        if (page && page.classList.contains('active')) fit(page, id);
+        if (page && page.classList.contains('active')) fit(page, id, full);
     }
 }
 
 // Cambi di misura e apertura pagina: subito (un fotogramma). Cambi di contenuto (testi e liste che si aggiornano ogni pochi
 // secondi): al massimo una volta ogni 80 ms, e mai con l'app in background.
-let lastRun = 0, timer = null, scrollUntil = 0;
+let lastRun = 0, timer = null, scrollUntil = 0, wantFull = false;
 // Mentre un elenco a scorrimento di lato si muove (dito o inerzia) la pagina non si rimisura: azzerare lo zoom e rimetterlo
 // sposta la posizione di scorrimento e lo interrompe (su iPhone rendeva impossibile scorrere i Segnali).
 const moving = () => Date.now() < scrollUntil;
-function schedule(urgent = true) {
+function schedule(urgent = true, full = true) {
     if (document.hidden) return;
+    if (full) wantFull = true;
     if (!urgent) {
         if (timer) return;
-        timer = setTimeout(() => { timer = null; schedule(true); }, Math.max(80 - (Date.now() - lastRun), moving() ? scrollUntil - Date.now() : 0, 0));
+        timer = setTimeout(() => { timer = null; schedule(true, false); }, Math.max(80 - (Date.now() - lastRun), moving() ? scrollUntil - Date.now() : 0, 0));
         return;
     }
     if (scheduled) return;
     scheduled = true;
-    requestAnimationFrame(() => { scheduled = false; lastRun = Date.now(); fitActive(); });
+    requestAnimationFrame(() => { scheduled = false; lastRun = Date.now(); const f = wantFull; wantFull = false; fitActive(f); });
 }
 
 // Puntini e contatori delle liste a scorrimento cambiano a ogni scheda: non sono contenuto che cambia la misura della pagina
 const INDICATORS = '.info-dots, .nav-dots, .pager-count';
 function relevant(m) {
     const el = m.target.nodeType === 3 ? m.target.parentElement : m.target;
-    return !(el && el.closest && el.closest(INDICATORS));
+    if (el && el.closest && el.closest(INDICATORS)) return false;
+    if (el && el.getClientRects && el.getClientRects().length === 0) return false;      // cambia qualcosa che non si vede (scheda nascosta): la misura non cambia
+    return true;
 }
 
 export function initPageFit() {
@@ -118,7 +133,7 @@ export function initPageFit() {
         if (!page) continue;
         if ('ResizeObserver' in window) new ResizeObserver(() => schedule(true)).observe(page);
         // Contenuto che cambia (liste, griglie, testi, elementi mostrati/nascosti con una classe)
-        new MutationObserver(muts => { if (muts.some(relevant)) schedule(false); }).observe(page, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+        new MutationObserver(muts => { if (muts.some(relevant)) schedule(false, false); }).observe(page, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
     }
     window.addEventListener('resize', () => schedule(true));
     if (window.visualViewport) window.visualViewport.addEventListener('resize', () => schedule(true));
