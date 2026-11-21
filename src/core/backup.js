@@ -5,7 +5,7 @@
 import { State } from './state.js';
 import { CONFIG } from './config.js';
 
-const SETTINGS = ['pt_theme', 'pt_glass', 'pt_pos_view', 'pt_api_base'];
+const SETTINGS = ['pt_theme', 'pt_glass', 'pt_title_icon', 'pt_pos_view', 'pt_api_base'];
 const SECRETS = ['pt_gh_token', 'pt_app_key', 'pt_data_key'];
 
 // Vecchio conto simulato a mano (tolto il 2026-11-20): se il telefono ne ha ancora i dati, restano leggibili qui e finiscono nel backup

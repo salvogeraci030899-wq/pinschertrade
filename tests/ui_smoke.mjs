@@ -482,6 +482,37 @@ try {
             if (!r.uniform) console.log('  altezze diverse:', JSON.stringify(r.sizes));
             return moving.length === 0 && r.uniform;
         });
+        await step('titoli: icona a sinistra di ogni titolo, un tocco la nasconde, i titoli si allineano e la scelta vale ovunque', async () => {
+            const r = await page.evaluate(async () => {
+                const wait = ms => new Promise(res => setTimeout(res, ms));
+                const ids = [...document.querySelectorAll('section.page')].filter(p => p.querySelector('.header-title')).map(p => p.id.replace('page-', ''));
+                const look = id => {
+                    window.switchTab(id);
+                    const t = document.querySelector(`#page-${id}.active .header-title`);
+                    if (!t) return null;
+                    const ic = t.querySelector('.title-icon').getBoundingClientRect(), h1 = t.querySelector('h1').getBoundingClientRect(), tr = t.getBoundingClientRect();
+                    return { id, iw: Math.round(ic.width), gap: Math.round(h1.left - ic.right), h1x: Math.round(h1.left), side: ic.left >= tr.left - 1 && ic.right <= h1.left + 1, top: ic.top >= tr.top - 2, ratio: tr.width / (t.offsetWidth || tr.width) };
+                };
+                window.localStorage.removeItem('pt_title_icon'); document.documentElement.classList.remove('title-icon-off');
+                await wait(300);
+                const on = ids.map(look).filter(Boolean);
+                // un tocco sul titolo della pagina aperta: icona nascosta, titolo a sinistra
+                const first = ids[0]; window.switchTab(first); await wait(200);
+                document.querySelector(`#page-${first}.active .header-title`).click(); await wait(500);
+                const off = ids.map(look).filter(Boolean);              // la scelta vale in tutte le pagine
+                const kept = window.localStorage.getItem('pt_title_icon');
+                window.switchTab(first); await wait(100);
+                document.querySelector(`#page-${first}.active .header-title`).click(); await wait(500);
+                const back = look(first);
+                window.switchTab('terminal');                            // i passi seguenti partono da Mercato
+                return { on, off, kept, back, n: ids.length };
+            });
+            const z = r.on.every(x => x.iw >= 30 * x.ratio - 2 && x.side && x.top && x.gap >= 4);
+            const hid = r.off.every((x, i) => x.iw <= 1 && x.h1x < r.on[i].h1x - 30 * r.on[i].ratio + 4);
+            const ok = r.n >= 6 && z && hid && r.kept === '0' && r.back.iw >= 30 * r.back.ratio - 2;
+            if (!ok) console.log('  titoli:', JSON.stringify({ n: r.n, kept: r.kept, on: r.on[0], off: r.off[0], back: r.back }));
+            return ok;
+        });
         await step('mercato: Nuovo avviso non apre la finestra', async () => {
             await page.evaluate(() => window.setMarketView('alerts')); await page.waitForTimeout(300);
             await page.click('.mkt-new-alert'); await page.waitForTimeout(300);
