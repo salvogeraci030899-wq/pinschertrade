@@ -15,7 +15,7 @@ import { findRealPosition, realPositions } from './history.js';
 // Voce: registrazione nel telefono (MediaRecorder) → trascrizione Whisper su Groq; le risposte le
 // legge la sintesi vocale di iOS.
 
-let realSymbol = null, general = false, history = [], speak = false, rec = null, chunks = [], recTimer = null, busy = false;
+let realSymbol = null, general = false, history = [], rec = null, chunks = [], recTimer = null, busy = false;
 const MAX_REC_MS = 30000;
 
 // La chat scorre di lato: ogni tua domanda apre una nuova schermata (CSS: break-before), le risposte lunghe
@@ -38,16 +38,6 @@ function updateDots() {
 document.addEventListener('DOMContentLoaded', () => { const l = $('assistLog'); if (l) l.addEventListener('scroll', updateDots, { passive: true }); });
 
 function status(text) { const el = $('assistStatus'); if (el) el.textContent = text || ''; }
-
-function say(text) {
-    if (!speak || !('speechSynthesis' in window)) return;
-    try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'it-IT';
-        window.speechSynthesis.speak(u);
-    } catch (e) { /* sintesi non disponibile */ }
-}
 
 function context(t) {
     const px = t.currentPrice || State.livePx[t.symbol] || t.entryPrice;
@@ -85,7 +75,7 @@ export function openAssistantReal(symbol, voice) {
 export function openAssistant(id, voice, real) {
     if (!real) realSymbol = null;
     general = !real;
-    history = []; speak = !!voice;
+    history = [];
     const realMode = tradingMode().mode === 'on';
     $('assistTitle').textContent = general ? 'Assistente' : `${SYM(real.symbol)} ${real.market === 'spot' ? 'spot' : real.side.toUpperCase()}`;
     const sub = $('assistSub');
@@ -99,7 +89,6 @@ export function openAssistant(id, voice, real) {
         ? 'Dimmi cosa fare con questa posizione, scrivendo o con il microfono, oppure usa un comando rapido qui sotto. Diventa un ordine vero su Bitget solo dopo la tua conferma.'
         : 'Chiedimi del conto, delle posizioni o del tool, oppure usa un comando rapido qui sotto: puoi chiudere più posizioni insieme. Ogni azione la confermi tu.');
     $('assistInput').value = '';
-    $('assistSpeak').classList.toggle('active', speak);
     status('');
     $('assistFoot').textContent = real ? 'Ordini veri su Bitget solo dopo «Conferma». Esito qui, in Posizioni → Ordini e su Telegram.' : 'Ogni azione parte solo dopo «Conferma».';
     $('assistModal').classList.add('active');
@@ -167,8 +156,6 @@ async function chatAnalysis() {
     try {
         const out = await AI.fetchAnalysis({ symbol: t.symbol, tf: t.granularity || '4h', trade: t }, step => status(step));
         addMsg('bot analysis', AI.renderAnalysis(out));
-        const act = (out.analysis.match(/AZIONE:\s*([^\n]+)/) || [])[1];
-        if (act) say(act);
     } catch (e) {
         addMsg('bot error', `Analisi non riuscita: ${escapeHtml(e.message)}`);
     } finally { busy = false; status(''); }
@@ -224,20 +211,13 @@ async function sendMany(items) {
             else { let o = {}; try { o = await r.json(); } catch (e) {} addMsg('bot error', `${SYM(it.p.symbol)}: non inviato (${escapeHtml(o.error || r.status)})`); }
         } catch (e) { addMsg('bot error', `${SYM(it.p.symbol)}: server non raggiungibile.`); }
     }
-    if (sent) { addMsg('bot', `Inviati ${sent} comandi a Bitget. Esiti nel Registro e in Posizioni → Ordini e su Telegram entro 1-3 minuti.`); say('Comandi inviati a Bitget.'); }
+    if (sent) { addMsg('bot', `Inviati ${sent} comandi a Bitget. Esiti nel Registro e in Posizioni → Ordini e su Telegram entro 1-3 minuti.`); }
     setTimeout(() => Auto.loadAutomation(), 90_000);
 }
 
 export function closeAssistant() {
     stopRecording(true);
-    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
     $('assistModal').classList.remove('active');
-}
-
-export function toggleAssistSpeak() {
-    speak = !speak;
-    $('assistSpeak').classList.toggle('active', speak);
-    if (!speak) try { window.speechSynthesis.cancel(); } catch (e) {}
 }
 
 export async function sendAssist(textArg) {
@@ -259,7 +239,7 @@ export async function sendAssist(textArg) {
         history.push({ role: 'user', content: text }, { role: 'assistant', content: out.reply });
         history = history.slice(-6);
         addMsg('bot', escapeHtml(out.reply));
-        say(out.reply);
+       
         if (out.action) (general ? showGeneralPlan : showRealPlan)(out.action);
     } catch (e) {
         addMsg('bot error', `Non riesco a rispondere: ${escapeHtml(e.message)}`);
@@ -299,7 +279,7 @@ function waitOutcome(req, status) {
         if (out) {
             status.textContent = `${out.ok ? 'Eseguito' : 'Non eseguito'}: ${out.msg}`;
             status.className = 'assist-plan-done ' + (out.ok ? 'text-accent' : 'text-danger');
-            say(out.msg);
+           
             Auto.loadAutomation();
             return;
         }
@@ -319,7 +299,7 @@ function showRealPlan(action) {
     let plan = action.type === 'clear_rules'
         ? (p.tp || p.sl ? { ok: true, kind: 'clear_rules', summary: `Tolgo take profit e stop loss di ${SYM(p.symbol)} ${p.side.toUpperCase()} su Bitget.` } : { ok: false, error: 'Su Bitget questa posizione non ha TP o SL da togliere.' })
         : planAction(t, action, t.currentPrice);
-    if (!plan.ok) { addMsg('bot warn', escapeHtml(plan.error)); say(plan.error); return; }
+    if (!plan.ok) { addMsg('bot warn', escapeHtml(plan.error)); return; }
     const cmd = realCommand(p, plan);
     if (!cmd) { addMsg('bot warn', 'Azione non disponibile sulle posizioni reali.'); return; }
     const spot = p.market === 'spot';
@@ -339,7 +319,7 @@ function showRealPlan(action) {
             if (!res.ok) throw new Error(out.error || `Errore ${res.status}`);
             const status = box.querySelector('.assist-plan-done');
             status.textContent = 'Inviato. Attendo l\'esito da Bitget (1-3 minuti)…';
-            say('Comando inviato a Bitget.');
+           
             waitOutcome(req, status);
         } catch (e) {
             box.querySelector('.assist-plan-done').textContent = `Non inviato: ${e.message}`;
@@ -447,7 +427,7 @@ function planGeneral(a) {
 
 function showGeneralPlan(action) {
     const plan = planGeneral(action);
-    if (!plan.ok) { addMsg('bot warn', escapeHtml(plan.error)); say(plan.error); return; }
+    if (!plan.ok) { addMsg('bot warn', escapeHtml(plan.error)); return; }
     const box = addMsg('plan', `<div>${escapeHtml(plan.summary)}</div><div class="assist-plan-actions"><button type="button" class="btn-cancel">Annulla</button><button type="button" class="btn-confirm">Conferma</button></div>`);
     const [no, yes] = box.querySelectorAll('button');
     const done = text => { box.querySelector('.assist-plan-actions').outerHTML = `<div class="assist-plan-done">${text}</div>`; };

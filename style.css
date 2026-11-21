@@ -815,7 +815,6 @@ html.pwa-mode .nav-item svg { width: 22px; height: 22px; }
     padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 8px); }
 .assist-head .header-title p.real { color: var(--warning); }
 
-.assist-speak.active { background: var(--ui-soft); color: var(--ui); border-color: var(--ui); }
 .assist-ctx { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-3); flex-shrink: 0; margin-bottom: var(--sp-3); }
 .assist-ctx:empty { display: none; }
 .assist-ctx div { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-ctl); padding: var(--sp-3) var(--sp-3); min-width: 0; }
@@ -1323,7 +1322,10 @@ button, .nav-item, .pill-btn, .lock-key { touch-action: manipulation; }
 .at-header .close-btn::after { content: ''; position: absolute; inset: -6px; z-index: -1; }
 /* Focus da tastiera visibile ovunque (principi 5 e 6). Sul touch non compare. */
 :focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
-input:focus-visible, select:focus-visible, textarea:focus-visible { outline: var(--focus-ring); outline-offset: 0; }
+/* Campi di testo: niente rettangolo, il cursore basta; i campi con bordo lo colorano */
+input:focus-visible, select:focus-visible, textarea:focus-visible { outline: none; }
+.input-group input:focus-visible, .input-group select:focus-visible, .text-field:focus-visible { border-color: var(--ui); }
+.assist-input:focus-within { border-color: var(--ui); }
 [role="button"], [onclick] { cursor: pointer; }
 /* Classi di utilita al posto degli stili inline */
 .u-center { text-align: center; }

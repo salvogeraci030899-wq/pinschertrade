@@ -232,7 +232,6 @@ window.assistQuick = Assist.assistQuick;
 window.closeAssistant = Assist.closeAssistant;
 window.sendAssist = Assist.sendAssist;
 window.toggleRecording = Assist.toggleRecording;
-window.toggleAssistSpeak = Assist.toggleAssistSpeak;
 // dalla Home: Agente → Strategie in un tocco
 window.openHomeCoin = HomeUI.openHomeCoin;
 window.openAutomation = () => { window.switchTab('signals'); AutoUI.setSignalsView('auto'); };   // Home → Automazione: Agente → Strategie
