@@ -336,6 +336,46 @@ def test_stato_strategia_dal_laboratorio():
     assert any("oss" in x and "su carta, in osservazione" in x for x in f) and any("boc" in x and "su carta, bocciata" in x for x in f), f
 
 
+def _near_summary():
+    mk = lambda p_, n=300: {"n": n, "excess_avg_pct": 2.0, "excess_p": p_, "stable": True}  # noqa: E731
+    return {"candidates": [], "confirmed": [], "results": {
+        "big_candle_trail:1d": mk(0.002), "big_candle:1d": mk(0.0055),           # gemelle: stesso segnale
+        "donchian20_calm:1d": mk(0.037), "tsmom_combo:1d": mk(0.0865),
+        "r_breakout_80_3:1d": mk(0.133), "r_breakout_80_4:1d": mk(0.18)}}      # lontane dalla candidatura
+
+
+def _near_cfg(mode):
+    return {"strategies": {"big_candle_trail:1d": "paper", "r_breakout_80_3:1d": "paper"}, "emergency": False, "history": [],
+            "risk": {}, "agent": {"observe": mode}}
+
+
+def test_osservazione_vicine_mette_anche_le_gemelle_e_lascia_andare_le_lontane():
+    d = agent.decide(_near_cfg("vicine"), _near_summary(), {"strategies": {}}, {"r_breakout_80_3:1d"}, {"r_breakout_80_3:1d"})
+    obs = [k for k, _ in d["observe"]]
+    assert obs == ["big_candle:1d", "donchian20_calm:1d", "tsmom_combo:1d"], obs          # per vicinanza, gemella compresa
+    assert [k for k, _ in d["off"]] == ["r_breakout_80_3:1d"] and "più lontana" in d["off"][0][1]
+    assert "r_breakout_80_4:1d" not in obs                                                # p 0,18: non è vicina
+
+
+def test_osservazione_base_resta_come_prima():
+    d = agent.decide(_near_cfg("base"), _near_summary(), {"strategies": {}}, {"r_breakout_80_3:1d"}, frozenset({"r_breakout_80_3:1d"}))
+    obs = [k for k, _ in d["observe"]]
+    assert "big_candle:1d" not in obs and d["off"] == []                                  # niente gemelle, nessuno lasciato andare
+    assert len(obs) <= agent.OBSERVE_UP_TO - 2                                            # tetto di 4 strategie in tutto
+
+
+def test_impostazione_osservazione():
+    import automation
+    cfg = {"strategies": {}, "emergency": False, "history": [], "risk": {}}
+    assert automation.agent_config(cfg)["observe"] == "base"
+    assert "base -> vicine" in automation.set_agent(cfg, "observe", "vicine") and cfg["agent"]["observe"] == "vicine"
+    try:
+        automation.set_agent(cfg, "observe", "tutte")
+        raise AssertionError("valore non ammesso accettato")
+    except automation.CommandError:
+        pass
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

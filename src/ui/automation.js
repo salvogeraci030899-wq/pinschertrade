@@ -702,13 +702,18 @@ export function setSignalsView(view, manual = true) {
 }
 
 // --- Vista Agente: stato, impostazioni (autonomia, profilo, stile), cronologia delle decisioni ---
-const AG_DEFAULT = { autonomy: 'paper', profile: 'bilanciato', style: 'swing' };
+const AG_DEFAULT = { autonomy: 'paper', profile: 'bilanciato', style: 'swing', observe: 'base' };
 const AG_LABELS = {
     autonomy: { off: 'Spento', paper: 'Simulato', live: 'Reale' },
     profile: { prudente: 'Prudente', bilanciato: 'Bilanciato', aggressivo: 'Aggressivo' },
-    style: { swing: 'Swing', giornaliero: 'Giornaliero', misto: 'Misto' }
+    style: { swing: 'Swing', giornaliero: 'Giornaliero', misto: 'Misto' },
+    observe: { base: 'Base', vicine: 'Vicine' }
 };
-const AG_TITLES = { autonomy: 'Autonomia', profile: 'Rischio', style: 'Stile' };
+const AG_TITLES = { autonomy: 'Autonomia', profile: 'Rischio', style: 'Stile', observe: 'Osserva' };
+const OBSERVE_TEXT = {
+    base: 'Poche strategie in osservazione, una per idea (le gemelle restano fuori).',
+    vicine: 'Fino a 6 su carta: le più vicine alla candidatura, anche gemelle. Le gemelle aprono gli stessi trade e occupano posti.'
+};
 const AG_KIND = { observe: ['', 'In osservazione', 'text-ui'], on: ['', 'Su carta', 'text-ui'], off: ['', 'Spenta', ''], promote: ['', 'Al reale', 'text-warning'], demote: ['', 'Tornata su carta', 'text-danger'], proposal: ['', 'Proposta', 'text-warning'] };
 const agentPending = {};
 const PROFILE_TEXT = { prudente: '0,25% a trade, leva 2x, max 2 posizioni, obiettivo +1% e limite −2% al giorno, ogni strategia reale torna su carta oltre −3% dal suo massimo', bilanciato: '0,5% a trade, leva 3x, max 3 posizioni, obiettivo +2% e limite −3% al giorno, ogni strategia reale torna su carta oltre −5% dal suo massimo', aggressivo: '1% a trade, leva 5x, max 4 posizioni, obiettivo +3% e limite −5% al giorno, ogni strategia reale torna su carta oltre −8% dal suo massimo' };
@@ -744,7 +749,7 @@ export function renderAgentView() {
         Object.entries(AG_LABELS[field]).map(([v, l]) => `<button type="button" class="pill-btn${ag[field] === v ? ' active' : ''}${field === 'autonomy' && v === 'live' ? ' agent-live' : ''}" onclick="setAgent('${field}','${v}')">${l}</button>`).join('')
     }</div></div>`;
     $('agentSettings').innerHTML = setting('autonomy');
-    $('agentStyle').innerHTML = setting('style') + styleHint();
+    $('agentStyle').innerHTML = setting('style') + styleHint() + setting('observe') + `<div class="agent-hint agent-hint-1">${escapeHtml(OBSERVE_TEXT[ag.observe] || '')}</div>`;
     $('agentProfile').innerHTML = setting('profile') + `<div class="agent-hint agent-hint-1">${escapeHtml(PROFILE_TEXT[ag.profile] || '')}</div>`;
     const log = ((agentState && agentState.log) || []).slice().reverse();
     $('agentLogCount').textContent = log.length ? String(log.length) : '';
@@ -863,6 +868,9 @@ export function setAgent(field, value) {
     if (field === 'profile') {
         const P = PROFILE_TEXT;
         return openAutoConfirm(`Profilo ${AG_LABELS.profile[value].toLowerCase()}?`, `Imposta tutti i limiti di rischio: ${P[value]}.`, 'Imposta', go);
+    }
+    if (field === 'observe') {
+        return openAutoConfirm(`Osservazione ${AG_LABELS.observe[value].toLowerCase()}?`, `${OBSERVE_TEXT[value]} Solo carta: nessun ordine vero.`, 'Conferma', go);
     }
     openAutoConfirm('Cambiare l\'agente?', `${AG_TITLES[field]}: ${AG_LABELS[field][value].toLowerCase()}.`, 'Conferma', go);
 }

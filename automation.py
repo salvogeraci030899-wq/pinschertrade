@@ -11,6 +11,7 @@ anche a mano:
     python automation.py agent autonomy live    # agente: off | paper | live (vedi agent.py)
     python automation.py agent profile prudente # profilo di rischio: imposta tutti i limiti insieme
     python automation.py agent style giornaliero    # timeframe su cui l'agente sceglie: swing | giornaliero | misto
+    python automation.py agent observe vicine      # osservazione su carta: base | vicine (le più vicine alla candidatura, anche gemelle)
 
 Regole che il codice fa rispettare, qualunque cosa arrivi dall'app:
 - si possono attivare solo strategie che esistono nel laboratorio, su timeframe su cui sono state provate;
@@ -167,7 +168,8 @@ def set_trading(cfg, value):
 
 
 # --- Agente (agent.py): autonomia, profilo di rischio, stile ---
-AGENT_DEFAULT = {"autonomy": "paper", "profile": "bilanciato", "style": "swing"}
+AGENT_DEFAULT = {"autonomy": "paper", "profile": "bilanciato", "style": "swing", "observe": "base"}
+OBSERVE_MODES = ("base", "vicine")   # base: poche in osservazione, una per idea; vicine: fino a 6 su carta, anche gemelle, le più vicine alla candidatura
 AUTONOMY = ("off", "paper", "live")
 # Ogni profilo imposta tutti i limiti dell'esecutore insieme (restano modificabili uno per uno)
 PROFILES = {
@@ -219,6 +221,10 @@ def set_agent(cfg, field, value):
         if value not in STYLES:
             raise CommandError(f"Stile ammesso: {', '.join(STYLES)}.")
         extra = ""
+    elif field == "observe":
+        if value not in OBSERVE_MODES:
+            raise CommandError(f"Osservazione ammessa: {', '.join(OBSERVE_MODES)}.")
+        extra = " Con \"vicine\" l'agente tiene su carta, anche gemelle, le strategie che mancano la candidatura per poco." if value == "vicine" else ""
     else:
         raise CommandError(f"Impostazione dell'agente sconosciuta: {field}.")
     before = ag[field]
