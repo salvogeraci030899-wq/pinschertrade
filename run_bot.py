@@ -70,7 +70,7 @@ def automation_step(frames, notify=None):
         cfg = paper.load_config()
         paper_ledger = load_json(paper.LEDGER_PATH) if os.path.exists(paper.LEDGER_PATH) else {}
         client, mode = executor.make_client(cfg)
-        executor.run(cfg, paper_ledger, client, mode, notify=notify, near_keys=automation.near_keys())
+        executor.run(cfg, paper_ledger, client, mode, notify=notify, near_keys=automation.near_keys(), candidate_keys=automation.candidate_keys())
     except Exception as e:
         print(f"Esecutore non eseguito: {e}")
         notify(f"⚠️ Esecutore: errore inatteso ({e}). Controlla le posizioni su Bitget.")

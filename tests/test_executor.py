@@ -683,6 +683,39 @@ def test_spot_round_trips_average_cost():
     assert abs(out[1]["size"] - 0.05) < 1e-9 and abs(out[1]["entry"] - 85.085) < 1e-9
 
 
+def _due_strategie(max_pos=2, extra_risk=None):
+    """Una candidata (segnale più recente, ETH) e una quasi candidata (segnale più vecchio, BTC): stessa carta, un solo posto libero in più."""
+    cand, near = "big_candle_trail:1d", "tsmom30:1d"
+    t_old, t_new = T_SIGNAL, T_SIGNAL + 60
+    tn = dict(trade("BTCUSDT", t=t_old), id=f"{near}:BTCUSDT:{t_old}")
+    tc = dict(trade("ETHUSDT", entry=3_000.0, stop=2_900.0, t=t_new), id=f"{cand}:ETHUSDT:{t_new}")
+    cfg = {"strategies": {cand: "paper", near: "paper"}, "emergency": False, "risk": {"max_open_positions": max_pos, "near_candidates": 1, **(extra_risk or {})}}
+    ledger = {"strategies": {cand: {"mode": "paper", "trades": [tc]}, near: {"mode": "paper", "trades": [tn]}}}
+    return cfg, ledger, cand, near
+
+
+def test_precedenza_alle_candidate_e_posto_riservato():
+    for mode in ("simulata", "reale"):          # vale in carta e in reale, anche con "reale segue la carta"
+        with tempfile.TemporaryDirectory() as d:
+            cfg, ledger, cand, near = _due_strategie(extra_risk={"real_follows_paper": 1})
+            path = os.path.join(d, "s.json")
+            notes = []
+            cl = bg.DryRunClient(10_000)
+            ex.run(cfg, ledger, cl, mode, path, now=NOW, notify=notes.append, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {},
+                   near_keys={near}, candidate_keys={cand})
+            pos = json.load(open(path))["positions"].values()
+            by_key = {p["key"]: p for p in pos}
+            # la candidata apre per prima anche se il suo segnale è più recente; l'ultimo posto è suo, la quasi candidata resta fuori
+            assert by_key[cand]["status"] == "open", by_key
+            assert by_key[near]["status"] == "skipped" and "riservato alle strategie candidate" in by_key[near]["reason"], by_key
+    # senza candidate accese non si riserva nulla: entrambe aprono, in ordine di segnale
+    with tempfile.TemporaryDirectory() as d:
+        cfg, ledger, cand, near = _due_strategie()
+        path = os.path.join(d, "s.json")
+        ex.run(cfg, ledger, bg.DryRunClient(10_000), "simulata", path, now=NOW, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {}, near_keys={near})
+        assert sorted(p["status"] for p in json.load(open(path))["positions"].values()) == ["open", "open"]
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

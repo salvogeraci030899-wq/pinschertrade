@@ -627,7 +627,7 @@ export async function saveAutoRisk() {
     const warn = (changes.some(c => c.field === 'real_follows_paper' && c.value === '1')
         ? 'ATTENZIONE: in Reale l\'esecutore aprirà ordini VERI anche per le strategie su carta non confermate dalla prova finale. Valgono tutti i limiti, ma puoi perdere soldi.\n\n' : '')
         + (changes.some(c => c.field === 'near_candidates' && c.value === '1')
-        ? 'ALTO RISCHIO: l\'agente terrà su carta le strategie che mancano la candidatura per poco (fino a 6, anche gemelle) e l\'esecutore le userà sia su carta sia in Reale, con tutti i limiti. Non hanno superato la prova finale: puoi perdere soldi.\n\n' : '');
+        ? 'ALTO RISCHIO: le candidate hanno sempre la precedenza; se resta spazio l\'agente aggiunge le strategie che mancano la candidatura per poco (fino a 6, anche gemelle) e l\'esecutore le usa sia su carta sia in Reale, con tutti i limiti, anche con Reale segue la carta. Non hanno superato la prova finale: puoi perdere soldi.\n\n' : '');
     const summary = changes.map(c => { const [n, u] = NAMES[c.field] || [c.field, '']; return `${n}: ${fmtIt(Number(risk[c.field]), 2).replace(/,00$/, '')}${u} → ${fmtIt(Number(c.value), 2).replace(/,00$/, '')}${u}`; }).join('\n');
     // la finestra dei limiti resta aperta sotto: se annulli non perdi quello che hai scritto
     openAutoConfirm('Cambiare i limiti di rischio?', `${warn}${summary}\nValgono per l'esecutore, anche in Simulato.`, 'Conferma', async () => {

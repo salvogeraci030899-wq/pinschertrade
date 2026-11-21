@@ -283,12 +283,29 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
     free = automation.MAX_ACTIVE - (len(active) - len(leaving))
     if cfg.get("emergency"):
         free = 0
+    def release(for_key, group=None):
+        """Alto rischio: le quasi candidate messe dall'agente cedono il posto alle candidate (prima la più lontana)."""
+        pool = [k for k in sorted(observing) if k in active and k not in leaving and k not in candidates and active[k] == "paper"
+                and (group is None or twin_group(k) == group)]
+        if not pool:
+            return False
+        k = max(pool, key=lambda x: ((results.get(x) or {}).get("excess_p") if (results.get(x) or {}).get("excess_p") is not None else 1))
+        out["off"].append((k, f"lascia il posto alla candidata {_label(for_key)}"))
+        leaving.add(k)
+        return True
+
     for key in candidates:
         if key in active or key in leaving:
             continue
         if not _usable(key):
             out["notes"].append(f"{_label(key)} è candidata ma usa dati che la carta non riceve ancora: resta fuori.")
             continue
+        if near and twin_group(key) in taken and release(key, twin_group(key)):
+            taken = {twin_group(k) for k in active if k not in leaving}
+            free += 1
+        if near and free <= 0 and release(key):
+            taken = {twin_group(k) for k in active if k not in leaving}
+            free += 1
         if free <= 0:
             out["notes"].append(f"{_label(key)} è candidata, ma ci sono già {automation.MAX_ACTIVE} strategie accese.")
             continue

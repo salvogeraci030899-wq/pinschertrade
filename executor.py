@@ -203,7 +203,7 @@ def make_client(cfg):
 
 
 def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=None, notify=None, specs_fn=contract_specs,
-        guard_path=None, prices_fn=public_prices, epoch_path=None, funding_fn=public_funding, near_keys=frozenset()):
+        guard_path=None, prices_fn=public_prices, epoch_path=None, funding_fn=public_funding, near_keys=frozenset(), candidate_keys=frozenset()):
     """Un giro dell'esecutore. Ritorna True se lo stato è cambiato."""
     now = now or datetime.now(timezone.utc)
     now_ts, today = int(now.timestamp()), now.strftime("%Y-%m-%d")
@@ -425,7 +425,16 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     open_notional = sum(p["size"] * p["entry"] for p in open_now.values())
     open_notional += sum((p.get("size") or 0) * (p.get("entry") or p.get("mark") or 0) for p in manual.values())   # anche le manuali pesano
     busy = {p["symbol"] for p in open_now.values()} | set(manual)
-    for tid, t in sorted(wanted.items(), key=lambda kv: kv[1]["t"]):
+    # Precedenza (carta, demo e reale, anche con "reale segue la carta"): prima le strategie live e le candidate, poi le quasi candidate
+    # (alto rischio), poi le altre su carta. Se c'è una strategia candidata o live accesa, l'ultimo posto resta per lei.
+    strategies_cfg = cfg.get("strategies") or {}
+
+    def rank(key):
+        if strategies_cfg.get(key) == "live" or key in candidate_keys:
+            return 0
+        return 1 if key in near_keys else 2
+    reserve = 1 if risk["max_open_positions"] >= 2 and any(m != "off" and rank(k) == 0 for k, m in strategies_cfg.items()) else 0
+    for tid, t in sorted(wanted.items(), key=lambda kv: (rank(kv[1]["key"]), kv[1]["t"])):
         if tid in state["positions"]:
             continue
         tf = t["key"].split(":")[1]
@@ -442,6 +451,8 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
             skip = "già una posizione su questa coin" + (" (aperta a mano)" if t["symbol"] in manual else "")
         elif len(open_now) >= risk["max_open_positions"]:
             skip = "numero massimo di posizioni"
+        elif rank(t["key"]) > 0 and reserve and len(open_now) >= risk["max_open_positions"] - reserve:
+            skip = "ultimo posto riservato alle strategie candidate"
         side = "long" if t["dir"] > 0 else "short"
         if not skip:
             same = sum(1 for p in open_now.values() if p.get("side") == side) + sum(1 for p in manual.values() if p.get("side") == side)

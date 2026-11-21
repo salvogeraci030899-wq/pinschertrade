@@ -84,6 +84,16 @@ def is_near_candidate(key, r):
             and p is not None and p <= NEAR_P)
 
 
+def candidate_keys(summary_path=SUMMARY_PATH):
+    """Candidate del laboratorio e confermate: hanno la precedenza su tutte le altre strategie su carta."""
+    try:
+        with open(summary_path) as f:
+            summary = json.load(f)
+    except Exception:
+        return set()
+    return set(summary.get("confirmed") or []) | set(summary.get("candidates") or [])
+
+
 def near_keys(summary_path=SUMMARY_PATH):
     """Strategie non candidate per poco (dal laboratorio). Vuoto se il file manca."""
     try:
