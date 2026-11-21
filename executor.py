@@ -178,7 +178,13 @@ def run_paper_account(cfg, ledger, state_path=PAPER_PATH, notify=None, **kw):
     """Conto della carta, SEMPRE acceso: l'esecutore simulato segue le strategie su carta con gli stessi limiti del reale,
     in un file suo (paper_account.json), anche quando gli ordini veri sono accesi. Non tocca mai Bitget."""
     pcfg = {**cfg, "risk": {**(cfg.get("risk") or {}), "shadow_paper": True}}
-    return run(pcfg, ledger, None, "simulata", state_path=state_path, notify=notify, **kw)
+    now = kw.get("now") or datetime.now(timezone.utc)
+    changed = run(pcfg, ledger, None, "simulata", state_path=state_path, notify=notify, **kw)
+    # marca dell'ultimo giro: il controllo di salute (watchdog.py) avvisa se la carta non si aggiorna
+    state = _load(state_path)
+    state["updated_at"] = now.isoformat(timespec="seconds")
+    _save(state, state_path)
+    return changed
 
 
 def _load(path):

@@ -21,6 +21,15 @@ def test_problemi():
     assert wd.checks(NOW, None, None) == ["Il bot non risulta mai partito."]
 
 
+def test_conto_della_carta():
+    ok = {"halted": False, "updated_at": (NOW - timedelta(minutes=20)).isoformat()}
+    assert wd.checks(NOW, NOW - timedelta(hours=1), "success", paper=ok) == []
+    assert wd.checks(NOW, NOW - timedelta(hours=1), "success", paper={"halted": False}) == []          # file senza marca: niente allarme
+    bad = {"halted": True, "updated_at": (NOW - timedelta(hours=5)).isoformat()}
+    p = wd.checks(NOW, NOW - timedelta(hours=1), "success", paper=bad)
+    assert len(p) == 2 and "BLOCCATO" in p[0] and "da 5 ore" in p[1]
+
+
 def test_controllo_rapido_e_agente():
     ok = {"quick": (NOW - timedelta(minutes=10), "success"), "agent": (NOW - timedelta(hours=20), "success")}
     assert wd.checks(NOW, NOW - timedelta(hours=1), "success", others=ok) == []
