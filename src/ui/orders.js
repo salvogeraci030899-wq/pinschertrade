@@ -197,9 +197,9 @@ function simAccount() {
         + `<br>base ${fmtIt(start, 2)} $ (capitale di prova) · commissioni comprese · stesse regole del reale: ${lim}`
         + (skipped.length ? `<br>${skipped.length} segnali non aperti per i limiti: ${why}` : '') + dayTxt + '</small></div>';
 }
-function botRows() {
-    if (simActive()) return simRows();
-    return paperOpen().map(t => {
+// Righe dei trade delle strategie su carta (paper_trades.json), anche quelli che il conto non ha aperto
+function paperRows(list) {
+    return list.map(t => {
         const side = t.dir > 0 ? 'LONG' : 'SHORT', pnl = livePct(t), size = notional(t);
         const res = pnl == null ? '' : ` · <span class="${tone(pnl)}">${pctTxt(pnl)}${usdOf(size, pnl)}</span>`;
         // dove sta lo stop ora: sopra l'ingresso (long) o sotto (short) il guadagno è già al sicuro
@@ -209,6 +209,17 @@ function botRows() {
         return row(`${escapeHtml(SYM(t.symbol))} ${side}${res}`,
             `${escapeHtml(stratName(t.key))} · dal ${day(t.t_entry || t.t)} · ingresso ${fmtPrice(t.entry)}<br>${lockTxt}`);
     });
+}
+function botRows() {
+    if (simActive()) return simRows();
+    return paperRows(paperOpen());
+}
+// Trade aperti delle strategie che il conto della carta non ha (ancora) aperto: segnali già in corso prima del conto, o fermati dai limiti.
+// Sono gli stessi che Mercato mostra in "Carta su questa coin".
+function extraPaperRows() {
+    if (!simActive()) return [];
+    const held = new Set(simPositions().filter(p => p.status === 'open').map(p => p.id));
+    return paperRows(paperOpen().filter(t => !held.has(t.id)));
 }
 // Conto su carta: base + trade chiusi (netti di costi) + aperti ai prezzi di adesso
 function botAccount() {
@@ -232,10 +243,11 @@ function botAccount() {
 }
 // Tanti trade: a pagine, ognuna piena di righe fino in fondo allo schermo, da scorrere di lato
 let perPage = 5;
+const pagesOf = rows => { const pages = []; for (let i = 0; i < rows.length; i += perPage) pages.push(`<div class="ord-page">${rows.slice(i, i + perPage).join('')}</div>`); return pages; };
 const botHtml = () => {
-    const rows = botRows(), pages = [];
-    for (let i = 0; i < rows.length; i += perPage) pages.push(`<div class="ord-page">${rows.slice(i, i + perPage).join('')}</div>`);
-    return botAccount() + section('Bot su carta · nessun ordine reale', pages, paper || simActive() ? 'Nessun trade su carta aperto: le strategie aprono solo quando arriva un segnale e i limiti lo permettono.' : 'Caricamento…', rows.length);
+    const rows = botRows(), extra = extraPaperRows();
+    return botAccount() + section('Bot su carta · nessun ordine reale', pagesOf(rows), paper || simActive() ? 'Nessun trade su carta aperto nel conto: le strategie aprono solo quando arriva un segnale recente e i limiti lo permettono.' : 'Caricamento…', rows.length)
+        + (extra.length ? section('Strategie su carta · non nel conto', pagesOf(extra), '', extra.length) : '');
 };
 // righe che stanno in una pagina, misurate sullo schermo (una volta disegnata la prima)
 function fitPerPage(box) {

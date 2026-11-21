@@ -70,10 +70,10 @@ try {
         });
         // dati personali inventati (quelli veri nel repository sono cifrati): conto, posizioni, carta, agente, storico
         const FIX = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'ui_data.json'), 'utf8'));
-        await page.route(/\/(automation|live_trades|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state|lab_summary)\.json/, async r => {
+        await page.route(/\/(automation|live_trades|paper_account|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state|lab_summary)\.json/, async r => {
             if (dataDelay) await new Promise(res => setTimeout(res, dataDelay));
             const name = new URL(r.request().url()).pathname.split('/').pop();
-            const j = structuredClone(FIX[name]);
+            const j = structuredClone(name === 'paper_account.json' ? { ...FIX['live_trades.json'], mode: 'simulata' } : FIX[name]);
             if (name === 'automation.json') j.risk = { ...(j.risk || {}), trading_enabled: mode === 'real', real_follows_paper: mode === 'real' ? 1 : 0 };
             return r.fulfill({ contentType: 'application/json', body: JSON.stringify(j) });
         });
