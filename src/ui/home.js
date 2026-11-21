@@ -151,13 +151,15 @@ const tone = v => (v > 0 ? ' safe' : v < 0 ? ' danger' : '');
 
 // In modalità Reale la scheda mostra il conto Bitget (letto dal bot ogni 15 minuti), in Simulato
 // il conto della carta (l'esecutore simulato, live_trades.json). Il titolo dice sempre quale dei due si sta guardando.
-const parallel = () => tradingMode().mode === 'on' && Number(bot && bot.cfg && bot.cfg.risk && bot.cfg.risk.real_follows_paper) === 1;
+// Home e Posizioni hanno sempre la stessa vista: conto Bitget; la carta si aggiunge quando gira davvero
+// (Reale spento, oppure Reale con "Reale segue la carta"). Con Reale acceso e senza, resta solo Bitget.
+const parallel = () => tradingMode().mode !== 'on' || Number(bot && bot.cfg && bot.cfg.risk && bot.cfg.risk.real_follows_paper) === 1;
 
 // Conto Bitget (letto dal bot ogni 15 minuti) nelle tessere con suffisso sfx
 function fillReal(sfx) {
     const set = (id, text, cls) => { const el = $(id + sfx); put(el, text); putCls(el, 'home-kpi-value' + (cls || '')); };
     const acc = bot && bot.live && bot.live.account;
-    put($('homePnlLabel' + sfx), 'Variazione oggi');
+    put($('homePnlLabel' + sfx), 'Variaz. oggi');
     if (!acc || !acc.connected) {
         set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—');
         return;
@@ -195,10 +197,9 @@ function renderAccount() {
     const both = parallel();
     const show = (id, on) => { const el = $(id); if (el) el.style.display = on ? '' : 'none'; };
     show('homeKpis2', both); show('homeAccTitle2', both);
-    if (both) { put($('homeAccTitle'), 'Conto Bitget · reale'); fillReal(''); fillPaper('2'); return; }
-    if (tradingMode().mode === 'on') { put($('homeAccTitle'), 'Conto Bitget · reale · $'); fillReal(''); return; }
-    put($('homeAccTitle'), 'Conto Simulato · carta');
-    fillPaper('');
+    put($('homeAccTitle'), both ? 'Conto Bitget · reale' : 'Conto Bitget · reale · $');
+    fillReal('');
+    if (both) fillPaper('2');
 }
 
 // Il tocco su una coin in alto apre il suo grafico in Mercato
@@ -215,7 +216,7 @@ export function openHomeCoin(tile) {
 const RECENT_MAX = 6;
 function recentTrades() {
     if (parallel()) return [...recentOf('real'), ...recentOf('paper')];
-    return recentOf(tradingMode().mode === 'on' ? 'real' : 'paper');
+    return recentOf('real');
 }
 function recentOf(which) {
     if (which === 'real') {
@@ -228,7 +229,7 @@ function recentOf(which) {
 function renderRecent() {
     const list = $('homeRecentList');
     if (!list) return;
-    put($('homeRecentTitle'), parallel() ? 'Ultime chiuse · reale e carta' : tradingMode().mode === 'on' ? 'Ultime chiuse · reale' : 'Ultime chiuse · carta');
+    put($('homeRecentTitle'), parallel() ? 'Ultime chiuse · reale e carta' : 'Ultime chiuse · reale');
     const rows = recentTrades().filter(x => x.t > 0).sort((a, b) => b.t - a.t).slice(0, RECENT_MAX);
     const html = rows.length ? rows.map(x => `<div class="home-line"><span>${SYM(x.symbol)} ${x.side === 'SHORT' ? 'SHORT' : 'LONG'} <small>${ago((Date.now() - x.t) / 60000)}${parallel() ? ' · ' + x.src : ''}</small></span><b class="${tone(x.pnl)}">${signed(x.pnl)}</b></div>`).join('')
         : '<div class="home-line home-empty"><span>Nessuna operazione chiusa ancora</span></div>';
