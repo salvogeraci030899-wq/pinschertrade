@@ -196,7 +196,7 @@ function simAccount() {
         + `<div class="bot-acc-main"><b>${fmtIt(total, 2)} $</b><span class="${tone(total - start)}">${usd(total - start)}</span></div>`
         + `<small>chiusi ${closed.length}: <span class="${tone(netClosed)}">${usd(netClosed)}</span> · aperti ${nOpen}: <span class="${tone(unreal)}">${usd(unreal)}</span>`
         + `<br>base ${fmtIt(start, 2)} $ (capitale di prova) · commissioni comprese · stesse regole del reale: ${lim}`
-        + (skipped.length ? `<br>${skipped.length} segnali non aperti per i limiti: ${why}` : '') + dayTxt + '</small></div>';
+        + (skipped.length ? `<br>${skipped.length} segnali non aperti dal conto: ${why}` : '') + dayTxt + '</small></div>';
 }
 // Righe dei trade delle strategie su carta (paper_trades.json), anche quelli che il conto non ha aperto
 function paperRows(list) {
@@ -248,7 +248,7 @@ const pagesOf = (rows, per = perPage) => { const pages = []; for (let i = 0; i <
 const botHtml = () => {
     const rows = botRows(), extra = extraPaperRows();
     return botAccount() + section('Bot su carta · nessun ordine reale', pagesOf(rows, extra.length ? 2 : perPage), paper || simActive() ? 'Nessun trade aperto nel conto: aprono solo i segnali recenti, entro i limiti.' : 'Caricamento…', rows.length)
-        + (extra.length ? section('Strategie su carta · non nel conto', pagesOf(extra), '', extra.length) : '');
+        + (extra.length ? section('Segnali aperti delle strategie · fuori dal conto', pagesOf(extra), '', extra.length) : '');
 };
 // righe che stanno in una pagina, misurate sullo schermo (una volta disegnata la prima)
 function fitPerPage(box) {
