@@ -256,7 +256,7 @@ export function renderSignalHistory() {
     if (!el) return;
     const prevScroll = el.scrollLeft;
     if (State.signalHistory.length === 0) {
-        el.innerHTML = '<div style="color:var(--text-secondary);font-size:12px;text-align:center;padding:20px;width:100%;">Nessun segnale registrato. Scansione auto ogni 10 min.</div>';
+        el.innerHTML = '<div class="empty-hint">Nessun segnale registrato. La scansione parte da sola ogni 10 minuti.</div>';
         renderSignalHistoryDots();
         return;
     }
@@ -273,10 +273,10 @@ export function renderSignalHistory() {
         return `<div class="log-item">
             <div class="signal-history-item">
                 <div class="shi-row1">
-                    <div><span class="shi-coin">${SYM(s.asset)}</span> <span style="color:var(--text-secondary); font-size:11px;">${s.tf}</span></div>
+                    <div><span class="shi-coin">${SYM(s.asset)}</span> <span class="shi-tf">${s.tf}</span></div>
                     <span class="shi-badge ${cls}">${s.consensus} ${s.agreement}/3</span>
                 </div>
-                <div class="shi-meta">${fmtDateTime(s.timestamp)} · Strength ${s.strength}%</div>
+                <div class="shi-meta">${fmtDateTime(s.timestamp)} · Forza ${s.strength}%</div>
                 <div class="shi-strategies">${stratTags.join('')}</div>
             </div>
         </div>`;
@@ -285,23 +285,38 @@ export function renderSignalHistory() {
     renderSignalHistoryDots();
 }
 
+// Passo reale tra una scheda e l'altra (larghezza + spazio), per sapere a che scheda si è arrivati scorrendo
+function historyStride(container) {
+    const items = container.querySelectorAll('.log-item');
+    return items.length > 1 ? items[1].offsetLeft - items[0].offsetLeft : (items[0] ? items[0].offsetWidth : 0);
+}
+const HISTORY_DOTS_MAX = 8;       // oltre questo numero di schede si mostra "3 / 30" al posto dei punti
+
+function paintHistoryDots(shown, activeIdx) {
+    const dotsContainer = $('signalHistoryDots');
+    if (!dotsContainer) return;
+    if (shown > HISTORY_DOTS_MAX) {
+        const txt = `${activeIdx + 1} / ${shown}`;
+        const cur = dotsContainer.querySelector('.pager-count');
+        if (cur) { if (cur.textContent !== txt) cur.textContent = txt; }
+        else dotsContainer.innerHTML = `<span class="pager-count">${txt}</span>`;
+        return;
+    }
+    if (dotsContainer.querySelectorAll('.info-dot').length !== shown) {
+        dotsContainer.innerHTML = Array.from({ length: shown }, (_, i) => `<div class="info-dot" onclick="goToSignalSlide(${i})"></div>`).join('');
+    }
+    dotsContainer.querySelectorAll('.info-dot').forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+}
+
 export function renderSignalHistoryDots() {
     const dotsContainer = $('signalHistoryDots');
     if (!dotsContainer) return;
-    const count = State.signalHistory.length;
-    if (count === 0) { dotsContainer.innerHTML = ''; return; }
-    const shown = Math.min(count, 30);
+    const shown = Math.min(State.signalHistory.length, 30);
+    if (shown === 0) { dotsContainer.innerHTML = ''; return; }
     const container = $('signalHistoryList');
-    let activeIdx = 0;
-    if (container && container.firstElementChild) {
-        const itemWidth = container.firstElementChild.offsetWidth + 10;
-        if (itemWidth > 0) activeIdx = Math.round(container.scrollLeft / itemWidth);
-    }
-    activeIdx = Math.max(0, Math.min(activeIdx, shown - 1));
-    if (shown > 15) { dotsContainer.innerHTML = ''; return; }
-    let html = '';
-    for (let i = 0; i < shown; i++) html += `<div class="info-dot${i === activeIdx ? ' active' : ''}" onclick="goToSignalSlide(${i})"></div>`;
-    dotsContainer.innerHTML = html;
+    const stride = container ? historyStride(container) : 0;
+    const activeIdx = stride > 0 ? Math.max(0, Math.min(Math.round(container.scrollLeft / stride), shown - 1)) : 0;
+    paintHistoryDots(shown, activeIdx);
 }
 
 export function goToSignalSlide(idx) {
@@ -317,16 +332,9 @@ export function updateSignalHistoryDots() {
     if (!container) return;
     const items = container.querySelectorAll('.log-item');
     if (items.length === 0) return;
-    const containerRect = container.getBoundingClientRect();
-    const containerCenter = containerRect.left + containerRect.width / 2;
-    let activeIdx = 0, minDist = Infinity;
-    items.forEach((item, i) => {
-        const r = item.getBoundingClientRect();
-        const c = r.left + r.width / 2;
-        const dist = Math.abs(c - containerCenter);
-        if (dist < minDist) { minDist = dist; activeIdx = i; }
-    });
-    document.querySelectorAll('#signalHistoryDots .info-dot').forEach((d, i) => d.classList.toggle('active', i === activeIdx));
+    const stride = historyStride(container);
+    const activeIdx = stride > 0 ? Math.max(0, Math.min(Math.round(container.scrollLeft / stride), items.length - 1)) : 0;
+    paintHistoryDots(items.length, activeIdx);
 }
 
 export function openSignalDetail(asset, tf) {
@@ -364,9 +372,9 @@ export function updateSignalNotifStatus() {
     const el = $('signalNotifStatus');
     if (!el) return;
     const tgOn = !!State.signalSettings.telegramBotToken && !!State.signalSettings.telegramChatId;
-    if (tgOn) { el.textContent = 'Telegram ON'; el.className = 'badge-notif-on'; }
-    else if (State.signalSettings.notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') { el.textContent = 'Browser ON'; el.className = 'badge-notif-on'; }
-    else { el.textContent = 'OFF'; el.className = 'badge-notif-off'; }
+    if (tgOn) { el.textContent = 'Telegram attivo'; el.className = 'badge-notif-on'; }
+    else if (State.signalSettings.notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') { el.textContent = 'Browser attivo'; el.className = 'badge-notif-on'; }
+    else { el.textContent = 'Spente'; el.className = 'badge-notif-off'; }
 }
 
 export async function toggleBrowserNotifications() {
@@ -444,8 +452,8 @@ function fireSignalNotifications(sig) {
         const lines = [
             `🚨 <b>${title}</b>`, '', body, '',
             `Breakout: ${sig.sources?.breakout || '—'}`,
-            `Mean Rev: ${sig.sources?.mean_reversion || '—'}`,
-            `MA Cross: ${sig.sources?.ma_crossover || '—'}`,
+            `Mean rev: ${sig.sources?.mean_reversion || '—'}`,
+            `MA cross: ${sig.sources?.ma_crossover || '—'}`,
             '', fmtDateTime(sig.timestamp)
         ];
         sendTelegramMessage(lines.join('\n'));

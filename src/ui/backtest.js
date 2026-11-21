@@ -82,7 +82,7 @@ function isSignal(strategy, slice, price) {
     return false;
 }
 
-const STRATEGY_LABEL = { breakout: 'Breakout', mean_reversion: 'Mean Rev.', ma_crossover: 'MA Cross' };
+const STRATEGY_LABEL = { breakout: 'Breakout', mean_reversion: 'Mean rev', ma_crossover: 'MA cross' };
 const APP_DESC = { breakout: 'Rottura a 20 candele con volume, RSI ed EMA200 (pagina Segnali).', mean_reversion: 'RSI sotto 35 vicino alla media a 200.', ma_crossover: 'EMA20 sopra EMA50 sopra EMA200.' };
 const FAMILY_ORDER = ['trend', 'momentum', 'ritorno alla media', 'volatilità', 'forza relativa'];
 const isLab = v => v.startsWith('lab:');

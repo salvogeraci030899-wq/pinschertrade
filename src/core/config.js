@@ -24,8 +24,8 @@ export const CONFIG = {
     SIGNAL_STRATEGIES: ['breakout', 'mean_reversion', 'ma_crossover'],
     SIGNAL_STRATEGY_LABELS: {
         breakout: 'Breakout',
-        mean_reversion: 'Mean Rev',
-        ma_crossover: 'MA Cross'
+        mean_reversion: 'Mean rev',
+        ma_crossover: 'MA cross'
     },
     STORAGE_KEY: 'pt_state_v3',
     SIGNAL_STORAGE_KEY: 'pt_signals_v1',
