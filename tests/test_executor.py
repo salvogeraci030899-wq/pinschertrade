@@ -88,6 +88,20 @@ def test_carta_sempre_accesa_anche_con_il_reale():
         assert st["mode"] == "simulata" and st["positions"][trade()["id"]]["status"] == "open" and "BTCUSDT" in st["simulated"]["positions"]
 
 
+def test_capitale_della_carta_esaurito_partita_persa():
+    with tempfile.TemporaryDirectory() as d:
+        path, notes = os.path.join(d, "paper.json"), []
+        cfg, ledger = setup([], mode="paper", cfg_extra={"risk": {"dry_run_equity": 1000}})
+        json.dump({"positions": {}, "day": {}, "halted": False, "events": [], "epoch": ex.epoch.current(None), "mode": "simulata",
+                   "simulated": {"cash": 80.0, "equity": 80.0, "start": 1000.0, "positions": {}}}, open(path, "w"))
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, notify=notes.append, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
+        st = json.load(open(path))
+        assert st["simulated"]["cash"] == 1000.0 and len(st["rounds"]) == 1 and st["rounds"][0]["equity"] == 80.0
+        assert any("Capitale della carta esaurito" in n and "partite perse: 1" in n for n in notes), notes
+        ex.run(cfg, ledger, None, "simulata", path, now=NOW, notify=notes.append, specs_fn=SPECS, prices_fn=lambda s: {}, funding_fn=lambda s: {})
+        assert len(json.load(open(path))["rounds"]) == 1                         # una volta sola: il conto è ripartito
+
+
 def test_solo_strategie_live():
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "live.json")

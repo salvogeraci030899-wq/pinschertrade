@@ -45,6 +45,7 @@ from fmt_it import it, it_g
 from market_data import TF_DELTA, TRADE_ASSETS
 
 STATE_PATH = "live_trades.json"
+RUIN_PCT = 10.0                     # conto carta: patrimonio sotto questa quota del capitale di partenza = capitale esaurito, partita persa
 PAPER_PATH = "paper_account.json"   # conto della carta: sempre acceso, anche quando gli ordini veri sono attivi
 EQUITY_PATH = "equity_history.json"     # un record al giorno: apertura, chiusura, versamenti/prelievi, guadagno
 DEFAULT_RISK = {
@@ -343,6 +344,24 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
         state["halted"], state["halt_reason"] = True, "mismatch"
     if state["halted"]:
         return _finish(state, before, state_path, client, mode)
+
+    # --- capitale esaurito (solo conto simulato): il bot ha perso la partita e ricomincia, la perdita resta registrata ---
+    if isinstance(client, DryRunClient) and mode == "simulata":
+        base = float((state.get("simulated") or {}).get("start") or risk["dry_run_equity"])
+        if base > 0 and equity <= base * RUIN_PCT / 100:
+            for p in list(ours.values()):
+                before = client._equity
+                try:
+                    client.close_position(p["symbol"], p["side"])
+                except Exception:       # noqa: BLE001
+                    pass
+                p.update(status="closed", closed_at=now.isoformat(timespec="seconds"), close_reason="CAPITALE ESAURITO", net=round(client._equity - before, 4))
+            state.setdefault("rounds", []).append({"ended": now.isoformat(timespec="seconds"), "result": "capitale esaurito", "equity": round(equity, 2), "start": base})
+            log("ruin", equity=round(equity, 2), start=base)
+            client._equity, client._positions, equity, ours = base, {}, base, {}
+            state["day"] = {}
+            say(f"Capitale della carta esaurito ({it(state['rounds'][-1]['equity'])} su {it(base, 0)}): il bot ha perso questa partita. "
+                f"Riparte da {it(base, 0)} (partite perse: {len(state['rounds'])}).")
 
     # --- perdita massima del giorno ---
     if state["day"].get("date") != today:

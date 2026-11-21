@@ -1,14 +1,17 @@
 name: Agente
 
-# Agente gestore (agent.py). Ogni giorno alle 18:41 UTC decide; la domenica (e quando lo avvii dall'app)
-# prima rilancia il laboratorio sui dati nuovi, con la prova finale per le strategie pronte (agent.py
-# --unseal-plan: buone su carta, mai provate sui mesi tenuti da parte; una volta sola ciascuna).
+# Agente gestore (agent.py), sempre al lavoro: sceglie le strategie migliori del momento (le candidate, e a opzione accesa le
+# quasi candidate) per il conto carta, scarta quelle che vanno male, approva. Decide ogni 6 ore (00:41, 06:41, 12:41, 18:41 UTC);
+# ogni giorno alle 18:41 prima rilancia il laboratorio sui dati nuovi; la domenica (e quando lo avvii dall'app) anche il ricercatore,
+# la prova finale per le strategie pronte (agent.py --unseal-plan: buone su carta, mai provate sui mesi tenuti da parte; una volta
+# sola ciascuna) e il rapporto completo.
 # Regole, autonomia, profilo e stile: vedi agent.py. Il reale dell'agente richiede autonomia "live"
 # E l'interruttore degli ordini veri acceso, entrambi dall'app.
 on:
   schedule:
-    - cron: '41 18 * * 1-6'     # lunedì-sabato: solo le scelte
-    - cron: '41 18 * * 0'       # domenica: laboratorio, prova finale, scelte e rapporto completo
+    - cron: '41 0,6,12 * * *'   # ogni giorno: solo le scelte (sui dati e sulla carta di adesso)
+    - cron: '41 18 * * 1-6'     # lunedì-sabato: laboratorio aggiornato e scelte
+    - cron: '41 18 * * 0'       # domenica: ricercatore, laboratorio, prova finale, scelte e rapporto completo
   workflow_dispatch:
 
 permissions:
@@ -21,7 +24,7 @@ env:
 jobs:
   lab:
     name: Laboratorio aggiornato
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 18 * * 0'
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 18 * * 0' || github.event.schedule == '41 18 * * 1-6'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
@@ -40,6 +43,7 @@ jobs:
         run: pip install "pandas>=2.2.2" numpy requests
       # Agente ricercatore: al massimo 2 varianti nuove a settimana da una grammatica chiusa, dichiarate prima del laboratorio
       - name: Ricercatore
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 18 * * 0'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
