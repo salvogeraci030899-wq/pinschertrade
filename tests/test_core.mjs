@@ -338,7 +338,7 @@ test('orologio del bot: avvio programmato', async () => {
 let failed = 0;
 test('bot Telegram: risposte in sola lettura', async () => {
     const data = {
-        'automation.json': { strategies: { 'big_candle_trail:1d': 'paper', 'tsmom30:1d': 'paper' }, risk: { trading_enabled: false, risk_per_trade_pct: 0.5 }, agent: { autonomy: 'paper' },
+        'automation.json': { strategies: { 'big_candle_trail:1d': 'paper', 'tsmom30:1d': 'paper', 'donchian20_turtle:1d': 'paper' }, risk: { trading_enabled: false, risk_per_trade_pct: 0.5 }, agent: { autonomy: 'paper' },
             price_alerts: [{ id: 'a1', symbol: 'BTCUSDT', side: 'above', price: 75000 }, { id: 'a2', symbol: 'SOLUSDT', side: 'below', price: 80 }] },
         'live_trades.json': { mode: 'simulata', account: { connected: true, equity: 16.06, total_usdt: 16.06, positions: 1, upl: 0.4, day_change: -0.1,
             positions_detail: [{ symbol: 'SOLUSDT', side: 'short', size: 0.1, entry: 160, mark: 156, upl: 0.4, leverage: 3, sl: null, tp: 150 }], spot_detail: [] } },
@@ -346,7 +346,10 @@ test('bot Telegram: risposte in sola lettura', async () => {
             trades: [{ open: false, net: 10, entry: 100, stop: 95 }, { open: false, net: -5, entry: 100, stop: 95 }] }, 'tsmom30:1d': { stats: { n: 0, open: 0 }, trades: [] } } },
         'agent_state.json': { observing: ['tsmom30:1d'], proposals: [], log: [{ kind: 'observe', key: 'tsmom30:1d' }],
             capital: { equity: 16.06, symbols: { BTCUSDT: { needed: 73.3, ok: false }, SOLUSDT: { needed: 82.7, ok: false } } } },
-        'quick_state.json': { _price_alerts_fired: ['a2'] }
+        'quick_state.json': { _price_alerts_fired: ['a2'] },
+        // stato dal laboratorio, uguale per chi ha messo la strategia: bocciata alla prova finale / non candidata (in osservazione)
+        'lab_summary.json': { candidates: [], confirmed: [], results: {
+            'big_candle_trail:1d': { n: 389, holdout: { confirmed: false } }, 'tsmom30:1d': { n: 1951 }, 'donchian20_turtle:1d': { n: 382 } } }
     };
     const st = telegramAnswer('/stato', data);
     assert.match(st, /16,06 USDT \(oggi -0,10\)/); assert.match(st, /Ordini veri: spenti/); assert.match(st, /tsmom30 1d \(carta\)/);
@@ -354,7 +357,10 @@ test('bot Telegram: risposte in sola lettura', async () => {
     const ag = telegramAnswer('/agente@SgBot', data);
     assert.match(ag, /Simulato, bilanciato, swing/); assert.match(ag, /servono ~73 per BTC/); assert.match(ag, /in osservazione: tsmom30 1d/);
     const ca = telegramAnswer('/carta', data);
-    assert.match(ca, /tsmom30 1d \(osservazione\)/); assert.match(ca, /In totale: \+0,50% del patrimonio in 2 trade/);
+    assert.match(ca, /tsmom30 1d \(in osservazione\)/); assert.match(ca, /big candle trail 1d \(bocciata\)/);
+    assert.match(ca, /donchian20 turtle 1d \(in osservazione\): 0 chiusi, 0 aperti/);   // accesa ma senza ancora una riga nel registro: compare lo stesso
+    assert.match(ag, /Strategie: 3 su carta, 0 reali \(2 in osservazione · 1 bocciata\)/);
+    assert.match(ca, /In totale: \+0,50% del patrimonio in 2 trade/);
     const av = telegramAnswer('/avvisi', data);
     assert.match(av, /BTC ≥ 75\.000/); assert.doesNotMatch(av, /SOL/);       // scattato: non più attivo
     assert.match(telegramAnswer('ciao', data), /\/stato/);

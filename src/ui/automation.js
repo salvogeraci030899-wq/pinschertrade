@@ -1,5 +1,6 @@
 import { State } from '../core/state.js';
 import { refitPages } from './page-fit.js';
+import { strategyStatus, statusSummary, STATUS_LABEL } from '../core/strategy-status.js';
 import { $, escapeHtml, apiPost, getApiBase, setApiBase, clearAppKey, getGhToken, setGhToken, commandMode, fmtIt, fmtPrice, fetchData, fetchT, markChosen, chosenRecently } from '../utils/helpers.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 
@@ -206,7 +207,20 @@ export async function confirmChartAlert() {
 }
 let agentState = null;     // agent_state.json: ultimo giro dell'agente, rapporto, proposte
 let guardState = null;     // guard_state.json: agente eventi (pausa dei nuovi ingressi per notizie di rischio)
-const observingKeys = () => new Set((agentState && agentState.observing) || []);
+// Etichetta di stato di una strategia (dal laboratorio, uguale per chi l'ha messa: agente o tu)
+const TAG_TITLE = {
+    osservazione: 'Non candidata: sta su carta per raccogliere dati, senza prova finale né reale',
+    candidata: 'Candidata: aspetta la prova finale',
+    bocciata: 'Ha fatto la prova finale e non l\'ha superata: solo carta',
+    confermata: 'Confermata dalla prova finale: può andare in Reale',
+    senza_storico: 'Nessun dato nel laboratorio'
+};
+const TAG_CLASS = { confermata: ' ok', candidata: ' ok', bocciata: ' warn', senza_storico: ' warn' };
+function statusTag(key) {
+    const st = strategyStatus(key, lab);
+    const txt = st === 'osservazione' ? 'osservazione' : STATUS_LABEL[st];
+    return `<span class="auto-tag${TAG_CLASS[st] || ''}" title="${escapeHtml(TAG_TITLE[st])}">${txt}</span>`;
+}
 let pendingTrading = null;   // 'on' / 'off' inviato ma non ancora visibile in automation.json
 const pending = {};   // comandi inviati ma non ancora visibili nei file pubblicati
 
@@ -343,7 +357,7 @@ export function renderAutomation() {
             : (res ? `Storico: ${res.n} trade, oltre il mercato ${pct(res.excess_avg_pct)}${res.holdout ? (res.holdout.confirmed ? ' · confermata' : ' · bocciata alla prova finale') : ''}` : 'Nessun dato');
         const btn = (m, text, disabled, title) => `<button type="button" class="pill-btn${mode === m ? ' active' : ''}" ${disabled ? 'disabled' : ''} title="${title || ''}" onclick="askAutoMode('${escapeHtml(key)}','${m}')">${text}</button>`;
         return `<div class="auto-item">
-            <div class="auto-item-head"><b class="clickable auto-open-trades" onclick="openPaperTrades('${escapeHtml(key)}')">${escapeHtml(label(key))} ›</b>${pending[key] ? '<span class="text-warning">in corso…</span>' : (observingKeys().has(key) ? '<span class="auto-tag" title="Messa dall\'agente solo per raccogliere dati: niente prova finale né reale">osservazione</span>' : '')}</div>
+            <div class="auto-item-head"><b class="clickable auto-open-trades" onclick="openPaperTrades('${escapeHtml(key)}')">${escapeHtml(label(key))} ›</b>${pending[key] ? '<span class="text-warning">in corso…</span>' : statusTag(key)}</div>
             <div class="auto-item-info">${escapeHtml(info)}</div>
             <div class="option-toggle compact">${btn('off', 'Spenta')}${btn('paper', 'Su carta', emergency)}${btn('live', 'Reale', emergency || !isConfirmed(key), isConfirmed(key) ? '' : 'Solo per strategie confermate dalla prova finale')}</div>
         </div>`;
@@ -719,7 +733,8 @@ export function renderAgentView() {
     status.innerHTML = `
         <div class="auto-row"><span>Autonomia</span><b class="${autoCls}">${AG_LABELS.autonomy[ag.autonomy]}${agentPending.autonomy ? ' (in corso…)' : ''} · reale: ${realState}</b></div>
         ${cfg && cfg.emergency ? '<div class="auto-row"><span>Stato</span><b class="text-danger">EMERGENZA: tutto bloccato</b></div>' : (live && live.halted ? '<div class="auto-row"><span>Stato</span><b class="text-danger">esecutore bloccato: controlla Bitget</b></div>' : '')}
-        <div class="auto-row"><span>Strategie</span><b>${nPaper} su carta${observingKeys().size ? ` (${[...observingKeys()].filter(k => currentMode(k) === 'paper').length} in osservazione)` : ''} · ${nLive} reali</b></div>
+        <div class="auto-row"><span>Strategie</span><b>${nPaper} su carta · ${nLive} reali</b></div>
+        ${nPaper ? `<div class="auto-row auto-sub"><span></span><b>${escapeHtml(statusSummary(strategies.filter(([, m]) => m === 'paper').map(([k]) => k), lab))}</b></div>` : ''}
         ${capitalRow()}
         <div class="auto-row"><span>Oggi</span><b class="${dayInfo > 0 ? 'text-accent' : dayInfo < 0 ? 'text-danger' : ''}">${escapeHtml(dayText)}</b></div>
         <div class="auto-row"><span>Esecuzione</span><b class="${reviewLine().cls}">${escapeHtml(reviewLine().text)}</b></div>

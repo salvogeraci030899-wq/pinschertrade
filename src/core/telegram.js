@@ -9,6 +9,7 @@
 // Emergenza dell'app). Va solo nella direzione che riduce il rischio; sbloccare si fa dall'app.
 import { CONFIG } from './config.js';
 import { isEncrypted, decryptText } from './datacrypt.js';
+import { strategyStatus, statusSummary, STATUS_LABEL } from './strategy-status.js';
 
 const COMMANDS = {
     '/stato': 'conto, modalità, strategie, blocchi',
@@ -19,7 +20,7 @@ const COMMANDS = {
     '/emergenza': 'spegne tutto (serve la parola CONFERMA)',
     '/aiuto': 'questo elenco'
 };
-const FILES = ['automation.json', 'live_trades.json', 'paper_trades.json', 'agent_state.json', 'alerts_state.json', 'quick_state.json', 'guard_state.json'];
+const FILES = ['automation.json', 'live_trades.json', 'paper_trades.json', 'agent_state.json', 'alerts_state.json', 'quick_state.json', 'guard_state.json', 'lab_summary.json'];
 
 const n = (v, d = 2) => (v == null || !isFinite(v) ? '—' : Number(v).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d }));
 const sg = (v, d = 2) => (v == null || !isFinite(v) ? '—' : (v > 0 ? '+' : '') + n(v, d));
@@ -74,6 +75,9 @@ function agente(d) {
     const lines = [`🤖 AGENTE · ${AG.autonomy[ag.autonomy] || ag.autonomy}, ${ag.profile}, ${ag.style}`];
     if (st.last_run) lines.push(`Ultima decisione: ${new Date(st.last_run).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`);
     for (const p of st.proposals || []) lines.push(`👉 Proposta: ${lab(p.key)} al reale (${p.n} trade su carta, netto medio ${sg(p.avg_net_pct)}%). Conferma nell'app.`);
+    const onPaper = Object.entries(cfg.strategies || {}).filter(([, m]) => m === 'paper').map(([k]) => k);
+    const nLive = Object.values(cfg.strategies || {}).filter(m => m === 'live').length;
+    if (onPaper.length || nLive) lines.push(`Strategie: ${onPaper.length} su carta, ${nLive} reali${onPaper.length ? ' (' + statusSummary(onPaper, d['lab_summary.json'] || null) + ')' : ''}`);
     const cap = st.capital;
     if (cap && cap.symbols && Object.keys(cap.symbols).length && !Object.values(cap.symbols).some(v => v.ok)) {
         const least = Object.entries(cap.symbols).sort((a, b) => a[1].needed - b[1].needed)[0];
@@ -88,21 +92,25 @@ function agente(d) {
 
 const VERDICT = { in_linea: 'in linea con lo storico', sotto: '⚠️ sotto lo storico', sopra: 'sopra lo storico' };
 function carta(d) {
-    const cfg = d['automation.json'] || {}, paper = d['paper_trades.json'] || {};
+    const cfg = d['automation.json'] || {}, paper = d['paper_trades.json'] || {}, labData = d['lab_summary.json'] || null;
     const active = new Set(Object.entries(cfg.strategies || {}).filter(([, m]) => m !== 'off').map(([k]) => k));
-    const observing = new Set((d['agent_state.json'] || {}).observing || []);
     const risk = Number((cfg.risk || {}).risk_per_trade_pct) || 0.5;
     const lines = ['🧪 CARTA'];
     let eq = 0, tot = 0;
-    for (const [k, e] of Object.entries(paper.strategies || {})) {
+    const ledger = paper.strategies || {};
+    for (const e of Object.values(ledger)) {
         for (const t of e.trades || []) {
             if (t.open || t.net == null || !t.entry || !t.stop) continue;
             const stop = Math.abs(t.entry - t.stop) / t.entry * 100;
             if (stop > 0) { eq += t.net / stop * risk; tot++; }
         }
-        if (!active.has(k)) continue;
-        const s = e.stats || {}, v = (s.vs_backtest || {}).verdict;
-        lines.push(`${lab(k)}${observing.has(k) ? ' (osservazione)' : ''}: ${s.n || 0} chiusi${s.n ? `, netto medio ${sg(s.avg_net_pct)}%` : ''}, ${s.open || 0} aperti${VERDICT[v] ? ' · ' + VERDICT[v] : ''}`);
+    }
+    // ogni strategia accesa compare, anche se il registro non ha ancora una sua riga
+    for (const k of [...active].sort()) {
+        const s = (ledger[k] || {}).stats || {}, v = (s.vs_backtest || {}).verdict;
+        const st = strategyStatus(k, labData);
+        const tag = st === 'confermata' ? '' : ` (${STATUS_LABEL[st]})`;
+        lines.push(`${lab(k)}${tag}: ${s.n || 0} chiusi${s.n ? `, netto medio ${sg(s.avg_net_pct)}%` : ''}, ${s.open || 0} aperti${VERDICT[v] ? ' · ' + VERDICT[v] : ''}`);
     }
     if (lines.length === 1) lines.push('Nessuna strategia su carta.');
     lines.push(tot ? `In totale: ${sg(eq)}% del patrimonio in ${tot} trade (rischio ${n(risk, 2)}% a trade).` : 'Nessun trade chiuso finora.');
