@@ -44,7 +44,7 @@ main {
 #page-trade.active > *:not(.header-row):not(.pos-views):not(#ordersView) { zoom: var(--fit-zoom-trade, 1); }
 #page-journal.active { padding-bottom: calc(10px + var(--fit-extra-bottom-journal, 0px)); overflow-y: var(--fit-overflow-journal, hidden); }
 #page-journal.active > *:not(.header-row) { zoom: var(--fit-zoom-journal, 1); }
-#page-signals.active { padding-bottom: calc(10px + var(--fit-extra-bottom-signals, 0px)); overflow-y: var(--fit-overflow-signals, hidden); }
+#page-signals.active { padding-bottom: calc(24px + var(--fit-extra-bottom-signals, 0px)); overflow-y: var(--fit-overflow-signals, hidden); }
 #page-signals.active > *:not(.header-row):not(.page-tabs) { zoom: var(--fit-zoom-signals, 1); }
 #page-test.active { padding-bottom: calc(10px + var(--fit-extra-bottom-test, 0px)); overflow-y: var(--fit-overflow-test, hidden); }
 #page-test.active > *:not(.header-row) { zoom: var(--fit-zoom-test, 1); }
