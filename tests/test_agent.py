@@ -320,6 +320,22 @@ def test_gemelle_gia_accese_resta_la_piu_forte():
     assert twin_a in cfg["strategies"] and twin_b not in cfg["strategies"]
 
 
+def test_stato_strategia_dal_laboratorio():
+    """Stessa regola dell'app e di Telegram (src/core/strategy-status.js): lo stato viene dal laboratorio, non da chi ha messo la strategia."""
+    summary = {"candidates": ["c:1d"], "confirmed": ["ok:1d"], "results": {
+        "ok:1d": {"holdout": {"confirmed": True}}, "boc:1d": {"holdout": {"confirmed": False}},
+        "c:1d": {"n": 300}, "oss:1d": {"n": 300}}}
+    st = lambda k: agent.strategy_status(k, summary)  # noqa: E731
+    assert st("ok:1d") == "confermata" and st("boc:1d") == "bocciata" and st("c:1d") == "candidata"
+    assert st("oss:1d") == "in osservazione" and st("mai_provata:1d") == "senza storico"
+    assert agent.strategy_status("x:1d", None) == "senza storico"
+    # compare nei fatti dell'agente (rapporto e Telegram) per ogni strategia accesa
+    cfg = {"strategies": {"oss:1d": "paper", "boc:1d": "paper"}}
+    d = {k: [] for k in ("off", "on", "observe", "promote", "demote", "proposals", "notes")}
+    f = agent.facts_text(cfg, {"strategies": {}}, d, [], summary)
+    assert any("oss" in x and "su carta, in osservazione" in x for x in f) and any("boc" in x and "su carta, bocciata" in x for x in f), f
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:

@@ -328,7 +328,21 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
     return out
 
 
-def facts_text(cfg, paper, d, errors):
+def strategy_status(key, summary):
+    """Stato di una strategia dai dati del laboratorio (stessa regola di src/core/strategy-status.js):
+    confermata, bocciata (prova finale fallita), candidata, in osservazione (non candidata) o senza storico."""
+    summary = summary or {}
+    r = (summary.get("results") or {}).get(key)
+    if key in (summary.get("confirmed") or []):
+        return "confermata"
+    if r and r.get("holdout"):
+        return "confermata" if r["holdout"].get("confirmed") else "bocciata"
+    if key in (summary.get("candidates") or []):
+        return "candidata"
+    return "in osservazione" if r else "senza storico"
+
+
+def facts_text(cfg, paper, d, errors, summary=None):
     lines = []
     for k, why in d["demote"]:
         lines.append(f"Tornata su carta dal reale {_label(k)}: {why}.")
@@ -349,7 +363,7 @@ def facts_text(cfg, paper, d, errors):
     active = {k: m for k, m in (cfg.get("strategies") or {}).items() if m != "off"}
     for k in sorted(active):
         st = _paper_stats(paper, k)
-        lines.append(f"Stato {_label(k)} ({'reale' if active[k] == 'live' else 'su carta'}): {st.get('n', 0)} trade chiusi, "
+        lines.append(f"Stato {_label(k)} ({'reale' if active[k] == 'live' else 'su carta'}, {strategy_status(k, summary)}): {st.get('n', 0)} trade chiusi, "
                      f"{st.get('open', 0)} aperti" + (f", netto medio {it(st['avg_net_pct'], 2, True)}%" if st.get("avg_net_pct") is not None else "") + ".")
     if not active:
         lines.append("Nessuna strategia accesa.")
@@ -461,7 +475,7 @@ def run(notify, cfg_path=automation.CONFIG_PATH, summary_path=automation.SUMMARY
         rev = reviewer.review(_load(live_path, {}), paper, now)
     except Exception as e:
         print(f"Revisione dell'esecuzione non riuscita: {e}")
-    facts = facts_text(cfg, paper, d, errors) + capital_facts(cap) + reviewer.facts(rev)
+    facts = facts_text(cfg, paper, d, errors, summary) + capital_facts(cap) + reviewer.facts(rev)
     acted = any(d[k] for k in ("off", "on", "observe", "promote", "demote")) or errors
     if rev and rev.get("alert") and not (state.get("review") or {}).get("alert"):
         acted = True                    # il reale si allontana dalla carta: avviso subito, la prima volta

@@ -70,7 +70,7 @@ try {
         });
         // dati personali inventati (quelli veri nel repository sono cifrati): conto, posizioni, carta, agente, storico
         const FIX = JSON.parse(fs.readFileSync(path.join(ROOT, 'tests', 'fixtures', 'ui_data.json'), 'utf8'));
-        await page.route(/\/(automation|live_trades|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state)\.json/, async r => {
+        await page.route(/\/(automation|live_trades|paper_trades|agent_state|equity_history|quick_state|alerts_state|guard_state|lab_summary)\.json/, async r => {
             if (dataDelay) await new Promise(res => setTimeout(res, dataDelay));
             const name = new URL(r.request().url()).pathname.split('/').pop();
             const j = structuredClone(FIX[name]);
@@ -151,7 +151,8 @@ try {
             console.log(`  contenuto pronto ${dev.n}, ${tag} (CPU 4x), ultima modifica dopo l'apertura: ${worst}`);
             // Schede che mostrano dati caricati: devono disegnarsi dalla memoria, senza attendere la rete (350 ms simulati).
             // Prima della correzione: Agente 410-440 ms, Registro 750 ms. Soglia larga contro le oscillazioni della CI.
-            for (const [l, t, w] of ready) if ((l.startsWith('Agente') || /^pagina (log|signals|journal|trade)$/.test(l)) && t > 300) problems.push(`${dev.n}, ${tag}: ${l} pronta dopo ${t} ms (${w}): deve disegnarsi subito dai dati in memoria`);
+            // Posizioni resta fuori: i prezzi dal vivo arrivano dalla rete dopo l'apertura, non sono dati in memoria.
+            for (const [l, t, w] of ready) if ((l.startsWith('Agente') || /^pagina (log|signals|journal)$/.test(l)) && t > 300) problems.push(`${dev.n}, ${tag}: ${l} pronta dopo ${t} ms (${w}): deve disegnarsi subito dai dati in memoria`);
         }
         // Home: schede una sotto l'altra, tutte sopra la barra in basso e senza righe tagliate; l'ultima riempie lo spazio rimasto
         await page.evaluate(() => window.switchTab('home'));
@@ -309,6 +310,18 @@ try {
         });
         await page.evaluate(() => { window.switchTab('signals'); window.setSignalsView('agent'); });
         await page.waitForTimeout(800);
+        // Strategie su carta: lo stato viene dal laboratorio e vale per chiunque le abbia messe (agente o tu).
+        // Dati di prova: 3 su carta = 1 candidata, 1 in osservazione, 1 bocciata alla prova finale (la quarta è spenta).
+        await step('agente: la riga Stato conta le strategie per stato del laboratorio', async () => {
+            const t = await page.evaluate(() => document.getElementById('agentStatus').innerText.replace(/\s+/g, ' '));
+            return /3 su carta · 0 reali/.test(t) && /1 candidata · 1 in osservazione · 1 bocciata/.test(t);
+        });
+        await step('agente: ogni scheda strategia ha la sua etichetta di stato', async () => {
+            await page.evaluate(() => window.setSignalsView('auto')); await page.waitForTimeout(400);
+            const tags = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll('#autoList .auto-item')].map(i => [i.querySelector('.auto-open-trades').textContent.replace(/[›\s]+$/, '').trim(), (i.querySelector('.auto-tag') || {}).textContent || ''])));
+            await page.evaluate(() => window.setSignalsView('agent')); await page.waitForTimeout(300);
+            return tags['big candle trail 1d'] === 'bocciata' && tags['tsmom30 1d'] === 'osservazione' && tags['donchian20 long 1d'] === 'candidata' && tags['donchian20 turtle 1d'] === 'osservazione';
+        });
         await step('agente: Reale senza la conferma', async () => {
             await page.click('#agentSettings .pill-btn:has-text("Reale")'); await page.waitForTimeout(300);
             const on = await page.evaluate(() => document.getElementById('autoConfirmModal').classList.contains('active'));
