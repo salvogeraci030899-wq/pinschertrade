@@ -59,6 +59,7 @@ DEFAULT_RISK = {
     "portfolio_stop_pct": 0.0,      # lo stesso in perdita: a -X% chiude tutto (0 = spento)
     "max_strategy_dd_pct": 5.0,     # perdita massima di una strategia reale dal suo massimo: oltre, l'agente la riporta su carta
     "dry_run_equity": 1000.0,
+    "near_candidates": 0,           # 1 = alto rischio: anche le strategie non candidate per poco (automation.near_keys) vengono eseguite, su carta e in REALE, con tutti i limiti
     "real_follows_paper": 0,        # 1 = anche in REALE l'esecutore segue le strategie su carta (non confermate), con tutti i limiti: scelta esplicita, spenta di default
     "shadow_paper": True,           # con gli ordini simulati l'esecutore segue anche le strategie su carta, con gli STESSI limiti del reale
 }
@@ -74,6 +75,7 @@ RISK_BOUNDS = {
     "max_strategy_dd_pct": (1.0, 20.0),
     "portfolio_target_pct": (0.0, 20.0),
     "portfolio_stop_pct": (0.0, 20.0),
+    "near_candidates": (0, 1),
     "real_follows_paper": (0, 1),
     "dry_run_equity": (100.0, 1_000_000.0),
 }
@@ -201,7 +203,7 @@ def make_client(cfg):
 
 
 def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=None, notify=None, specs_fn=contract_specs,
-        guard_path=None, prices_fn=public_prices, epoch_path=None, funding_fn=public_funding):
+        guard_path=None, prices_fn=public_prices, epoch_path=None, funding_fn=public_funding, near_keys=frozenset()):
     """Un giro dell'esecutore. Ritorna True se lo stato è cambiato."""
     now = now or datetime.now(timezone.utc)
     now_ts, today = int(now.timestamp()), now.strftime("%Y-%m-%d")
@@ -380,8 +382,11 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     follow_paper = (mode in ("simulata", "demo") and risk.get("shadow_paper", True)) or (mode == "reale" and int(risk.get("real_follows_paper") or 0) == 1)
     follow = {"live"} | ({"paper"} if follow_paper else set())
     wanted, exits = {}, {}
+    # Alto rischio (near_candidates = 1): anche le strategie su carta non candidate per poco, in REALE come in simulata
+    near_on = int(risk.get("near_candidates") or 0) == 1
     for key, entry in (ledger.get("strategies") or {}).items():
-        if entry.get("mode") not in follow or (cfg.get("strategies") or {}).get(key) not in follow:
+        near_paper = near_on and key in near_keys and entry.get("mode") == "paper" and (cfg.get("strategies") or {}).get(key) == "paper"
+        if not near_paper and (entry.get("mode") not in follow or (cfg.get("strategies") or {}).get(key) not in follow):
             continue
         for t in entry.get("trades", []):
             if t.get("open"):

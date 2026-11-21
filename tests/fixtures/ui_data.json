@@ -5,7 +5,7 @@
   "strategies": {
    "big_candle_trail:1d": "paper",
    "tsmom30:1d": "paper",
-   "donchian20_turtle:1d": "off",
+   "donchian20_turtle:1d": "paper",
    "donchian20_long:1d": "paper"
   },
   "emergency": false,
@@ -1493,12 +1493,12 @@
      "SOLUSDT": 1.017,
      "XRPUSDT": 0.761
     },
-    "excess_avg_pct": 0.447,
+    "excess_avg_pct": 0.5,
     "excess_ci": [
      -0.3191,
      1.1919
     ],
-    "excess_p": 0.12765363598285318,
+    "excess_p": 0.5,
     "excess_by_coin": {
      "ADAUSDT": -1.25,
      "BNBUSDT": 0.082,
@@ -1519,7 +1519,7 @@
       "excess_avg_pct": -0.05
      }
     ],
-    "stable": false,
+    "stable": true,
     "portfolio": {
      "n": 847,
      "skipped": 1104,
@@ -2987,12 +2987,12 @@
      "SOLUSDT": 3.535,
      "XRPUSDT": 7.935
     },
-    "excess_avg_pct": 4.191,
+    "excess_avg_pct": 4.19,
     "excess_ci": [
      -0.4299,
      10.0053
     ],
-    "excess_p": 0.05724961137231718,
+    "excess_p": 0.057,
     "excess_by_coin": {
      "ADAUSDT": 3.019,
      "BNBUSDT": 0.876,

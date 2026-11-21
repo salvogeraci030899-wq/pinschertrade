@@ -346,10 +346,10 @@ def _near_summary():
 
 def _near_cfg(mode):
     return {"strategies": {"big_candle_trail:1d": "paper", "r_breakout_80_3:1d": "paper"}, "emergency": False, "history": [],
-            "risk": {}, "agent": {"observe": mode}}
+            "risk": {"near_candidates": 1 if mode == "vicine" else 0}}
 
 
-def test_osservazione_vicine_mette_anche_le_gemelle_e_lascia_andare_le_lontane():
+def test_alto_rischio_mette_anche_le_gemelle_e_lascia_andare_le_lontane():
     d = agent.decide(_near_cfg("vicine"), _near_summary(), {"strategies": {}}, {"r_breakout_80_3:1d"}, {"r_breakout_80_3:1d"})
     obs = [k for k, _ in d["observe"]]
     assert obs == ["big_candle:1d", "donchian20_calm:1d", "tsmom_combo:1d"], obs          # per vicinanza, gemella compresa
@@ -357,23 +357,39 @@ def test_osservazione_vicine_mette_anche_le_gemelle_e_lascia_andare_le_lontane()
     assert "r_breakout_80_4:1d" not in obs                                                # p 0,18: non è vicina
 
 
-def test_osservazione_base_resta_come_prima():
+def test_senza_alto_rischio_resta_come_prima():
     d = agent.decide(_near_cfg("base"), _near_summary(), {"strategies": {}}, {"r_breakout_80_3:1d"}, frozenset({"r_breakout_80_3:1d"}))
     obs = [k for k, _ in d["observe"]]
     assert "big_candle:1d" not in obs and d["off"] == []                                  # niente gemelle, nessuno lasciato andare
     assert len(obs) <= agent.OBSERVE_UP_TO - 2                                            # tetto di 4 strategie in tutto
 
 
-def test_impostazione_osservazione():
+def test_alto_rischio_e_un_limite_di_rischio():
     import automation
+    import executor
     cfg = {"strategies": {}, "emergency": False, "history": [], "risk": {}}
-    assert automation.agent_config(cfg)["observe"] == "base"
-    assert "base -> vicine" in automation.set_agent(cfg, "observe", "vicine") and cfg["agent"]["observe"] == "vicine"
+    assert executor.risk_config(cfg)["near_candidates"] == 0 and executor.RISK_BOUNDS["near_candidates"] == (0, 1)
+    assert "0 -> 1" in automation.set_risk(cfg, "near_candidates", "1") and cfg["risk"]["near_candidates"] == 1
     try:
-        automation.set_agent(cfg, "observe", "tutte")
-        raise AssertionError("valore non ammesso accettato")
+        automation.set_risk(cfg, "near_candidates", "0.5")
+        raise AssertionError("valore non intero accettato")
     except automation.CommandError:
         pass
+
+
+def test_regola_quasi_candidata():
+    """Stessa regola di src/core/strategy-status.js (isNearCandidate): p fino a 0,10, stabile, non candidata né bocciata."""
+    import automation
+    ok = {"n": 300, "excess_avg_pct": 2.0, "excess_p": 0.0865, "stable": True}
+    near = automation.is_near_candidate
+    assert near("tsmom_combo:1d", ok)
+    assert not near("tsmom_combo:1d", {**ok, "excess_p": 0.13})                       # troppo lontana
+    assert not near("tsmom_combo:1d", {**ok, "stable": False})
+    assert not near("tsmom_combo:1d", {**ok, "n": 20})
+    assert not near("tsmom_combo:1d", {**ok, "candidate": True})
+    assert not near("tsmom_combo:1d", {**ok, "holdout": {"confirmed": False}})       # già bocciata: niente
+    assert not near("tsmom_combo:1d", {**ok, "excess_avg_pct": -1.0})
+    assert agent.strategy_status("tsmom_combo:1d", {"results": {"tsmom_combo:1d": ok}}) == "quasi candidata"
 
 
 if __name__ == "__main__":

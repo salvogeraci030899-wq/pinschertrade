@@ -26,7 +26,7 @@ const n = (v, d = 2) => (v == null || !isFinite(v) ? '—' : Number(v).toLocaleS
 const sg = (v, d = 2) => (v == null || !isFinite(v) ? '—' : (v > 0 ? '+' : '') + n(v, d));
 const coin = s => String(s || '').replace('USDT', '');
 const lab = k => String(k || '').replace(/_/g, ' ').replace(':', ' ');
-const AG = { autonomy: { off: 'spento', paper: 'Simulato', live: 'Reale' }, def: { autonomy: 'paper', profile: 'bilanciato', style: 'swing', observe: 'base' } };
+const AG = { autonomy: { off: 'spento', paper: 'Simulato', live: 'Reale' }, def: { autonomy: 'paper', profile: 'bilanciato', style: 'swing' } };
 
 function help() {
     return '🤖 PinscherTrade: comandi (sola lettura)\n' + Object.entries(COMMANDS).map(([c, t]) => `${c} · ${t}`).join('\n')
@@ -72,7 +72,7 @@ const KIND = { on: 'su carta', observe: 'in osservazione', off: 'spenta', promot
 function agente(d) {
     const cfg = d['automation.json'] || {}, st = d['agent_state.json'] || {};
     const ag = { ...AG.def, ...(cfg.agent || {}) };
-    const lines = [`🤖 AGENTE · ${AG.autonomy[ag.autonomy] || ag.autonomy}, ${ag.profile}, ${ag.style}${ag.observe === 'vicine' ? ', osservazione vicine' : ''}`];
+    const lines = [`🤖 AGENTE · ${AG.autonomy[ag.autonomy] || ag.autonomy}, ${ag.profile}, ${ag.style}`];
     if (st.last_run) lines.push(`Ultima decisione: ${new Date(st.last_run).toLocaleString('it-IT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`);
     for (const p of st.proposals || []) lines.push(`👉 Proposta: ${lab(p.key)} al reale (${p.n} trade su carta, netto medio ${sg(p.avg_net_pct)}%). Conferma nell'app.`);
     const onPaper = Object.entries(cfg.strategies || {}).filter(([, m]) => m === 'paper').map(([k]) => k);
