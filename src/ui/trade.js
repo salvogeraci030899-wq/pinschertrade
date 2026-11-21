@@ -76,7 +76,7 @@ const bitgetAccount = () => { const st = getAutoState(); return st.live && st.li
 
 export function refreshCapitalUI() {
     const el = document.getElementById('simCapitalDisplay');
-    const real = isReal(), acc = bitgetAccount();
+    const real = true, acc = bitgetAccount();
     const total = acc && acc.connected ? (acc.total_usdt != null ? acc.total_usdt : acc.equity) : null;
     const st = getAutoState(), sim = st.live && st.live.simulated;
     const paper = sim && Number.isFinite(Number(sim.equity)) ? Number(sim.equity) : null;
@@ -188,7 +188,7 @@ export function renderActiveTrades() {
     const pg = document.getElementById('page-trade');
     if (pg && !pg.classList.contains('active')) return;
     if (window.renderOrders) window.renderOrders();       // vista Ordini, se è quella aperta
-    if (isReal()) renderRealPositions(el);        // in Simulato la pagina mostra solo il conto della carta (orders.js)
+    renderRealPositions(el);                      // la pagina ha sempre la stessa vista, anche con Reale spento
 }
 
 export function renderActiveTradeDots() {
@@ -197,7 +197,7 @@ export function renderActiveTradeDots() {
     if (!dotsContainer) return;
     // schede della modalità attiva; per pagina: due, una sugli schermi bassi (righe della griglia)
     const container = document.getElementById('activeTradesList');
-    const count = isReal() ? realList().length : 0;
+    const count = realList().length;
     if (count === 0) { dotsContainer.innerHTML = ''; if (counter) counter.textContent = ''; return; }
     const perPage = container ? Math.max(1, getComputedStyle(container).gridTemplateRows.split(' ').filter(Boolean).length) : 2;
     const totalPages = Math.ceil(count / perPage);

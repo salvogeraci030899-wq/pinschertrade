@@ -196,8 +196,8 @@ try {
         await page.waitForTimeout(700);
         // Reale con "Reale segue la carta": Home mostra insieme conto reale e conto carta; in Simulato solo la carta
         const both = await page.evaluate(() => { const v = id => { const e = document.getElementById(id); return !!e && e.getClientRects().length > 0; }; return { two: v('homeKpis2'), title: document.getElementById('homeAccTitle').textContent }; });
-        if (mode === 'real' && !both.two) problems.push(`${dev.n}, ${tag}: Reale con Reale segue la carta: la Home deve mostrare anche il conto carta`);
-        if (mode !== 'real' && both.two) problems.push(`${dev.n}, ${tag}: in Simulato la Home non deve mostrare il secondo conto`);
+        if (!both.two) problems.push(`${dev.n}, ${tag}: la Home deve mostrare anche il conto carta (Reale spento, o Reale che segue la carta)`);
+        if (!/Bitget/.test(both.title)) problems.push(`${dev.n}, ${tag}: la Home deve sempre mostrare il conto Bitget`);
         const home = await page.evaluate(() => {
             const top = document.querySelector('.nav-wrap').getBoundingClientRect().top;
             const kids = [...document.querySelectorAll('#page-home .home-container > *')].filter(e => e.getClientRects().length);
@@ -321,10 +321,10 @@ try {
         const where = `${dev.n}, ${tag}`;
         const step = async (name, fn) => { try { if (!(await fn())) problems.push(`${where}: ${name}`); } catch (e) { problems.push(`${where}: ${name} (${e.message.split('\n')[0]})`); } };
         if (mode === 'sim') {
-            // in Simulato la pagina Posizioni mostra solo il conto della carta, senza le schede Aperte e Ordini
+            // la pagina Posizioni ha sempre le stesse schede (Aperte, Ordini, Bot su carta), anche con Reale spento
             await page.evaluate(() => window.switchTab('trade'));
             await page.waitForTimeout(500);
-            await step('posizioni: in Simulato niente schede Aperte e Ordini', async () => page.evaluate(() => getComputedStyle(document.querySelector('#page-trade .pos-views')).display === 'none'));
+            await step('posizioni: anche con Reale spento ci sono le schede Aperte, Ordini e Bot su carta', async () => page.evaluate(() => getComputedStyle(document.querySelector('#page-trade .pos-views')).display !== 'none'));
             // assistente generale, dall'icona in Home
             await page.evaluate(() => window.switchTab('home'));
             await page.waitForTimeout(400);
