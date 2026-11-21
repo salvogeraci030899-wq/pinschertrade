@@ -289,11 +289,7 @@ window.switchTab = (tabId) => {
     }
 
     if (tabId === 'trade') TradeUI.onOpenTrade();
-    // pagine che si sistemano da sole all'apertura (mai mentre le guardi; una scelta tua vale 30 minuti)
-    if (tabId === 'terminal' && !Helpers.chosenRecently('asset')) {
-        const top = HomeUI.topCoins()[0];
-        if (top && top !== State.currentAsset) TerminalUI.setAsset(top, false);
-    }
+    // pagine che si sistemano da sole all'apertura (mai mentre le guardi; una scelta tua vale 30 minuti). Il grafico di Mercato no: ricorda sempre l'ultima coin e l'ultimo timeframe
     if (tabId === 'trade' && !Helpers.chosenRecently('posView')) Orders.autoPosView();
     if (tabId === 'journal') Results.autoResultsSource();
     if (tabId === 'home') {
