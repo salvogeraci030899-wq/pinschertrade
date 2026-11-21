@@ -385,7 +385,7 @@ def test_stop_scattato_su_bitget_non_blocca():
         st = json.load(open(path))
         p = st["positions"][trade()["id"]]
         assert st["halted"] is False and p["status"] == "closed" and p["close_reason"] == "CHIUSA SU BITGET", st
-        assert "chiusa su Bitget" in notes[-1] and "-9.80" in notes[-1]
+        assert "chiusa su Bitget" in notes[-1] and "-9,80" in notes[-1]
         # il trade su carta è ancora aperto (si chiude a fine candela): l'esecutore non lo riapre
         go(cfg, ledger, path, client, now=later.replace(hour=6))
         assert client.positions() == {} and json.load(open(path))["halted"] is False
