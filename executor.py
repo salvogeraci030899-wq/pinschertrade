@@ -41,6 +41,7 @@ import requests
 
 import epoch
 from bitget_client import BitgetClient, DryRunClient, round_down
+from fmt_it import it, it_g
 from market_data import TF_DELTA, TRADE_ASSETS
 
 STATE_PATH = "live_trades.json"
@@ -312,7 +313,7 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
                          exit=h.get("exit"), net=h.get("net"))
                 log("close", id=tid, symbol=p["symbol"], reason="chiusa su Bitget")
                 say(f"{p['symbol']} {p['side'].upper()} ({p['key']}) chiusa su Bitget (stop o a mano)"
-                    + (f": netto {h['net']:+.2f} USDT." if isinstance(h.get("net"), (int, float)) else "."))
+                    + (f": netto {it(h['net'], 2, True)} USDT." if isinstance(h.get("net"), (int, float)) else "."))
         ours = {tid: p for tid, p in ours.items() if p["status"] == "open"}
     expected = {p["symbol"]: p["side"] for p in ours.values()}
     missing = {s: v for s, v in expected.items() if actual.get(s) != v}
@@ -333,13 +334,13 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
     day_pnl = (equity / state["day"]["start_equity"] - 1) * 100 if state["day"]["start_equity"] else 0.0
     if day_pnl <= -risk["max_daily_loss_pct"] and not state["day"]["blocked"]:
         state["day"]["blocked"] = True
-        say(f"Perdita del giorno {day_pnl:.2f}% oltre il limite ({risk['max_daily_loss_pct']}%): niente nuovi ingressi fino a domani.")
+        say(f"Perdita del giorno {it(day_pnl, 2)}% oltre il limite ({it_g(risk['max_daily_loss_pct'])}%): niente nuovi ingressi fino a domani.")
         log("daily_limit", pnl_pct=round(day_pnl, 2))
     # obiettivo del giorno: raggiunto, si smette di aprire (le posizioni aperte restano con i loro stop)
     target = risk.get("daily_target_pct") or 0
     if target > 0 and day_pnl >= target and not state["day"].get("target_hit"):
         state["day"]["target_hit"] = True
-        say(f"Obiettivo del giorno raggiunto: {day_pnl:+.2f}% (obiettivo {target}%). Niente nuovi ingressi fino a domani.")
+        say(f"Obiettivo del giorno raggiunto: {it(day_pnl, 2, True)}% (obiettivo {it_g(target)}%). Niente nuovi ingressi fino a domani.")
         log("daily_target", pnl_pct=round(day_pnl, 2))
 
     # --- obiettivo di portafoglio: in aggiunta a stop e target dei singoli trade ---
@@ -367,7 +368,7 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
                     say(f"{hit}: chiusura di {p['symbol']} FALLITA ({e}). Controlla su Bitget.")
             gain = equity - state["basket"]["start"]
             log("portfolio_exit", reason=hit, pnl_pct=round(b_pnl, 2), closed=closed_n)
-            say(f"{hit}: totale delle posizioni {b_pnl:+.2f}% ({gain:+.2f} USDT). Chiuse {closed_n} posizioni, si aspettano nuovi segnali.")
+            say(f"{hit}: totale delle posizioni {it(b_pnl, 2, True)}% ({it(gain, 2, True)} USDT). Chiuse {closed_n} posizioni, si aspettano nuovi segnali.")
             ours = {}
             state["basket"] = {"start": equity}
 
@@ -406,7 +407,7 @@ def run(cfg, ledger, client=None, mode="simulata", state_path=STATE_PATH, now=No
                 client.close_position(p["symbol"], p["side"])
             p.update(status="closed", closed_at=now.isoformat(timespec="seconds"), close_reason="SEGUE LA CARTA")
             log("close", id=tid, symbol=p["symbol"])
-            say(f"Chiusa {p['symbol']} {p['side'].upper()} ({p['key']})" + (f": netto {p['net']:+.2f} USDT." if "net" in p else "."))
+            say(f"Chiusa {p['symbol']} {p['side'].upper()} ({p['key']})" + (f": netto {it(p['net'], 2, True)} USDT." if "net" in p else "."))
         except Exception as e:
             log("error", id=tid, error=str(e))
             say(f"Chiusura di {p['symbol']} FALLITA ({e}). Controlla su Bitget.")
