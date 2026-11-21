@@ -47,6 +47,7 @@ PROMO_MIN_TRADES = 20          # trade chiusi su carta prima della prova finale 
 LOG_MAX = 60
 OBSERVE_UP_TO = 4              # strategie accese in tutto, oltre le quali non se ne aggiungono in osservazione
 OBSERVE_MIN_TRADES = 50        # storico minimo per l'osservazione
+NEAR_P = 0.10                  # modalità "vicine": eccesso sul mercato con p-value fino a 0,10 (mancano la candidatura per poco)
 # Strategie "gemelle": stesso segnale di ingresso con filtri o uscite diverse (big_candle_trail usa i segnali di
 # big_candle; le donchian20_* sono tutte la rottura delle 20 candele). Accese insieme sullo stesso timeframe aprono
 # gli stessi trade: su carta contano due volte la stessa idea. L'agente ne tiene una sola per gruppo.
@@ -218,10 +219,17 @@ def observable(key, r, tfs):
             and (r.get("excess_avg_pct") or 0) > 0 and bool(r.get("stable")) and not r.get("candidate"))
 
 
+def is_near(r):
+    """Vicina alla candidatura: eccesso sul mercato con p-value fino a NEAR_P."""
+    p = r.get("excess_p")
+    return p is not None and p <= NEAR_P
+
+
 def decide(cfg, summary, paper, added, observing=frozenset()):
     """Solo regole, nessun effetto. Ritorna un dizionario di liste: off, on, promote, demote, proposals, notes."""
     ag = automation.agent_config(cfg)
     tfs = automation.STYLES[ag["style"]]
+    near = ag.get("observe") == "vicine"
     results = summary.get("results") or {}
     confirmed = set(summary.get("confirmed") or [])
     candidates = [k for k in dict.fromkeys(sorted(confirmed) + list(summary.get("candidates") or [])) if k.split(":")[1] in tfs]
@@ -257,6 +265,8 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
         elif active[key] == "paper" and key in observing and key not in candidates:
             if not observable(key, results.get(key) or {}, tfs):
                 out["off"].append((key, "non è più promettente sullo storico (osservazione finita)"))
+            elif near and not is_near(results.get(key) or {}):
+                out["off"].append((key, f"più lontana dalla candidatura (p {it((results.get(key) or {}).get('excess_p') or 1, 3)}): lascio il posto a quelle più vicine"))
         elif active[key] == "paper" and key in added and key not in candidates:
             out["off"].append((key, "non è più candidata (laboratorio aggiornato o stile cambiato)"))
 
@@ -266,7 +276,7 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
     for key in sorted(k for k in active if k not in leaving):
         groups.setdefault(twin_group(key), []).append(key)
     for keys in groups.values():
-        mine = [k for k in keys if k in added and active[k] == "paper"]
+        mine = [k for k in keys if k in added and active[k] == "paper" and not (near and k not in candidates)]   # "vicine": le gemelle non candidate restano
         if len(keys) < 2 or not mine:
             continue
         keep = set(keys) - set(mine) or {max(mine, key=lambda k: (results.get(k) or {}).get("excess_avg_pct") or 0)}
@@ -300,10 +310,12 @@ def decide(cfg, summary, paper, added, observing=frozenset()):
         out["notes"].append(f"Nessuna strategia {('giornaliera' if ag['style'] == 'giornaliero' else ag['style'])} supera i controlli del laboratorio: l'agente non ne accende.")
 
     # 2b) posti liberi: le più promettenti non candidate, in osservazione su carta (più dati dal vivo, prima)
-    room = min(free, OBSERVE_UP_TO - (len(active) - len(leaving) + len(out["on"])))
-    pool = sorted(((k, r) for k, r in results.items() if k not in active and observable(k, r, tfs)),
+    ceiling = automation.MAX_ACTIVE if near else OBSERVE_UP_TO          # "vicine": fino a MAX_ACTIVE strategie in tutto
+    room = min(free, ceiling - (len(active) - len(leaving) + len(out["on"])))
+    pool = sorted(((k, r) for k, r in results.items() if k not in active and observable(k, r, tfs) and (not near or is_near(r))),
                   key=lambda kv: (kv[1].get("excess_p") if kv[1].get("excess_p") is not None else 1, -(kv[1].get("excess_avg_pct") or 0)))
-    pool = [(k, r) for k, r in pool if twin_group(k) not in taken and not taken.add(twin_group(k))]
+    if not near:
+        pool = [(k, r) for k, r in pool if twin_group(k) not in taken and not taken.add(twin_group(k))]
     for key, r in pool[:max(0, room)]:
         out["observe"].append((key, f"in osservazione: non candidata ma promettente sullo storico ({r.get('n')} trade, oltre il mercato {it(r.get('excess_avg_pct') or 0, 2, True)}% a trade). Solo carta, non andrà al reale"))
 
@@ -503,7 +515,7 @@ def run(notify, cfg_path=automation.CONFIG_PATH, summary_path=automation.SUMMARY
         json.dump(state, f, indent=1, ensure_ascii=False)
 
     if full_report or acted or (new_props and d["proposals"]):
-        head = "🤖 AGENTE" + (" · rapporto" if full_report else "") + f" ({ag['autonomy']}, {ag['profile']}, {ag['style']})"
+        head = "🤖 AGENTE" + (" · rapporto" if full_report else "") + f" ({ag['autonomy']}, {ag['profile']}, {ag['style']}{', osservazione vicine' if ag.get('observe') == 'vicine' else ''})"
         msg = head + "\n\n" + (text or "\n".join(f"• {x}" for x in facts))
         if d["proposals"]:
             msg += "\n\n👉 " + "; ".join(f"{_label(p['key'])}: proposta per il reale" for p in d["proposals"]) + ". Conferma in app: Agente → Stato."

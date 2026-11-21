@@ -322,6 +322,15 @@ try {
             await page.evaluate(() => window.setSignalsView('agent')); await page.waitForTimeout(300);
             return tags['big candle trail 1d'] === 'bocciata' && tags['tsmom30 1d'] === 'osservazione' && tags['donchian20 long 1d'] === 'candidata' && tags['donchian20 turtle 1d'] === 'osservazione';
         });
+        await step('agente: Osservazione Vicine chiede la conferma e non parte da sola', async () => {
+            await page.evaluate(() => window.setSignalsView('auto')); await page.waitForTimeout(400);
+            const n = await page.evaluate(() => document.querySelectorAll('#agentStyle .agent-set').length);
+            await page.locator('#agentStyle .agent-set').nth(1).locator('.pill-btn', { hasText: 'Vicine' }).click(); await page.waitForTimeout(300);
+            const m = await page.evaluate(() => ({ on: document.getElementById('autoConfirmModal').classList.contains('active'), t: document.getElementById('autoConfirmTitle').textContent }));
+            await page.evaluate(() => window.closeAutoConfirm());
+            await page.evaluate(() => window.setSignalsView('agent')); await page.waitForTimeout(300);
+            return n === 2 && m.on && /Osservazione vicine/.test(m.t);
+        });
         await step('agente: Reale senza la conferma', async () => {
             await page.click('#agentSettings .pill-btn:has-text("Reale")'); await page.waitForTimeout(300);
             const on = await page.evaluate(() => document.getElementById('autoConfirmModal').classList.contains('active'));
