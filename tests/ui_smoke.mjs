@@ -421,6 +421,27 @@ try {
             if (!ok) console.log('  scorrimento col dito:', JSON.stringify({ g0: g0.sl, g1: g1.sl, cw: g1.cw, h0: h0.sl, h1: h1.sl, geo }));
             return ok;
         });
+        await step('segnali: le celle accese vengono mostrate per prime, le più forti in testa', async () => {
+            const r = await page.evaluate(async () => {
+                window.switchTab('terminal'); window.setMarketView('sig');
+                const { State } = await import('./src/core/state.js');
+                const sm = await import('./src/ui/signals.js');
+                const sig = (a, b, c) => ({ breakout: { signal: a, strength: 70 }, mean_reversion: { signal: b, strength: 60 }, ma_crossover: { signal: c, strength: 66 } });
+                for (const a of ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'XRPUSDT', 'DOGEUSDT', 'BNBUSDT', 'ADAUSDT', 'LINKUSDT']) for (const tf of ['1d', '4h', '1h']) State.signalMatrix[`${a}_${tf}`] = sig('NEUTRAL', 'NEUTRAL', 'NEUTRAL');
+                State.signalMatrix['LINKUSDT_1h'] = sig('SHORT', 'SHORT', 'SHORT');       // 3/3: la più forte, anche se è l'ultima coin e il timeframe più basso
+                State.signalMatrix['DOGEUSDT_4h'] = sig('LONG', 'NEUTRAL', 'LONG');       // 2/3
+                State.signalMatrix['BTCUSDT_1d'] = sig('NEUTRAL', 'SHORT', 'NEUTRAL');    // parziale: una sola strategia
+                sm.orderSignalAssets(); sm.renderSignalGrid();
+                await new Promise(res => setTimeout(res, 2000));            // la griglia non si ridisegna mentre la tocchi: dopo un tocco aspetta un attimo
+                const cells = [...document.querySelectorAll('#signalGrid .signal-page:first-child .signal-cell')].map(c => ({ t: c.querySelector('.sc-asset').textContent + ' ' + c.querySelector('.sc-tf').textContent, lit: /long|short/.test(c.className) }));
+                return cells;
+            });
+            const lit = r.filter(c => c.lit).map(c => c.t);
+            const firstNeutral = r.findIndex(c => !c.lit), lastLit = r.map(c => c.lit).lastIndexOf(true);
+            const ok = r.length === 9 && lit[0] === 'LINK 1h' && lit[1] === 'DOGE 4h' && lit.length === 2 && lastLit < firstNeutral && r[2].t === 'BTC 1d';
+            if (!ok) console.log('  ordine celle:', JSON.stringify(r.map(c => c.t + (c.lit ? '*' : ''))));
+            return ok;
+        });
         await step('mercato: Nuovo avviso non apre la finestra', async () => {
             await page.evaluate(() => window.setMarketView('alerts')); await page.waitForTimeout(300);
             await page.click('.mkt-new-alert'); await page.waitForTimeout(300);
