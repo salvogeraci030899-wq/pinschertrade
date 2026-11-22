@@ -1380,3 +1380,5 @@ html.tint:not(.glass) body, html.tint:not(.glass) #app {
 .wall-dot[data-i="0"] { --dot: var(--wall-c1, var(--ui)); }
 .wall-dot[data-i="1"] { --dot: var(--wall-c2, var(--accent)); }
 .wall-dot[data-i="2"] { --dot: var(--wall-c3, rgb(191 90 242)); }
+
+.ord-sumline { font-size: var(--fs-sm); color: var(--text-secondary); margin-bottom: var(--sp-3); flex-shrink: 0; line-height: 1.4; }
