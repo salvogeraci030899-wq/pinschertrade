@@ -44,7 +44,7 @@ function applyView() {
 // Nessuno scroll verticale: ogni scheda ha i suoi elementi in fila, da scorrere in orizzontale
 // Oltre allo scorrimento col dito, frecce ‹ › e posizione (1/4): su iPhone si scorre anche senza trascinare
 const nav = n => n > 1 ? `<span class="ord-nav"><button type="button" aria-label="Precedente" onclick="ordStep(this,-1)">‹</button><span class="ord-pos">1/${n}</span><button type="button" aria-label="Successivo" onclick="ordStep(this,1)">›</button></span>` : '';
-const section = (title, rows, empty, count = rows.length) => `<div class="ord-sec"><div class="ord-title">${title}${count > 1 ? ` <span class="ord-count">${count}</span>` : ''}${nav(rows.length)}</div>`
+const section = (title, rows, empty, count = rows.length, sub = '') => `<div class="ord-sec"><div class="ord-title">${title}${count > 1 ? ` <span class="ord-count">${count}</span>` : ''}${nav(rows.length)}</div>${sub ? `<div class="ord-sumline">${sub}</div>` : ''}`
     + `<div class="ord-list${rows.length > 1 ? ' many' : ''}" onscroll="ordSync(this)">${rows.length ? rows.join('') : `<div class="ord-empty">${empty}</div>`}</div></div>`;
 
 const listIndex = list => {
@@ -232,10 +232,19 @@ function botRows() {
 }
 // Trade aperti delle strategie che il conto della carta non ha (ancora) aperto: segnali già in corso prima del conto, o fermati dai limiti.
 // Sono gli stessi che Mercato mostra in "Carta su questa coin".
-function extraPaperRows() {
+function extraPaperTrades() {
     if (!simActive()) return [];
     const held = new Set(simPositions().filter(p => p.status === 'open').map(p => p.id));
-    return paperRows(paperOpen().filter(t => !held.has(t.id)));
+    return paperOpen().filter(t => !held.has(t.id));
+}
+// Saldo ipotetico dei segnali aperti fuori dal conto: base + guadagno aperto ai prezzi di adesso (stessa dimensione dei trade della carta)
+function extraSummary(trades) {
+    if (!trades.length) return '';
+    const start = Number(simSrc() && simSrc().simulated && simSrc().simulated.start) || base.capital;
+    let total = 0, n = 0;
+    for (const t of trades) { const pct = livePct(t), size = notional(t); if (pct != null && size != null) { total += size * pct / 100; n++; } }
+    if (!n) return `${trades.length} aperti · prezzi non ancora disponibili`;
+    return `${trades.length} aperti · PnL live <b class="${tone(total)}">${usd(total)}</b> · saldo ipotetico <b class="${tone(total)}">${fmtIt(start + total, 2)} $</b> (base ${fmtIt(start, 0)} $)${n < trades.length ? ` · ${trades.length - n} senza prezzo` : ''}`;
 }
 // Conto su carta: base + trade chiusi (netti di costi) + aperti ai prezzi di adesso
 function botAccount() {
@@ -261,9 +270,9 @@ function botAccount() {
 let perPage = 5;
 const pagesOf = (rows, per = perPage) => { const pages = []; for (let i = 0; i < rows.length; i += per) pages.push(`<div class="ord-page">${rows.slice(i, i + per).join('')}</div>`); return pages; };
 const botHtml = () => {
-    const rows = botRows(), extra = extraPaperRows();
+    const rows = botRows(), extraTrades = extraPaperTrades(), extra = paperRows(extraTrades);
     return botAccount() + section('Bot su carta · nessun ordine reale', pagesOf(rows, extra.length ? 2 : perPage), paper || simActive() ? 'Nessun trade aperto nel conto: aprono solo i segnali recenti, entro i limiti.' : 'Caricamento…', rows.length)
-        + (extra.length ? section('Segnali aperti delle strategie · fuori dal conto', pagesOf(extra), '', extra.length) : '');
+        + (extra.length ? section('Segnali aperti delle strategie · fuori dal conto', pagesOf(extra), '', extra.length, extraSummary(extraTrades)) : '');
 };
 // righe che stanno in una pagina, misurate sullo schermo (una volta disegnata la prima)
 function fitPerPage(box) {
