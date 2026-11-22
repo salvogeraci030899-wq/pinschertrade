@@ -29,7 +29,7 @@ const BOT_FILES_EVERY_MS = 30_000;
 const JOBS = {
     bot: { file: 'bot.yml', minutes: [2, 17, 32, 47], ok: 30, late: 120 },
     quick: { file: 'quick.yml', minutes: [2, 7, 12, 17, 22, 27, 32, 37, 42, 47, 52, 57], ok: 15, late: 120 },
-    agent: { file: 'agent.yml', daily: [18, 41], ok: 26 * 60, late: 50 * 60 }
+    agent: { file: 'agent.yml', at: [[0, 41], [6, 41], [12, 41], [18, 41]], ok: 8 * 60, late: 16 * 60 }       // l'agente decide ogni 6 ore (agent.yml)
 };
 const RUNS_EVERY_MS = 120_000, AGENT_EVERY_MS = 900_000;
 const runs = {};            // job -> { latest, done } dalle esecuzioni di GitHub
@@ -372,10 +372,9 @@ async function refreshRuns() {
 // Prossimo avvio previsto, in ora locale
 function nextRun(job, now = new Date()) {
     const j = JOBS[job];
-    if (j.daily) {
-        const t = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), j.daily[0], j.daily[1]));
-        if (t <= now) t.setUTCDate(t.getUTCDate() + 1);
-        return t;
+    if (j.at) {                                    // orari fissi del giorno (UTC): il primo che viene dopo adesso
+        const base = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+        for (let d = 0; d <= 1; d++) for (const [h, m] of j.at) { const t = new Date(base + d * 86400000 + (h * 60 + m) * 60000); if (t > now) return t; }
     }
     for (let k = 1; k <= 60; k++) {
         const t = new Date(now.getTime() + k * 60000);
