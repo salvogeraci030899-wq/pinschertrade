@@ -8,8 +8,7 @@
 // In Simulato la pagina mostra solo il conto della carta (Bot su carta): niente trade simulati a mano.
 import { $, SYM, escapeHtml, fmtIt, fmtPrice, markChosen, fetchData, fetchT } from '../utils/helpers.js';
 import { realPositions } from './history.js';
-import { isRealOrderRemoving, getAutoState } from './automation.js';
-import { isNearCandidate } from '../core/strategy-status.js';
+import { isRealOrderRemoving, getAutoState, accountFollows } from './automation.js';
 
 const VIEW_KEY = 'pt_pos_view';
 let view = 'open';
@@ -183,15 +182,8 @@ function simRows() {
 // Conto della carta con i limiti del reale: cassa + guadagno non realizzato ai prezzi di adesso
 // Quali strategie segue ora il conto (stessa regola del bot): live, candidate o confermate e, con alto rischio, quasi candidate
 function followedLine() {
-    const { cfg, lab } = getAutoState();
-    const strategies = (cfg && cfg.strategies) || {};
-    const best = new Set([...((lab && lab.confirmed) || []), ...((lab && lab.candidates) || [])]);
-    const nearOn = Number(cfg && cfg.risk && cfg.risk.near_candidates) === 1;
-    const names = [];
-    for (const [key, mode] of Object.entries(strategies)) {
-        if (mode === 'off') continue;
-        if (mode === 'live' || best.has(key) || (nearOn && lab && lab.results && lab.results[key] && isNearCandidate(lab.results[key]))) names.push(stratName(key));
-    }
+    const { cfg } = getAutoState();
+    const names = Object.keys((cfg && cfg.strategies) || {}).filter(accountFollows).map(stratName);
     return names.length ? `<br>segue ora ${names.length} ${names.length === 1 ? 'strategia' : 'strategie'}: ${escapeHtml(names.join(', '))}`
         : '<br>nessuna strategia candidata o confermata: il conto non apre trade finché una non lo diventa (le altre restano in osservazione)';
 }
