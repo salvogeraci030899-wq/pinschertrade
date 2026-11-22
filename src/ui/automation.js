@@ -1,6 +1,6 @@
 import { State } from '../core/state.js';
 import { refitPages } from './page-fit.js';
-import { strategyStatus, statusSummary, STATUS_LABEL } from '../core/strategy-status.js';
+import { strategyStatus, statusSummary, isNearCandidate, STATUS_LABEL } from '../core/strategy-status.js';
 import { $, escapeHtml, apiPost, getApiBase, setApiBase, clearAppKey, getGhToken, setGhToken, commandMode, fmtIt, fmtPrice, fetchData, fetchT, markChosen, chosenRecently } from '../utils/helpers.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 
@@ -222,10 +222,19 @@ const TAG_TITLE = {
     senza_storico: 'Nessun dato nel laboratorio'
 };
 const TAG_CLASS = { confermata: ' ok', candidata: ' ok', vicina: ' warn', bocciata: ' warn', senza_storico: ' warn' };
+// Il conto carta esegue questa strategia? Stessa regola del bot (executor.run): live, candidata o confermata e, con alto rischio, quasi candidata
+export function accountFollows(key) {
+    const mode = cfg && cfg.strategies && cfg.strategies[key];
+    if (!mode || mode === 'off') return false;
+    if (mode === 'live') return true;
+    if (lab && ((lab.confirmed || []).includes(key) || (lab.candidates || []).includes(key))) return true;
+    return Number(cfg && cfg.risk && cfg.risk.near_candidates) === 1 && !!(lab && lab.results && lab.results[key] && isNearCandidate(lab.results[key]));
+}
 function statusTag(key) {
     const st = strategyStatus(key, lab);
     const txt = st === 'osservazione' ? 'osservazione' : STATUS_LABEL[st];
-    return `<span class="auto-tag${TAG_CLASS[st] || ''}" title="${escapeHtml(TAG_TITLE[st])}">${txt}</span>`;
+    return `<span class="auto-tag${TAG_CLASS[st] || ''}" title="${escapeHtml(TAG_TITLE[st])}">${txt}</span>`
+        + (accountFollows(key) ? '<span class="auto-tag ok" title="Il conto carta esegue i trade di questa strategia">nel conto</span>' : '');
 }
 let pendingTrading = null;   // 'on' / 'off' inviato ma non ancora visibile in automation.json
 const pending = {};   // comandi inviati ma non ancora visibili nei file pubblicati

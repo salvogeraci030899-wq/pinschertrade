@@ -80,6 +80,7 @@ try {
             }
             if (process.env.EMPTY_ACCOUNT && (name === 'paper_account.json' || name === 'live_trades.json')) j.positions = {};      // prova di layout: conto carta senza posizioni
             if (name === 'automation.json') j.risk = { ...(j.risk || {}), trading_enabled: mode === 'real', real_follows_paper: mode === 'real' ? 1 : 0 };
+            if (name === 'automation.json' && process.env.NEAR_ON) j.risk.near_candidates = 1;       // prova di layout: alto rischio acceso
             return r.fulfill({ contentType: 'application/json', body: JSON.stringify(j) });
         });
         await page.route(/api\.github\.com|workers\.dev|api\.telegram\.org/, r => r.fulfill({ status: 204, headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': '*' } }));
