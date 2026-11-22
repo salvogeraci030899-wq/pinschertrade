@@ -1,6 +1,6 @@
 # Laboratorio strategie
 
-Generato il 2026-11-21T23:53:06+00:00 · 60 prove in questa esecuzione, 60 registrate in tutto.
+Generato il 2026-11-22T18:58:36+00:00 · 60 prove in questa esecuzione, 60 registrate in tutto.
 
 - **Ricerca** solo sullo storico prima del 2025-11-11; da lì in poi è **sigillato** per la prova finale.
 - **Costi** (scenario principale: futures, ordini a mercato): 0.11% per lato più funding. "Netto" = dopo questi costi, tasse escluse.
@@ -92,7 +92,7 @@ Generato il 2026-11-21T23:53:06+00:00 · 60 prove in questa esecuzione, 60 regis
 
 | Prova | Aperta il | Trade | Netto medio | Oltre il mercato | IC 95% | p | Esito |
 |---|---|---|---|---|---|---|---|
-| big_candle_trail:1d | 2026-11-11 | 74 | +1.323% | +1.204% | [-3.61%, +6.76%] | 0.3318 | non confermata |
+| big_candle_trail:1d | 2026-11-11 | 74 | +1.257% | +1.133% | [-3.68%, +6.63%] | 0.3401 | non confermata |
 
 ### Le strategie
 
