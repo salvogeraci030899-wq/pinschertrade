@@ -1,18 +1,22 @@
 name: Agente
 
 # Agente gestore (agent.py), sempre al lavoro: sceglie le strategie migliori del momento (le candidate, e a opzione accesa le
-# quasi candidate) per il conto carta, scarta quelle che vanno male, approva. Decide ogni 6 ore (00:41, 06:41, 12:41, 18:41 UTC);
-# ogni giorno alle 18:41 prima rilancia il laboratorio sui dati nuovi; la domenica (e quando lo avvii dall'app) anche il ricercatore,
-# la prova finale per le strategie pronte (agent.py --unseal-plan: buone su carta, mai provate sui mesi tenuti da parte; una volta
-# sola ciascuna) e il rapporto completo.
+# quasi candidate) per il conto carta, scarta quelle che vanno male, approva. Lo avvia l'orologio del server Cloudflare
+# (worker/index.js: 00:41, 06:41, 12:41 e 18:41 UTC), perché le partenze programmate di GitHub ritardano anche di ore.
+# Modalità (input "mode"): choices = solo le scelte; daily = prima rilancia il laboratorio sui dati nuovi (18:41, ogni giorno);
+# full = anche il ricercatore, la prova finale per le strategie pronte (agent.py --unseal-plan: buone su carta, mai provate sui
+# mesi tenuti da parte; una volta sola ciascuna) e il rapporto completo (la domenica, e quando lo avvii dall'app).
+# Il controllo di salute (watchdog.py) avvisa se l'agente non gira da troppo.
 # Regole, autonomia, profilo e stile: vedi agent.py. Il reale dell'agente richiede autonomia "live"
 # E l'interruttore degli ordini veri acceso, entrambi dall'app.
 on:
-  schedule:
-    - cron: '41 0,6,12 * * *'   # ogni giorno: solo le scelte (sui dati e sulla carta di adesso)
-    - cron: '41 18 * * 1-6'     # lunedì-sabato: laboratorio aggiornato e scelte
-    - cron: '41 18 * * 0'       # domenica: ricercatore, laboratorio, prova finale, scelte e rapporto completo
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'choices = solo scelte, daily = con laboratorio, full = anche ricercatore, prova finale e rapporto'
+        type: choice
+        options: [full, daily, choices]
+        default: full
 
 permissions:
   contents: write
@@ -24,7 +28,7 @@ env:
 jobs:
   lab:
     name: Laboratorio aggiornato
-    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 18 * * 0' || github.event.schedule == '41 18 * * 1-6'
+    if: inputs.mode != 'choices'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
@@ -43,7 +47,7 @@ jobs:
         run: pip install "pandas>=2.2.2" numpy requests
       # Agente ricercatore: al massimo 2 varianti nuove a settimana da una grammatica chiusa, dichiarate prima del laboratorio
       - name: Ricercatore
-        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 18 * * 0'
+        if: inputs.mode == 'full'
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
@@ -51,8 +55,11 @@ jobs:
         run: |
           python research.py || echo "Ricercatore non riuscito, il laboratorio gira lo stesso"
       - name: Calcola (con la prova finale per le strategie pronte)
+        env:
+          MODE: ${{ inputs.mode }}
         run: |
-          UNSEAL="$(python agent.py --unseal-plan)"
+          # la prova finale si fa una volta sola per strategia, e solo nel giro completo
+          if [ "$MODE" = "full" ]; then UNSEAL="$(python agent.py --unseal-plan)"; else UNSEAL=""; fi
           echo "Prova finale: ${UNSEAL:-nessuna}" | tee -a "$GITHUB_STEP_SUMMARY"
           # shellcheck disable=SC2086
           python strategy_lab.py --unseal $UNSEAL > /dev/null
@@ -94,7 +101,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          FULL: ${{ github.event_name == 'workflow_dispatch' || github.event.schedule == '41 18 * * 0' }}
+          FULL: ${{ inputs.mode == 'full' }}
         run: |
           if [ "$FULL" = "true" ]; then python agent.py --full-report; else python agent.py; fi | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Salva

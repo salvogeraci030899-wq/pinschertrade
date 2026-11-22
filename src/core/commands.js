@@ -85,6 +85,13 @@ export function quickCheck(env, fetchFn) {
     return dispatch(env, fetchFn, 'quick.yml', {});
 }
 
+// Agente (agent.yml), avviato dall'orologio del server: 'choices' solo le scelte, 'daily' anche il laboratorio aggiornato,
+// 'full' anche ricercatore, prova finale e rapporto completo
+export function agentRun(env, fetchFn, mode = 'choices') {
+    if (!['choices', 'daily', 'full'].includes(mode)) return Promise.resolve(json(400, { error: 'Modalità dell\'agente non valida' }));
+    return dispatch(env, fetchFn, 'agent.yml', { mode });
+}
+
 // Ogni comando ammesso, con i soli parametri che può ricevere
 export async function command(body, env, fetchFn) {
     const b = body || {};
