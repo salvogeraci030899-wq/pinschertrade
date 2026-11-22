@@ -8,7 +8,8 @@
 // In Simulato la pagina mostra solo il conto della carta (Bot su carta): niente trade simulati a mano.
 import { $, SYM, escapeHtml, fmtIt, fmtPrice, markChosen, fetchData, fetchT } from '../utils/helpers.js';
 import { realPositions } from './history.js';
-import { isRealOrderRemoving } from './automation.js';
+import { isRealOrderRemoving, getAutoState } from './automation.js';
+import { isNearCandidate } from '../core/strategy-status.js';
 
 const VIEW_KEY = 'pt_pos_view';
 let view = 'open';
@@ -180,6 +181,20 @@ function simRows() {
     });
 }
 // Conto della carta con i limiti del reale: cassa + guadagno non realizzato ai prezzi di adesso
+// Quali strategie segue ora il conto (stessa regola del bot): live, candidate o confermate e, con alto rischio, quasi candidate
+function followedLine() {
+    const { cfg, lab } = getAutoState();
+    const strategies = (cfg && cfg.strategies) || {};
+    const best = new Set([...((lab && lab.confirmed) || []), ...((lab && lab.candidates) || [])]);
+    const nearOn = Number(cfg && cfg.risk && cfg.risk.near_candidates) === 1;
+    const names = [];
+    for (const [key, mode] of Object.entries(strategies)) {
+        if (mode === 'off') continue;
+        if (mode === 'live' || best.has(key) || (nearOn && lab && lab.results && lab.results[key] && isNearCandidate(lab.results[key]))) names.push(stratName(key));
+    }
+    return names.length ? `<br>segue ora ${names.length} ${names.length === 1 ? 'strategia' : 'strategie'}: ${escapeHtml(names.join(', '))}`
+        : '<br>nessuna strategia candidata o confermata: il conto non apre trade finché una non lo diventa (le altre restano in osservazione)';
+}
 function simAccount() {
     const sim = simSrc().simulated, pos = simPositions(), start = Number(sim.start) || Number(riskCfg.dry_run_equity) || 1000;
     let unreal = 0, nOpen = 0;
@@ -196,7 +211,7 @@ function simAccount() {
         + `<div class="bot-acc-main"><b>${fmtIt(total, 2)} $</b><span class="${tone(total - start)}">${usd(total - start)}</span></div>`
         + `<small>chiusi ${closed.length}: <span class="${tone(netClosed)}">${usd(netClosed)}</span> · aperti ${nOpen}: <span class="${tone(unreal)}">${usd(unreal)}</span>`
         + `<br>base ${fmtIt(start, 2)} $ (capitale di prova) · commissioni comprese · stesse regole del reale: ${lim}`
-        + (skipped.length ? `<br>${skipped.length} segnali non aperti dal conto: ${why}` : '') + ((simSrc().rounds || []).length ? `<br><span class="text-danger">partite perse: ${(simSrc().rounds || []).length} (capitale esaurito, il conto è ripartito)</span>` : '') + dayTxt + '</small></div>';
+        + followedLine() + (skipped.length ? `<br>${skipped.length} segnali non aperti dal conto: ${why}` : '') + ((simSrc().rounds || []).length ? `<br><span class="text-danger">partite perse: ${(simSrc().rounds || []).length} (capitale esaurito, il conto è ripartito)</span>` : '') + dayTxt + '</small></div>';
 }
 // Righe dei trade delle strategie su carta (paper_trades.json), anche quelli che il conto non ha aperto
 function paperRows(list) {
