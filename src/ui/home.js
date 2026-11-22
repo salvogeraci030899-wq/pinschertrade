@@ -49,6 +49,7 @@ export function updateHome() {
     if (!isActive() || document.hidden) return;
     const now = Date.now();
     if (now - lastMarketAt >= MARKET_EVERY_MS) { lastMarketAt = now; refreshMarket(); }
+    if (now - lastPaperPxAt >= 10000) { lastPaperPxAt = now; refreshPaperPx(); }
     if (now - lastBotAt >= BOT_FILES_EVERY_MS) { lastBotAt = now; refreshBotFiles(); }
     if (now - lastRunsAt >= RUNS_EVERY_MS) { lastRunsAt = now; refreshRuns(); }
     if (now - lastPickAt >= PICK_EVERY_MS && Object.keys(market).length >= 3) { lastPickAt = now; pickCoins(); }
@@ -175,6 +176,23 @@ function fillReal(sfx) {
     put($('homeOpenPnlLabel' + sfx), n && hasLiveMarks() ? 'PnL live' : 'PnL aperto');
 }
 // Conto della carta (l'esecutore simulato, sempre acceso: paper_account.json; in mancanza live_trades.json se simulato)
+// Prezzi live delle coin su cui il conto carta ha posizioni aperte (ticker pubblico di Bitget, ogni 10 secondi con la Home aperta):
+// il saldo della carta si aggiorna in tempo reale, non solo a ogni giro del bot
+const paperPx = {};
+let lastPaperPxAt = 0;
+async function refreshPaperPx() {
+    const pl = paperOf();
+    const open = Object.values((pl && pl.positions) || {}).filter(p => p && p.status === 'open');
+    if (!open.length) { lastPaperPxAt = 0; return; }       // i dati della carta non sono ancora arrivati o non ci sono posizioni: si riprova al prossimo giro
+    await Promise.all([...new Set(open.map(p => p.symbol))].map(async s => {
+        try {
+            const r = await fetchT(`https://api.bitget.com/api/v2/spot/market/tickers?symbol=${s}`);
+            const px = Number((await r.json())?.data?.[0]?.lastPr);
+            if (px > 0) paperPx[s] = px;
+        } catch (e) { /* si riprova al prossimo giro */ }
+    }));
+    renderAccount();
+}
 const paperOf = () => { const l = bot && bot.live; return bot && bot.paperAcct && bot.paperAcct.simulated ? bot.paperAcct : (l && l.mode === 'simulata' && l.simulated ? l : null); };
 function fillPaper(sfx) {
     const set = (id, text, cls) => { const el = $(id + sfx); put(el, text); putCls(el, 'home-kpi-value' + (cls || '')); };
@@ -182,11 +200,15 @@ function fillPaper(sfx) {
     put($('homePnlLabel' + sfx), 'PnL oggi');
     const live = paperOf(), sim = live && live.simulated;
     if (!sim || !Number.isFinite(Number(sim.equity))) { set('homeEquity', '—'); set('homePnlToday', '—'); set('homeOpenCount', '—'); set('homeOpenPnl', '—'); return; }
-    set('homeEquity', money(sim.equity));
-    const dayStart = Number(live.day && live.day.start_equity) || Number(sim.start) || Number(sim.equity);
-    const todayPnl = Number(sim.equity) - dayStart;
+    // patrimonio = cassa + guadagno aperto ai prezzi di adesso (se i prezzi live ci sono per tutte le posizioni), altrimenti l'ultimo dato del bot
     const open = Object.values(live.positions || {}).filter(p => p && p.status === 'open');
-    const floating = Number(sim.unrealized) || 0;
+    const livePx = open.length && open.every(p => paperPx[p.symbol] > 0 && p.entry && p.size);
+    const floating = livePx ? open.reduce((s, p) => s + p.size * (paperPx[p.symbol] - p.entry) * (p.side === 'long' ? 1 : -1), 0) : (Number(sim.unrealized) || 0);
+    const equity = livePx ? (Number(sim.cash ?? sim.equity) || 0) + floating : Number(sim.equity);
+    put($('homeOpenPnlLabel' + sfx), livePx ? 'PnL live' : 'PnL aperto');
+    set('homeEquity', money(equity));
+    const dayStart = Number(live.day && live.day.start_equity) || Number(sim.start) || Number(sim.equity);
+    const todayPnl = equity - dayStart;
     set('homePnlToday', signed(todayPnl), tone(todayPnl));
     set('homeOpenCount', String(open.length));
     set('homeOpenPnl', open.length ? signed(floating) : '—', open.length ? tone(floating) : '');
