@@ -20,17 +20,29 @@ const COMMANDS = {
     '/emergenza': 'spegne tutto (serve la parola CONFERMA)',
     '/aiuto': 'questo elenco'
 };
-const FILES = ['automation.json', 'live_trades.json', 'paper_trades.json', 'agent_state.json', 'alerts_state.json', 'quick_state.json', 'guard_state.json', 'lab_summary.json'];
+const FILES = ['automation.json', 'live_trades.json', 'paper_account.json', 'paper_trades.json', 'agent_state.json', 'alerts_state.json', 'quick_state.json', 'guard_state.json', 'lab_summary.json'];
 
 const n = (v, d = 2) => (v == null || !isFinite(v) ? '—' : Number(v).toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d }));
 const sg = (v, d = 2) => (v == null || !isFinite(v) ? '—' : (v > 0 ? '+' : '') + n(v, d));
 const coin = s => String(s || '').replace('USDT', '');
 const lab = k => String(k || '').replace(/_/g, ' ').replace(':', ' ');
-const AG = { autonomy: { off: 'spento', paper: 'Simulato', live: 'Reale' }, def: { autonomy: 'paper', profile: 'bilanciato', style: 'swing' } };
+const AG = { autonomy: { paper: 'Simulato', live: 'Reale' }, def: { autonomy: 'paper', profile: 'bilanciato', style: 'swing' } };
 
 function help() {
     return '🤖 PinscherTrade: comandi (sola lettura)\n' + Object.entries(COMMANDS).map(([c, t]) => `${c} · ${t}`).join('\n')
         + '\nOrdini e impostazioni si cambiano dall\'app, con la conferma. Da qui si può solo fermare tutto.';
+}
+
+// Conto carta (sempre acceso, paper_account.json): patrimonio, aperte, chiuse, partite perse
+function contoCarta(d) {
+    const pa = d['paper_account.json'] || {}, sim = pa.simulated || {};
+    if (sim.equity == null) return null;
+    const pos = Object.values(pa.positions || {});
+    const open = pos.filter(p => p && p.status === 'open').length;
+    const closed = pos.filter(p => p && p.status === 'closed' && p.net != null);
+    const net = closed.reduce((s, p) => s + Number(p.net), 0), start = Number(sim.start) || Number(sim.equity);
+    return `Conto carta: ${n(sim.equity)} USDT (${sg(sim.equity - start)} dalla base ${n(start, 0)}) · ${open} aperte · ${closed.length} chiuse (netto ${sg(net)})`
+        + ((pa.rounds || []).length ? ` · partite perse ${pa.rounds.length}` : '');
 }
 
 function stato(d) {
@@ -47,6 +59,8 @@ function stato(d) {
         if (acc.checked_at) lines.push(`Letto alle ${new Date(acc.checked_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Rome' })}`);
     } else lines.push('Conto Bitget non letto.');
     lines.push(`Ordini veri: ${risk.trading_enabled ? 'interruttore ACCESO' : 'spenti'} · esecutore ${live.mode || 'simulata'}`);
+    const cc = contoCarta(d);
+    if (cc) lines.push(cc);
     const active = Object.entries(cfg.strategies || {}).filter(([, m]) => m !== 'off');
     lines.push('Strategie: ' + (active.length ? active.map(([k, m]) => `${lab(k)} (${m === 'live' ? 'reale' : 'carta'})`).join(', ') : 'nessuna'));
     const ag = { ...AG.def, ...(cfg.agent || {}) };
@@ -96,6 +110,8 @@ function carta(d) {
     const active = new Set(Object.entries(cfg.strategies || {}).filter(([, m]) => m !== 'off').map(([k]) => k));
     const risk = Number((cfg.risk || {}).risk_per_trade_pct) || 0.5;
     const lines = ['🧪 CARTA'];
+    const cc = contoCarta(d);
+    if (cc) lines.push(cc);
     let eq = 0, tot = 0;
     const ledger = paper.strategies || {};
     for (const e of Object.values(ledger)) {

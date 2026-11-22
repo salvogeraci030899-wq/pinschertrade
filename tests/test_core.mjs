@@ -361,6 +361,8 @@ test('bot Telegram: risposte in sola lettura', async () => {
             trades: [{ open: false, net: 10, entry: 100, stop: 95 }, { open: false, net: -5, entry: 100, stop: 95 }] }, 'tsmom30:1d': { stats: { n: 0, open: 0 }, trades: [] } } },
         'agent_state.json': { observing: ['tsmom30:1d'], proposals: [], log: [{ kind: 'observe', key: 'tsmom30:1d' }],
             capital: { equity: 16.06, symbols: { BTCUSDT: { needed: 73.3, ok: false }, SOLUSDT: { needed: 82.7, ok: false } } } },
+        'paper_account.json': { simulated: { equity: 1012.5, start: 1000 }, rounds: [{ result: 'capitale esaurito' }],
+            positions: { a: { status: 'open' }, b: { status: 'closed', net: 15 }, c: { status: 'closed', net: -2.5 }, d: { status: 'skipped' } } },
         'quick_state.json': { _price_alerts_fired: ['a2'] },
         // stato dal laboratorio, uguale per chi ha messo la strategia: bocciata alla prova finale / non candidata (in osservazione)
         'lab_summary.json': { candidates: [], confirmed: [], results: {
@@ -368,11 +370,12 @@ test('bot Telegram: risposte in sola lettura', async () => {
     };
     const st = telegramAnswer('/stato', data);
     assert.match(st, /16,06 USDT \(oggi -0,10\)/); assert.match(st, /Ordini veri: spenti/); assert.match(st, /tsmom30 1d \(carta\)/);
+    assert.match(st, /Conto carta: 1012,50 USDT \(\+12,50 dalla base 1000\) · 1 aperte · 2 chiuse \(netto \+12,50\) · partite perse 1/);
     assert.match(telegramAnswer('/posizioni', data), /SOL SHORT 3x · 0,1000 da 160,00[\s\S]*stop NESSUNO · target 150,00/);
     const ag = telegramAnswer('/agente@SgBot', data);
     assert.match(ag, /Simulato, bilanciato, swing/); assert.match(ag, /servono ~73 per BTC/); assert.match(ag, /in osservazione: tsmom30 1d/);
     const ca = telegramAnswer('/carta', data);
-    assert.match(ca, /tsmom30 1d \(in osservazione\)/); assert.match(ca, /big candle trail 1d \(bocciata\)/);
+    assert.match(ca, /Conto carta: 1012,50 USDT/); assert.match(ca, /tsmom30 1d \(in osservazione\)/); assert.match(ca, /big candle trail 1d \(bocciata\)/);
     assert.match(ca, /donchian20 turtle 1d \(in osservazione\): 0 chiusi, 0 aperti/);   // accesa ma senza ancora una riga nel registro: compare lo stesso
     assert.match(ag, /Strategie: 3 su carta, 0 reali \(2 in osservazione · 1 bocciata\)/);
     assert.match(ca, /In totale: \+0,50% del patrimonio in 2 trade/);
