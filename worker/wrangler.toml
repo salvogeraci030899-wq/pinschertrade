@@ -7,7 +7,8 @@ workers_dev = true
 # Orologi (worker/index.js → scheduled):
 # - "Bot" ogni 15 minuti (minuti 2, 17, 32, 47): il giro dei :02 prende subito la candela oraria
 #   appena chiusa; gli altri durano ~2 minuti (il bot salta da solo il modello se non c'è una candela nuova);
+# - "Agente" alle 00:41, 06:41, 12:41 e 18:41 UTC (agent.yml, con la modalità giusta);
 # - "Controllo rapido" ogni 5 minuti (anche negli stessi minuti del bot): avvisi di prezzo e chiusure su Bitget.
 # Gratis: Cloudflare e GitHub Actions (repository pubblico).
 [triggers]
-crons = ["2,17,32,47 * * * *", "7,12,22,27,37,42,52,57 * * * *"]
+crons = ["2,17,32,47 * * * *", "7,12,22,27,37,42,52,57 * * * *", "41 0,6,12,18 * * *"]

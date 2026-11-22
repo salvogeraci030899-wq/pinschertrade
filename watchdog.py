@@ -20,8 +20,8 @@ import requests
 MAX_BOT_GAP_HOURS = float(os.environ.get("WATCHDOG_MAX_HOURS", "2"))   # Cloudflare avvia il bot ogni 15 minuti: 2 ore = 8 giri saltati
 MAX_ARCHIVE_AGE_DAYS = 10
 # Altri workflow sorvegliati: (nome, ore massime senza giri). Il controllo rapido parte ogni 5 minuti,
-# l'agente una volta al giorno (GitHub può ritardare i giri programmati anche di qualche ora).
-WATCHED = {"quick": ("Il controllo rapido (avvisi di prezzo, chiusure Bitget)", 1.0), "agent": ("L'agente", 30.0)}
+# l'agente ogni 6 ore dall'orologio del server (9 ore = un giro saltato più il ritardo di GitHub nell'avviare il workflow).
+WATCHED = {"quick": ("Il controllo rapido (avvisi di prezzo, chiusure Bitget)", 1.0), "agent": ("L'agente", 9.0)}
 OK_STATES = (None, "", "success", "in_progress", "queued", "waiting", "requested", "pending", "skipped", "cancelled")
 
 

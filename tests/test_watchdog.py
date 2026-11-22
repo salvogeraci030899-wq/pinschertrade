@@ -31,7 +31,7 @@ def test_conto_della_carta():
 
 
 def test_controllo_rapido_e_agente():
-    ok = {"quick": (NOW - timedelta(minutes=10), "success"), "agent": (NOW - timedelta(hours=20), "success")}
+    ok = {"quick": (NOW - timedelta(minutes=10), "success"), "agent": (NOW - timedelta(hours=5), "success")}
     assert wd.checks(NOW, NOW - timedelta(hours=1), "success", others=ok) == []
     bad = {"quick": (NOW - timedelta(hours=3), "success"), "agent": (NOW - timedelta(hours=40), "failure")}
     p = wd.checks(NOW, NOW - timedelta(hours=1), "success", others=bad)

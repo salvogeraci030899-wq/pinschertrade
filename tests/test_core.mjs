@@ -344,6 +344,15 @@ test('orologio del bot: avvio programmato', async () => {
     const q = await scheduled({ GH_TOKEN: 'tok', GH_REPO: 'io/repo' }, fakeFetch, '7,12,22,27,37,42,52,57 * * * *');
     assert.equal(q.status, 200);
     assert.deepEqual(calls.map(c => c.url.split('/').slice(-2)[0]), ['quick.yml']);
+    // agente: ogni 6 ore dall'orologio del server; 18:41 con il laboratorio (la domenica completo), le altre ore solo le scelte
+    for (const [when, mode] of [['2026-11-23T00:41:00Z', 'choices'], ['2026-11-23T06:41:00Z', 'choices'], ['2026-11-23T18:41:00Z', 'daily'], ['2026-11-22T18:41:00Z', 'full']]) {
+        calls.length = 0;
+        const a = await scheduled({ GH_TOKEN: 'tok', GH_REPO: 'io/repo' }, fakeFetch, '41 0,6,12,18 * * *', new Date(when));
+        assert.equal(a.status, 200);
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].url, 'https://api.github.com/repos/io/repo/actions/workflows/agent.yml/dispatches');
+        assert.deepEqual(calls[0].body, { ref: 'main', inputs: { mode } });
+    }
     // senza token: nessuna chiamata, errore registrato
     calls.length = 0;
     assert.equal((await scheduled({}, fakeFetch)).status, 500);

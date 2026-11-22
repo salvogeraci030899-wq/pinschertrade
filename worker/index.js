@@ -11,7 +11,7 @@
 //   ALLOWED_ORIGINS  origini ammesse, separate da virgola
 //   DATA_KEY         facoltativa: chiave dei dati cifrati (bot Telegram); con questa l'IA risponde solo a chi
 //                    ha la chiave sul dispositivo (header x-pt-proof, una prova derivata, non la chiave)
-import { handle, trigger, quickCheck } from '../api/_core.js';
+import { handle, trigger, quickCheck, agentRun } from '../api/_core.js';
 import { aiProof } from '../src/core/datacrypt.js';
 import { safeEqual } from '../src/core/commands.js';
 
@@ -35,8 +35,17 @@ function cors(request, env) {
 // (avvisi di prezzo e chiusure su Bitget). Il bot resta a 15 minuti: i segnali cambiano solo alla chiusura
 // delle candele e il giro dei :02 prende già quella oraria appena chiusa.
 export const BOT_CRON = '2,17,32,47 * * * *';
-export async function scheduled(env, fetchFn = fetch, cron = BOT_CRON) {
+// Agente: ogni 6 ore (00:41, 06:41, 12:41, 18:41 UTC) con l'orologio del server, non con quello di GitHub (che ritarda anche di ore).
+// 18:41: laboratorio aggiornato e scelte (la domenica anche ricercatore, prova finale e rapporto completo); le altre ore: solo le scelte.
+export const AGENT_CRON = '41 0,6,12,18 * * *';
+export async function scheduled(env, fetchFn = fetch, cron = BOT_CRON, now = new Date()) {
     let r = null;
+    if (cron === AGENT_CRON) {
+        const mode = now.getUTCHours() === 18 ? (now.getUTCDay() === 0 ? 'full' : 'daily') : 'choices';
+        r = await agentRun(env, fetchFn, mode);
+        if (r.status !== 200) console.log('Avvio programmato dell\'agente fallito:', JSON.stringify(r.body));
+        return r;
+    }
     if (cron === BOT_CRON) {
         r = await trigger({ symbol: 'ALL', timeframe: 'ALL', force: 'false' }, env, fetchFn);
         if (r.status !== 200) console.log('Avvio programmato del bot fallito:', JSON.stringify(r.body));
