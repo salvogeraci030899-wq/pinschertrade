@@ -78,6 +78,7 @@ try {
                 const coins = ['ADAUSDT', 'BNBUSDT', 'XRPUSDT', 'DOGEUSDT', 'LINKUSDT', 'AVAXUSDT', 'DOTUSDT', 'LTCUSDT', 'TRXUSDT', 'ATOMUSDT', 'NEARUSDT', 'APTUSDT'];
                 j.strategies.many_open = { mode: 'paper', stats: { n: 0, open: coins.length }, trades: coins.map((symbol, i) => ({ id: `many_open:1d:${symbol}:${i}`, symbol, t: 1790000000 + i, t_entry: 1790086400 + i, dir: -1, entry: 100 + i, stop: 110 + i, open: true, gross: 0 })) };
             }
+            if (process.env.EMPTY_ACCOUNT && (name === 'paper_account.json' || name === 'live_trades.json')) j.positions = {};      // prova di layout: conto carta senza posizioni
             if (name === 'automation.json') j.risk = { ...(j.risk || {}), trading_enabled: mode === 'real', real_follows_paper: mode === 'real' ? 1 : 0 };
             return r.fulfill({ contentType: 'application/json', body: JSON.stringify(j) });
         });
