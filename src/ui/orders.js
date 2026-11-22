@@ -271,8 +271,11 @@ let perPage = 5;
 const pagesOf = (rows, per = perPage) => { const pages = []; for (let i = 0; i < rows.length; i += per) pages.push(`<div class="ord-page">${rows.slice(i, i + per).join('')}</div>`); return pages; };
 const botHtml = () => {
     const rows = botRows(), extraTrades = extraPaperTrades(), extra = paperRows(extraTrades);
-    return botAccount() + section('Bot su carta · nessun ordine reale', pagesOf(rows, extra.length ? 2 : perPage), paper || simActive() ? 'Nessun trade aperto nel conto: aprono solo i segnali recenti, entro i limiti.' : 'Caricamento…', rows.length)
-        + (extra.length ? section('Segnali aperti delle strategie · fuori dal conto', pagesOf(extra), '', extra.length, extraSummary(extraTrades)) : '');
+    // conto senza trade aperti e segnali fuori dal conto da mostrare: la scheda vuota si toglie (il conto dice già "aperti 0"), lo spazio va ai segnali
+    const showAccountList = rows.length > 0 || !extra.length;
+    return botAccount()
+        + (showAccountList ? section('Bot su carta · nessun ordine reale', pagesOf(rows, extra.length ? 2 : perPage), paper || simActive() ? 'Nessun trade aperto nel conto: aprono solo i segnali recenti, entro i limiti.' : 'Caricamento…', rows.length) : '')
+        + (extra.length ? section('Segnali delle strategie · fuori dal conto', pagesOf(extra), '', extra.length, extraSummary(extraTrades)) : '');
 };
 // righe che stanno in una pagina, misurate sullo schermo (una volta disegnata la prima)
 function fitPerPage(box) {
