@@ -1,7 +1,7 @@
 import { State } from '../core/state.js';
 import { CONFIG } from '../core/config.js';
 import { $, SYM, fetchT, fmtIt, fmtPrice, fetchData, getGhToken } from '../utils/helpers.js';
-import { isRemovingAlert, paperPerformance, priceAlerts, getAutoState, portfolioLine } from './automation.js';
+import { isRemovingAlert, paperPerformance, priceAlerts, getAutoState, portfolioLine, accountFollows } from './automation.js';
 import { TRADE_SYMBOLS } from '../core/commands.js';
 import { updateModePills, tradingMode } from './account.js';
 import { liveUpl, hasLiveMarks } from './trade.js';
@@ -310,7 +310,8 @@ function renderAutomationCard() {
     else {
         const parts = [];
         if (real) parts.push(`${real} reale`);
-        if (paper) parts.push(`${paper} su carta`);
+        const labData = getAutoState().lab, followed = Object.keys((cfg && cfg.strategies) || {}).filter(k => accountFollows(k, cfg, labData)).length;
+        if (paper) parts.push(`${followed} nel conto`, `${paper} su carta`);
         setLine('homeAutoStrategies', `${parts.join(' · ')} · ${opened} aperti, ${closed} chiusi`, 'text-ui');
     }
     const al = ((cfg && cfg.price_alerts) || []).filter(a => a && !bot.fired.includes(a.id) && !isRemovingAlert(a.id));

@@ -223,12 +223,12 @@ const TAG_TITLE = {
 };
 const TAG_CLASS = { confermata: ' ok', candidata: ' ok', vicina: ' warn', bocciata: ' warn', senza_storico: ' warn' };
 // Il conto carta esegue questa strategia? Stessa regola del bot (executor.run): live, candidata o confermata e, con alto rischio, quasi candidata
-export function accountFollows(key) {
-    const mode = cfg && cfg.strategies && cfg.strategies[key];
+export function accountFollows(key, c = cfg, l = lab) {
+    const mode = c && c.strategies && c.strategies[key];
     if (!mode || mode === 'off') return false;
     if (mode === 'live') return true;
-    if (lab && ((lab.confirmed || []).includes(key) || (lab.candidates || []).includes(key))) return true;
-    return Number(cfg && cfg.risk && cfg.risk.near_candidates) === 1 && !!(lab && lab.results && lab.results[key] && isNearCandidate(lab.results[key]));
+    if (l && ((l.confirmed || []).includes(key) || (l.candidates || []).includes(key))) return true;
+    return Number(c && c.risk && c.risk.near_candidates) === 1 && !!(l && l.results && l.results[key] && isNearCandidate(l.results[key]));
 }
 function statusTag(key) {
     const st = strategyStatus(key, lab);
