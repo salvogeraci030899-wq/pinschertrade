@@ -38,6 +38,32 @@ def test_il_modello_non_c_e_piu():
     assert not hasattr(run_bot, "load_predictor") and not hasattr(run_bot, "process_alerts") and not hasattr(run_bot, "build_alert_text")
 
 
+def test_telegram_rifiutato_riparte_senza_formattazione():
+    """Se Telegram rifiuta il Markdown (errore 400), lo stesso messaggio riparte come testo semplice."""
+    class R:
+        def __init__(self, code):
+            self.status_code = code
+
+        def json(self):
+            return {"description": "Bad Request: can't parse entities"}
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(self.status_code)
+    sent = []
+    saved = (run_bot.TG_TOKEN, run_bot.TG_CHAT_ID, run_bot.requests.post)
+    try:
+        run_bot.TG_TOKEN, run_bot.TG_CHAT_ID = "t", "c"
+        run_bot.requests.post = lambda url, json, timeout: (sent.append(dict(json)), R(400 if "parse_mode" in json else 200))[1]
+        assert run_bot.send_telegram_alert("prova *rotta") is True
+        assert len(sent) == 2 and "parse_mode" in sent[0] and "parse_mode" not in sent[1] and sent[1]["text"] == "prova *rotta"
+        sent.clear()
+        run_bot.requests.post = lambda url, json, timeout: (sent.append(dict(json)), R(500))[1]
+        assert run_bot.send_telegram_alert("x") is False and len(sent) == 1     # altri errori: nessun secondo tentativo
+    finally:
+        run_bot.TG_TOKEN, run_bot.TG_CHAT_ID, run_bot.requests.post = saved
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     for t in tests:
