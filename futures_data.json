@@ -1,20 +1,20 @@
 {
- "updated_at": "2026-11-23T18:02:38+00:00",
+ "updated_at": "2026-11-23T19:02:35+00:00",
  "product_type": "USDT-FUTURES",
  "symbols": {
   "BTCUSDT": {
    "symbol": "BTCUSDT",
-   "last": 61683.6,
-   "mark": 61683.6,
-   "index": 61710.507608695654,
-   "premium_pct": -0.0436,
-   "funding_rate_pct": -0.0054,
+   "last": 61516.4,
+   "mark": 61520.1,
+   "index": 61544.489130434784,
+   "premium_pct": -0.0396,
+   "funding_rate_pct": -0.0045,
    "funding_interval_h": 8.0,
    "next_funding_ts": 1795478400,
-   "open_interest": 35798.22019999999,
-   "open_interest_usd": 2208163096.0,
-   "long_accounts_pct": 78.48,
-   "long_positions_pct": 52.24,
+   "open_interest": 35827.67139999999,
+   "open_interest_usd": 2204121927.0,
+   "long_accounts_pct": 79.09,
+   "long_positions_pct": 52.19,
    "maker_fee_pct": 0.02,
    "taker_fee_pct": 0.06,
    "max_leverage": 150.0,
@@ -80,22 +80,22 @@
      "mmr_pct": 60.0
     }
    ],
-   "t": 1795456958,
-   "open_interest_change_24h_pct": 2.17
+   "t": 1795460555,
+   "open_interest_change_24h_pct": 2.62
   },
   "ETHUSDT": {
    "symbol": "ETHUSDT",
-   "last": 1744.88,
-   "mark": 1745.01,
-   "index": 1746.1489130434782,
-   "premium_pct": -0.0652,
-   "funding_rate_pct": 0.003,
+   "last": 1743.53,
+   "mark": 1743.61,
+   "index": 1744.5510869565217,
+   "premium_pct": -0.0539,
+   "funding_rate_pct": 0.0004,
    "funding_interval_h": 8.0,
    "next_funding_ts": 1795478400,
-   "open_interest": 695265.3900000016,
-   "open_interest_usd": 1213245058.0,
-   "long_accounts_pct": 82.49,
-   "long_positions_pct": 51.84,
+   "open_interest": 692853.0900000016,
+   "open_interest_usd": 1208065576.0,
+   "long_accounts_pct": 82.8,
+   "long_positions_pct": 52.32,
    "maker_fee_pct": 0.02,
    "taker_fee_pct": 0.06,
    "max_leverage": 150.0,
@@ -176,22 +176,22 @@
      "mmr_pct": 60.0
     }
    ],
-   "t": 1795456958,
-   "open_interest_change_24h_pct": -3.66
+   "t": 1795460555,
+   "open_interest_change_24h_pct": -4.05
   },
   "SOLUSDT": {
    "symbol": "SOLUSDT",
-   "last": 73.765,
-   "mark": 73.799,
-   "index": 73.84391304347827,
-   "premium_pct": -0.0608,
-   "funding_rate_pct": 0.006,
+   "last": 73.43,
+   "mark": 73.43,
+   "index": 73.46739130434783,
+   "premium_pct": -0.0509,
+   "funding_rate_pct": 0.0047,
    "funding_interval_h": 8.0,
    "next_funding_ts": 1795478400,
-   "open_interest": 4130013.2,
-   "open_interest_usd": 304790844.0,
-   "long_accounts_pct": 88.72,
-   "long_positions_pct": 53.43,
+   "open_interest": 4123844.2,
+   "open_interest_usd": 302813880.0,
+   "long_accounts_pct": 88.92,
+   "long_positions_pct": 53.56,
    "maker_fee_pct": 0.02,
    "taker_fee_pct": 0.06,
    "max_leverage": 100.0,
@@ -247,8 +247,8 @@
      "mmr_pct": 60.0
     }
    ],
-   "t": 1795456958,
-   "open_interest_change_24h_pct": -4.76
+   "t": 1795460555,
+   "open_interest_change_24h_pct": -4.81
   }
  }
 }
