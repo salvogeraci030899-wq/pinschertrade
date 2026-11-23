@@ -38,6 +38,16 @@ def send_telegram_alert(text):
     payload = {"chat_id": TG_CHAT_ID, "text": text, "parse_mode": "Markdown", "reply_markup": watchdog.keyboard_for(text)}
     try:
         r = requests.post(url, json=payload, timeout=10)
+        if r.status_code == 400:
+            # Telegram rifiuta il testo (di solito un carattere che il Markdown legge come formattazione):
+            # si scrive il motivo nel log e lo stesso messaggio riparte come testo semplice, così non va perso.
+            try:
+                why = r.json().get("description", "")
+            except Exception:
+                why = ""
+            print(f"Telegram ha rifiutato il messaggio ({why or 'richiesta non valida'}): lo rimando senza formattazione.")
+            payload.pop("parse_mode")
+            r = requests.post(url, json=payload, timeout=10)
         r.raise_for_status()
         return True
     except Exception as e:
