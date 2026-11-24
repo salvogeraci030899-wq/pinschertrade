@@ -1,8 +1,15 @@
 {
- "checked_at": "2026-11-24T12:47:30+00:00",
- "titles": 14,
- "status": "normale",
+ "checked_at": "2026-11-24T13:47:35+00:00",
+ "titles": 19,
+ "status": "pausa",
  "history": [
+  {
+   "at": "2026-11-24T13:47:35+00:00",
+   "hours": 6,
+   "reason": "hack in corso, rischio sicurezza",
+   "headline": "U.S. seeks $1.1 billion seized in Binance hack as North Korean funds keep moving",
+   "source": "CoinDesk"
+  },
   {
    "at": "2026-11-18T22:33:02+00:00",
    "hours": 6,
@@ -45,5 +52,9 @@
    "headline": "North Korea's Binance hack faces U.S. crackdown as DOJ targets $1.2 billion in stolen crypto",
    "source": "CoinDesk"
   }
- ]
+ ],
+ "pause_until": "2026-11-24T19:47:35+00:00",
+ "reason": "hack in corso, rischio sicurezza",
+ "headline": "U.S. seeks $1.1 billion seized in Binance hack as North Korean funds keep moving",
+ "source": "CoinDesk"
 }
