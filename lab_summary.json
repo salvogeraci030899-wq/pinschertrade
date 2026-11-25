@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-24T19:01:00+00:00",
+ "generated_at": "2026-11-25T18:58:22+00:00",
  "holdout_start": "2025-11-11",
  "trials_registered": 60,
  "fdr": 0.1,
@@ -12510,48 +12510,48 @@
    "holdout": {
     "n": 74,
     "win_rate": 35.1,
-    "avg_gross_pct": 1.576,
-    "avg_net_pct": 1.249,
+    "avg_gross_pct": 1.64,
+    "avg_net_pct": 1.313,
     "avg_net_ci": [
-     -3.4927,
-     6.7365
+     -3.4767,
+     6.7836
     ],
-    "p_value": 0.3230985994746939,
+    "p_value": 0.316217807325246,
     "avg_bars": 10.4,
-    "net_per_year_per_coin_pct": 11.5,
-    "after_tax_per_year_per_coin_pct": 7.7,
+    "net_per_year_per_coin_pct": 12.0,
+    "after_tax_per_year_per_coin_pct": 8.1,
     "by_coin": {
-     "ADAUSDT": 1.239,
+     "ADAUSDT": 1.238,
      "BNBUSDT": 2.733,
-     "BTCUSDT": 1.377,
-     "DOGEUSDT": -3.246,
-     "ETHUSDT": 0.488,
+     "BTCUSDT": 1.541,
+     "DOGEUSDT": -3.068,
+     "ETHUSDT": 0.581,
      "LINKUSDT": 3.356,
-     "SOLUSDT": 6.571,
+     "SOLUSDT": 6.57,
      "XRPUSDT": -1.548
     },
-    "excess_avg_pct": 1.107,
+    "excess_avg_pct": 1.158,
     "excess_ci": [
-     -3.7047,
-     6.6027
+     -3.6523,
+     6.689
     ],
-    "excess_p": 0.34306696686414184,
+    "excess_p": 0.33723601970088607,
     "excess_by_coin": {
-     "ADAUSDT": 0.056,
-     "BNBUSDT": 2.433,
-     "BTCUSDT": 1.312,
-     "DOGEUSDT": -3.106,
-     "ETHUSDT": 0.435,
-     "LINKUSDT": 3.244,
-     "SOLUSDT": 6.106,
-     "XRPUSDT": -0.866
+     "ADAUSDT": 0.026,
+     "BNBUSDT": 2.424,
+     "BTCUSDT": 1.461,
+     "DOGEUSDT": -2.954,
+     "ETHUSDT": 0.515,
+     "LINKUSDT": 3.24,
+     "SOLUSDT": 6.093,
+     "XRPUSDT": -0.857
     },
     "portfolio": {
      "n": 38,
      "skipped": 36,
-     "final_equity": 105.51,
-     "total_return_pct": 5.5,
-     "annual_return_pct": 5.5,
+     "final_equity": 105.71,
+     "total_return_pct": 5.7,
+     "annual_return_pct": 5.7,
      "max_drawdown_pct": -4.9,
      "years": 1.0,
      "curve": [
@@ -12669,43 +12669,43 @@
       ],
       [
        1788364800,
-       102.599
+       102.595
       ],
       [
        1789747200,
-       102.075
+       102.071
       ],
       [
        1791475200,
-       102.048
+       102.044
       ],
       [
        1791475200,
-       101.83
+       101.826
       ],
       [
        1793116800,
-       102.946
+       102.942
       ],
       [
        1793203200,
-       102.653
+       102.649
       ],
       [
        1793808000,
-       102.126
+       102.122
       ],
       [
        1795104000,
-       103.713
+       103.709
       ],
       [
        1795449600,
-       103.177
+       103.173
       ],
       [
-       1795536000,
-       105.513
+       1795622400,
+       105.708
       ]
      ]
     },
