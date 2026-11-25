@@ -1,8 +1,15 @@
 {
- "checked_at": "2026-11-25T08:47:33+00:00",
+ "checked_at": "2026-11-25T09:47:41+00:00",
  "titles": 10,
  "status": "pausa",
  "history": [
+  {
+   "at": "2026-11-25T09:47:41+00:00",
+   "hours": 2,
+   "reason": "Bug su DEX Solana ferma trading, rischio per nuove posizioni",
+   "headline": "Solana DEX Velocity halts trading over bug just months after relaunch",
+   "source": "Cointelegraph"
+  },
   {
    "at": "2026-11-24T21:47:40+00:00",
    "hours": 12,
@@ -60,8 +67,8 @@
    "source": "CoinDesk"
   }
  ],
- "pause_until": "2026-11-25T09:47:40+00:00",
- "reason": "Vulnerabilità wallet Bitcoin scoperta, rischio di attacchi immediati",
- "headline": "Coldcard Bitcoin Exploit, Revisited: How a Hidden Flaw Survived Years of Audits",
- "source": "Decrypt"
+ "pause_until": "2026-11-25T11:47:41+00:00",
+ "reason": "Bug su DEX Solana ferma trading, rischio per nuove posizioni",
+ "headline": "Solana DEX Velocity halts trading over bug just months after relaunch",
+ "source": "Cointelegraph"
 }
