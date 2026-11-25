@@ -1,7 +1,7 @@
 {
- "checked_at": "2026-11-25T11:47:40+00:00",
- "titles": 16,
- "status": "pausa",
+ "checked_at": "2026-11-25T12:47:34+00:00",
+ "titles": 18,
+ "status": "normale",
  "history": [
   {
    "at": "2026-11-25T09:47:41+00:00",
@@ -66,9 +66,5 @@
    "headline": "North Korea's Binance hack faces U.S. crackdown as DOJ targets $1.2 billion in stolen crypto",
    "source": "CoinDesk"
   }
- ],
- "pause_until": "2026-11-25T11:47:41+00:00",
- "reason": "Bug su DEX Solana ferma trading, rischio per nuove posizioni",
- "headline": "Solana DEX Velocity halts trading over bug just months after relaunch",
- "source": "Cointelegraph"
+ ]
 }
