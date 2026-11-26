@@ -1120,3 +1120,6 @@
 {"t":1795665600,"symbol":"BTCUSDT","mark":60902.5,"index":60922.59456521739,"funding_rate_pct":0.0089,"open_interest":36477.548200000325,"long_accounts_pct":79.78,"long_positions_pct":50.57}
 {"t":1795665600,"symbol":"ETHUSDT","mark":1701.58,"index":1702.287391304348,"funding_rate_pct":0.0087,"open_interest":716178.1000000009,"long_accounts_pct":83.97,"long_positions_pct":52.62}
 {"t":1795665600,"symbol":"SOLUSDT","mark":71.191,"index":71.21934782608696,"funding_rate_pct":0.01,"open_interest":4240649.200000002,"long_accounts_pct":88.91,"long_positions_pct":53.39}
+{"t":1795669200,"symbol":"BTCUSDT","mark":60927.6,"index":60957.71891304348,"funding_rate_pct":0.0083,"open_interest":36551.15750000032,"long_accounts_pct":79.76,"long_positions_pct":50.59}
+{"t":1795669200,"symbol":"ETHUSDT","mark":1700.29,"index":1701.22,"funding_rate_pct":0.0087,"open_interest":717415.8300000009,"long_accounts_pct":83.79,"long_positions_pct":52.56}
+{"t":1795669200,"symbol":"SOLUSDT","mark":71.086,"index":71.12173913043478,"funding_rate_pct":0.01,"open_interest":4238563.1000000015,"long_accounts_pct":88.68,"long_positions_pct":53.23}
