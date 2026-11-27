@@ -9,10 +9,11 @@
 import { $, SYM, escapeHtml, fmtIt, fmtPrice, markChosen, fetchData, fetchT } from '../utils/helpers.js';
 import { realPositions } from './history.js';
 import { isRealOrderRemoving, getAutoState, accountFollows } from './automation.js';
+import { loadGuard, guardHtml } from './guard.js';
 
 const VIEW_KEY = 'pt_pos_view';
 let view = 'open';
-const VIEWS = ['open', 'orders', 'bot'];
+const VIEWS = ['open', 'orders', 'bot', 'phantom'];
 try { const v = localStorage.getItem(VIEW_KEY); if (VIEWS.includes(v)) view = v; } catch (e) {}
 
 export function setPosView(v, manual = true) {
@@ -22,7 +23,8 @@ export function setPosView(v, manual = true) {
     applyView();
     if (view !== 'open') renderOrders();
     if (view === 'bot') loadPaper().then(renderOrders);
-    liveBot(view === 'bot');
+    if (view === 'phantom') loadGuard(true).then(renderOrders);
+    liveBot(view === 'bot' || view === 'phantom');
 }
 
 // Vista scelta da sola all'apertura della pagina: in Reale le posizioni vere, in Simulato il conto della carta.
@@ -144,8 +146,8 @@ function liveBot(on) {
     if (on && !liveTimer) {
         liveTimer = setInterval(() => {
             const pg = document.getElementById('page-trade');
-            if (view !== 'bot' || document.hidden || !(pg && pg.classList.contains('active'))) return;
-            loadPaper().then(renderOrders);
+            if (!['bot', 'phantom'].includes(view) || document.hidden || !(pg && pg.classList.contains('active'))) return;
+            (view === 'bot' ? loadPaper() : loadGuard()).then(renderOrders);
         }, 10000);
     } else if (!on && liveTimer) { clearInterval(liveTimer); liveTimer = null; }
 }
@@ -285,7 +287,9 @@ export function renderOrders() {
     const box = $('ordersView');
     if (!box || view === 'open') return;
     const real = true;
-    const html = view === 'bot'
+    const html = view === 'phantom'
+        ? guardHtml(section, row)
+        : view === 'bot'
         ? botHtml()
         : real
         ? section('Futures · in attesa su Bitget', realOrders('futures'), 'Nessuno stop o target in attesa sui futures.')
@@ -302,4 +306,4 @@ export function renderOrders() {
 }
 let lastHtml = '';
 
-export function initOrders() { applyView(); if (view === 'bot') { loadPaper().then(renderOrders); liveBot(true); } }
+export function initOrders() { applyView(); if (view === 'bot') { loadPaper().then(renderOrders); liveBot(true); } if (view === 'phantom') { loadGuard(true).then(renderOrders); liveBot(true); } }

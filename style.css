@@ -959,7 +959,7 @@ html.app-locked .lock-screen, .lock-screen.active { display: flex; }
 .order-status:empty { display: none; }
 
 /* Posizioni: viste Aperte / Ordini */
-.pos-views { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-1); height: 36px; flex: 0 0 36px; min-height: 36px; background: var(--field); border: 1px solid var(--border); border-radius: var(--r-pill); overflow: hidden; margin-bottom: var(--sp-3); flex-shrink: 0; padding: var(--sp-2); }
+.pos-views { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--sp-1); height: 36px; flex: 0 0 36px; min-height: 36px; background: var(--field); border: 1px solid var(--border); border-radius: var(--r-pill); overflow: hidden; margin-bottom: var(--sp-3); flex-shrink: 0; padding: var(--sp-2); }
 .pos-views button { background: transparent; border: none; color: var(--text-secondary); font-size: var(--fs-md); font-weight: 700; min-height: 0; cursor: pointer; font-family: var(--font); border-radius: var(--r-pill); }
 .pos-views button.active { background: var(--surface-hover); color: var(--text); }
 .orders-view { flex: 1; min-height: 0; overflow: hidden; display: grid; grid-auto-rows: max-content; align-content: start; gap: var(--sp-3); padding-bottom: var(--sp-2); }
@@ -1278,6 +1278,7 @@ html.glass .page { animation-name: pt-page-in; }
 .ord-list .ord-page .ord-row { flex: none; }
 /* Posizioni → Bot su carta: conto su carta in cima */
 .bot-acc { flex-shrink: 0; gap: var(--sp-1); }
+.guard-modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-2); }
 .bot-acc-main { display: flex; align-items: baseline; gap: var(--sp-3); }
 .bot-acc-main b { font: 800 22px var(--mono); color: var(--text); }
 .bot-acc-main span { font: 700 14px var(--mono); }

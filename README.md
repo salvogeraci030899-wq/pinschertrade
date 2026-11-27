@@ -40,7 +40,9 @@ Ogni azione arriva su Telegram. Soglie in `CFG` in cima a `hl_guard.py`.
 - segreto `HL_ACCOUNT_ADDRESS`: indirizzo del conto Hyperliquid (in Phantom, l'indirizzo Ethereum);
 - segreto `HL_API_PRIVATE_KEY`: chiave di un **API wallet** creato su app.hyperliquid.xyz → API collegando Phantom
   (può fare ordini, **non può prelevare**). Mai la frase segreta di Phantom;
-- variabile `HL_GUARD_MODE`: `off` spento, `osserva` (predefinito) solo messaggi "farei…", `attivo` esegue.
+- modalità: dall'app, **Posizioni → Phantom** (Spento / Osserva / Attivo), salvata in `hl_guard_config.json` e riletta
+  ogni minuto; in mancanza vale la variabile `HL_GUARD_MODE`, poi `osserva`. La stessa vista mostra in diretta posizioni,
+  stop e prossima soglia (API pubblica di Hyperliquid) e le ultime azioni del guardiano.
 
 Il repository è pubblico: il log mostra solo conteggi; lo stato (`hl_guard_state.json`) è cifrato.
 

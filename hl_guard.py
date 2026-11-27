@@ -13,8 +13,9 @@ Ogni azione arriva su Telegram con il motivo.
 Regole fisse: lo stop si sposta solo per proteggere di più (mai per allontanarlo); prima si mette lo stop
 nuovo e solo dopo si toglie quello vecchio, così la posizione non resta mai scoperta; i take profit non si toccano.
 
-Modalità (variabile del repository HL_GUARD_MODE): "off" spento, "osserva" scrive cosa farebbe senza toccare
-niente, "attivo" esegue. Chiavi (segreti del repository): HL_ACCOUNT_ADDRESS, l'indirizzo del conto
+Modalità: "off" spento, "osserva" scrive cosa farebbe senza toccare niente, "attivo" esegue. Si sceglie
+dall'app (Posizioni → Phantom, salvata in hl_guard_config.json e riletta ogni minuto: lo spegnimento vale
+entro un minuto); in mancanza vale la variabile del repository HL_GUARD_MODE, poi "osserva". Chiavi (segreti del repository): HL_ACCOUNT_ADDRESS, l'indirizzo del conto
 Hyperliquid (quello EVM di Phantom), e HL_API_PRIVATE_KEY, la chiave di un API wallet creato su
 app.hyperliquid.xyz → API: può fare ordini ma non prelevare.
 
@@ -29,6 +30,8 @@ from datetime import datetime, timezone
 from fmt_it import it
 
 STATE_PATH = "hl_guard_state.json"
+CONFIG_PATH = "hl_guard_config.json"
+LOG_MAX = 30
 MODES = ("off", "osserva", "attivo")
 
 CFG = {
@@ -180,6 +183,13 @@ def run_once(info, exchange, notify, addr, mode, state, now=None, cfg=CFG):
     except Exception:
         funding = {}
 
+    log = state.setdefault("log", [])
+
+    def say(kind, coin, text):
+        notify(text)
+        log.append({"t": now_ms, "kind": kind, "coin": coin, "text": text})
+        del log[:-LOG_MAX]
+
     seen = state.setdefault("positions", {})
     alive = set()
     actions = 0
@@ -215,10 +225,10 @@ def run_once(info, exchange, notify, addr, mode, state, now=None, cfg=CFG):
             if mode == "attivo":
                 r = exchange.market_close(coin)
                 if not _ok(r):
-                    notify(f"⚠️ {describe(pos)}: chiusura non riuscita ({_err(r)}). Controlla la posizione su Phantom.")
+                    say("error", coin, f"⚠️ {describe(pos)}: chiusura non riuscita ({_err(r)}). Controlla la posizione su Phantom.")
                     continue
             rec["proposed"] = "close"
-            notify(msg)
+            say("close", coin, msg)
             actions += 1
         elif p["action"] == "set_sl":
             sl = round_px(p["sl"], szd)
@@ -234,12 +244,12 @@ def run_once(info, exchange, notify, addr, mode, state, now=None, cfg=CFG):
                 r = exchange.order(coin, d == -1, pos["size"], limit,
                                    {"trigger": {"triggerPx": sl, "isMarket": True, "tpsl": "sl"}}, reduce_only=True)
                 if not _ok(r):
-                    notify(f"⚠️ {describe(pos)}: nuovo stop a {it(sl, 3)} non accettato ({_err(r)}). Resta quello di prima.")
+                    say("error", coin, f"⚠️ {describe(pos)}: nuovo stop a {it(sl, 3)} non accettato ({_err(r)}). Resta quello di prima.")
                     continue
                 for s in stops:            # solo dopo che il nuovo è attivo
                     exchange.cancel(coin, s["oid"])
             rec["proposed"] = sl
-            notify(msg)
+            say("stop", coin, msg)
             actions += 1
 
         # avvisi (una volta per posizione)
@@ -249,12 +259,14 @@ def run_once(info, exchange, notify, addr, mode, state, now=None, cfg=CFG):
             jump = pct(mark, ref)
             if abs(jump) >= cfg["jump_pct"] and now_ms - rec.get("jump_at", 0) > 30 * 60000:
                 rec["jump_at"] = now_ms
-                notify(f"⚡ {describe(pos)}: {it(jump, 1, sign=True)}% in 5 minuti (prezzo {it(mark, 3)}).")
+                say("alert", coin, f"⚡ {describe(pos)}: {it(jump, 1, sign=True)}% in 5 minuti (prezzo {it(mark, 3)}).")
         f = funding.get(coin, 0) * 100           # % l'ora; positivo = pagano i long
         if f * d >= cfg["funding_alert"] and not rec.get("funding_alert"):
             rec["funding_alert"] = True
-            notify(f"💸 {describe(pos)}: funding alto contro di te ({it(f, 4)}% l'ora). Tenerla a lungo costa.")
+            say("alert", coin, f"💸 {describe(pos)}: funding alto contro di te ({it(f, 4)}% l'ora). Tenerla a lungo costa.")
 
+    state["last_check"] = now_ms
+    state["mode"] = mode
     for k in list(seen):                      # posizioni chiuse: si dimenticano
         if k not in alive:
             del seen[k]
@@ -294,8 +306,50 @@ def save_state(state, path=STATE_PATH):
         json.dump(state, f, separators=(",", ":"), sort_keys=True)
 
 
+def config_mode(text):
+    try:
+        m = str(json.loads(text).get("mode", "")).strip().lower()
+        return m if m in MODES else None
+    except Exception:
+        return None
+
+
+def current_mode(default):
+    """Modalità scelta nell'app: la versione più recente di hl_guard_config.json su GitHub (riletta ogni minuto),
+    altrimenti quella del checkout, altrimenti la variabile del repository."""
+    import subprocess
+    try:
+        subprocess.run(["git", "fetch", "-q", "--depth=1", "origin", "main"], timeout=30, check=True, capture_output=True)
+        out = subprocess.run(["git", "show", f"origin/main:{CONFIG_PATH}"], timeout=10, capture_output=True, text=True)
+        if out.returncode == 0 and config_mode(out.stdout):
+            return config_mode(out.stdout)
+    except Exception:
+        pass
+    try:
+        with open(CONFIG_PATH) as f:
+            return config_mode(f.read()) or default
+    except Exception:
+        return default
+
+
+def set_mode(mode, path=CONFIG_PATH):
+    """Comando dall'app (automation.yml, action guard): salva la modalità scelta."""
+    mode = str(mode or "").strip().lower()
+    if mode not in MODES:
+        print("Modalità non valida.")
+        return 1
+    with open(path, "w") as f:
+        json.dump({"mode": mode}, f)
+        f.write("\n")
+    print(f"Guardiano Hyperliquid: modalità {mode}.")
+    return 0
+
+
 def main():
-    mode = (os.environ.get("HL_GUARD_MODE") or "osserva").strip().lower()
+    if len(sys.argv) >= 3 and sys.argv[1] == "--set-mode":
+        return set_mode(sys.argv[2])
+    env_mode = (os.environ.get("HL_GUARD_MODE") or "osserva").strip().lower()
+    mode = current_mode(env_mode)
     addr = (os.environ.get("HL_ACCOUNT_ADDRESS") or "").strip()
     key = (os.environ.get("HL_API_PRIVATE_KEY") or "").strip()
     minutes = int(os.environ.get("HL_GUARD_MINUTES") or 14)
@@ -314,16 +368,24 @@ def main():
     from hyperliquid.utils import constants
     info = Info(constants.MAINNET_API_URL, skip_ws=True)
     exchange = None
-    if mode == "attivo":
+    if key:
         import eth_account
         from hyperliquid.exchange import Exchange
         exchange = Exchange(eth_account.Account.from_key(key), constants.MAINNET_API_URL, account_address=addr)
 
     state = load_state()
+    state["account"] = addr                   # per l'app (il file è cifrato)
     before = json.dumps(state, sort_keys=True)
     end = time.time() + minutes * 60
     errors = 0
     while True:
+        mode = current_mode(mode)
+        if mode == "off":
+            state["mode"] = "off"
+            print("Guardiano spento dall'app.")
+            break
+        if mode == "attivo" and exchange is None:
+            mode = "osserva"
         try:
             n, npos = run_once(info, exchange, watchdog.send, addr, mode, state)
             print(f"{datetime.now(timezone.utc):%H:%M} posizioni {npos}, azioni {n}")

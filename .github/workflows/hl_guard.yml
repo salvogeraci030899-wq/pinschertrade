@@ -4,7 +4,7 @@ name: Guardiano Hyperliquid
 # chiusura dopo 48 ore ferme o vicino alla liquidazione. Non apre mai posizioni nuove.
 # Avviato ogni 15 minuti dal server Cloudflare (worker/index.js); ogni giro controlla una volta al minuto
 # per 14 minuti, così il controllo è continuo.
-# Modalità: variabile del repository HL_GUARD_MODE = off | osserva | attivo (predefinita: osserva).
+# Modalità: off | osserva | attivo, scelta nell'app (hl_guard_config.json); in mancanza la variabile HL_GUARD_MODE, poi osserva.
 # Segreti: HL_ACCOUNT_ADDRESS (indirizzo del conto), HL_API_PRIVATE_KEY (API wallet: ordini sì, prelievi no).
 on:
   workflow_dispatch:
@@ -22,15 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
+      - uses: actions/checkout@v5
       - name: Acceso?
         id: on
         env:
           MODE: ${{ vars.HL_GUARD_MODE || 'osserva' }}
           ADDR: ${{ secrets.HL_ACCOUNT_ADDRESS }}
         run: |
+          # la modalità scelta nell'app (hl_guard_config.json) vale più della variabile del repository
+          if [ -f hl_guard_config.json ]; then MODE=$(python3 -c "import json; print(json.load(open('hl_guard_config.json')).get('mode', ''))" 2>/dev/null || echo "$MODE"); fi
           if [ "$MODE" = "off" ] || [ -z "$ADDR" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "Guardiano spento o non configurato."; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/checkout@v5
-        if: steps.on.outputs.run == 'true'
       - name: Dati cifrati
         if: steps.on.outputs.run == 'true'
         uses: ./.github/actions/data-key

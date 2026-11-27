@@ -73,6 +73,8 @@ test('comandi ammessi e workflow giusti', async () => {
         [{ type: 'set_risk', field: 'max_leverage', value: '2' }, 'automation.yml', { action: 'risk', key: 'max_leverage', mode: '2' }],
         [{ type: 'set_risk', field: 'near_candidates', value: '1' }, 'automation.yml', { action: 'risk', key: 'near_candidates', mode: '1' }],
         [{ type: 'trading', value: 'on' }, 'automation.yml', { action: 'trading', key: '', mode: 'on' }],
+        [{ type: 'guard_mode', mode: 'attivo' }, 'automation.yml', { action: 'guard', key: '', mode: 'attivo' }],
+        [{ type: 'guard_mode', mode: 'off' }, 'automation.yml', { action: 'guard', key: '', mode: 'off' }],
     ];
     for (const [body, wf, inputs] of cases) {
         const r = await handle('POST', '/api/command', body, ok, env, fakeFetch);
@@ -97,6 +99,8 @@ test('comandi rifiutati prima di toccare GitHub', async () => {
         { type: 'trading', value: 'maybe' },
         { type: 'set_agent', field: 'autonomy', value: 'yolo' },
         { type: 'set_agent', field: 'GH_TOKEN', value: 'live' },
+        { type: 'guard_mode', mode: 'on; rm -rf /' },
+        { type: 'guard_mode' },
     ];
     for (const body of bad) assert.equal((await handle('POST', '/api/command', body, ok, env, fakeFetch)).status, 400, JSON.stringify(body));
     assert.equal((await handle('GET', '/api/command', {}, ok, env, fakeFetch)).status, 405);

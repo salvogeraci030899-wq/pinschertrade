@@ -10,7 +10,7 @@ on:
         description: 'set = cambia lo stato di una strategia, emergency = spegni tutto, resume = sblocca'
         required: true
         type: choice
-        options: [set, emergency, resume, risk, trading, alert, agent]
+        options: [set, emergency, resume, risk, trading, alert, agent, guard]
       key:
         description: 'Strategia (set, es. big_candle_trail:1d), limite di rischio (risk) o impostazione dell agente (agent: autonomy/profile/style)'
         required: false
@@ -59,6 +59,8 @@ jobs:
             python automation.py "$ACTION" "$KEY" "$MODE" | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$ACTION" = "alert" ]; then
             python automation.py alert "$MODE" "$KEY" | tee -a "$GITHUB_STEP_SUMMARY"
+          elif [ "$ACTION" = "guard" ]; then
+            python hl_guard.py --set-mode "$MODE" | tee -a "$GITHUB_STEP_SUMMARY"
           elif [ "$ACTION" = "trading" ]; then
             python automation.py trading "$MODE" | tee -a "$GITHUB_STEP_SUMMARY"
           else
@@ -71,6 +73,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add automation.json
+          git add hl_guard_config.json 2>/dev/null || true
           git add live_trades.json 2>/dev/null || true
           git add events 2>/dev/null || true
           git commit -m "Automazione: $ACTION $(date -u +%Y-%m-%d_%H:%M)" || { echo "Nessuna modifica"; exit 0; }

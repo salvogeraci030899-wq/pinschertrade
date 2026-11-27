@@ -174,3 +174,19 @@ def test_posizione_chiusa_si_dimentica():
     state = {"positions": {"SOL:1:70.0": {"first_seen": 0}}}
     g.run_once(FakeInfo(), None, lambda m: None, "0xabc", "osserva", state, now=NOW)
     assert "SOL:1:70.0" not in state["positions"]
+
+
+def test_registro_delle_azioni_per_l_app():
+    state = {}
+    g.run_once(FakeInfo(), FakeExchange(), lambda m: None, "0xabc", "attivo", state, now=NOW)
+    assert state["mode"] == "attivo" and state["last_check"] == NOW_MS
+    assert state["log"][-1]["kind"] == "stop" and state["log"][-1]["coin"] == "SOL"
+
+
+def test_modalita_dall_app(tmp_path):
+    p = tmp_path / "cfg.json"
+    assert g.set_mode("attivo", str(p)) == 0
+    assert g.config_mode(p.read_text()) == "attivo"
+    assert g.set_mode("tutto", str(p)) == 1                   # valore non ammesso: file invariato
+    assert g.config_mode(p.read_text()) == "attivo"
+    assert g.config_mode("{}") is None and g.config_mode("non json") is None

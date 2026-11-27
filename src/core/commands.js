@@ -147,6 +147,10 @@ export async function command(body, env, fetchFn) {
             if (b.op === 'clear') return dispatch(env, fetchFn, 'automation.yml', { action: 'alert', key: '', mode: 'clear' });
             return json(400, { error: 'Avviso non valido' });
         }
+        case 'guard_mode':
+            // guardiano Hyperliquid / Phantom: spento, solo messaggi, esegue (hl_guard.py --set-mode)
+            if (!['off', 'osserva', 'attivo'].includes(b.mode)) return json(400, { error: 'Modalità del guardiano non valida' });
+            return dispatch(env, fetchFn, 'automation.yml', { action: 'guard', key: '', mode: b.mode });
         case 'emergency':
             return dispatch(env, fetchFn, 'automation.yml', { action: 'emergency', key: '', mode: '' });
         case 'resume':
