@@ -9,6 +9,7 @@ paper_trades.json filter=ptenc merge=ptenc
 agent_state.json filter=ptenc merge=ptenc
 alerts_state.json filter=ptenc merge=ptenc
 quick_state.json filter=ptenc merge=ptenc
+hl_guard_state.json filter=ptenc merge=ptenc
 equity_history.json filter=ptenc merge=ptenc
 # File di stato che crescono riga per riga: se due workflow salvano insieme si tengono le righe di entrambi
 # (chi legge scarta poi i doppioni per id).

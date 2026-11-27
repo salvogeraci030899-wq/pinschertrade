@@ -1,0 +1,63 @@
+name: Guardiano Hyperliquid
+
+# Gestisce da solo le posizioni aperte su Hyperliquid / Phantom Perps (hl_guard.py): pareggio, trailing,
+# chiusura dopo 48 ore ferme o vicino alla liquidazione. Non apre mai posizioni nuove.
+# Avviato ogni 15 minuti dal server Cloudflare (worker/index.js); ogni giro controlla una volta al minuto
+# per 14 minuti, così il controllo è continuo.
+# Modalità: variabile del repository HL_GUARD_MODE = off | osserva | attivo (predefinita: osserva).
+# Segreti: HL_ACCOUNT_ADDRESS (indirizzo del conto), HL_API_PRIVATE_KEY (API wallet: ordini sì, prelievi no).
+on:
+  workflow_dispatch:
+
+# uno alla volta: il giro successivo aspetta che finisca quello in corso
+concurrency:
+  group: hl-guard
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Acceso?
+        id: on
+        env:
+          MODE: ${{ vars.HL_GUARD_MODE || 'osserva' }}
+          ADDR: ${{ secrets.HL_ACCOUNT_ADDRESS }}
+        run: |
+          if [ "$MODE" = "off" ] || [ -z "$ADDR" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "Guardiano spento o non configurato."; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v5
+        if: steps.on.outputs.run == 'true'
+      - name: Dati cifrati
+        if: steps.on.outputs.run == 'true'
+        uses: ./.github/actions/data-key
+        with:
+          key: ${{ secrets.DATA_KEY }}
+      - uses: actions/setup-python@v6
+        if: steps.on.outputs.run == 'true'
+        with:
+          python-version: '3.11'
+      - name: Installa l'SDK di Hyperliquid
+        if: steps.on.outputs.run == 'true'
+        run: pip install -q hyperliquid-python-sdk requests
+      - name: Controllo delle posizioni (14 minuti)
+        if: steps.on.outputs.run == 'true'
+        env:
+          HL_GUARD_MODE: ${{ vars.HL_GUARD_MODE || 'osserva' }}
+          HL_ACCOUNT_ADDRESS: ${{ secrets.HL_ACCOUNT_ADDRESS }}
+          HL_API_PRIVATE_KEY: ${{ secrets.HL_API_PRIVATE_KEY }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python hl_guard.py
+      - name: Salva
+        if: steps.on.outputs.run == 'true'
+        run: |
+          [ -f hl_guard_state.json ] || exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add hl_guard_state.json
+          git commit -q -m "Guardiano Hyperliquid $(date -u +%H:%M)" || { echo "Nessuna modifica"; exit 0; }
+          bash tools/push_state.sh

@@ -339,6 +339,8 @@ test('orologio del bot: avvio programmato', async () => {
     assert.equal(calls[0].url, 'https://api.github.com/repos/io/repo/actions/workflows/bot.yml/dispatches');
     assert.deepEqual(calls[0].body, { ref: 'main', inputs: { symbol: 'ALL', timeframe: 'ALL', force: 'false' } });
     assert.equal(calls[1].url, 'https://api.github.com/repos/io/repo/actions/workflows/quick.yml/dispatches');   // anche il controllo rapido
+    assert.equal(calls[2].url, 'https://api.github.com/repos/io/repo/actions/workflows/hl_guard.yml/dispatches'); // e il guardiano Hyperliquid
+    assert.equal(calls.length, 3);
     // gli altri minuti: solo il controllo rapido
     calls.length = 0;
     const q = await scheduled({ GH_TOKEN: 'tok', GH_REPO: 'io/repo' }, fakeFetch, '7,12,22,27,37,42,52,57 * * * *');

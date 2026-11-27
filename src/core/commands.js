@@ -85,6 +85,11 @@ export function quickCheck(env, fetchFn) {
     return dispatch(env, fetchFn, 'quick.yml', {});
 }
 
+// Guardiano delle posizioni su Hyperliquid / Phantom (hl_guard.yml): ogni giro controlla una volta al minuto per 14 minuti
+export function guardRun(env, fetchFn) {
+    return dispatch(env, fetchFn, 'hl_guard.yml', {});
+}
+
 // Agente (agent.yml), avviato dall'orologio del server: 'choices' solo le scelte, 'daily' anche il laboratorio aggiornato,
 // 'full' anche ricercatore, prova finale e rapporto completo
 export function agentRun(env, fetchFn, mode = 'choices') {

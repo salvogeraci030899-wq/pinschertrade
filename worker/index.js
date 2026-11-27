@@ -11,7 +11,7 @@
 //   ALLOWED_ORIGINS  origini ammesse, separate da virgola
 //   DATA_KEY         facoltativa: chiave dei dati cifrati (bot Telegram); con questa l'IA risponde solo a chi
 //                    ha la chiave sul dispositivo (header x-pt-proof, una prova derivata, non la chiave)
-import { handle, trigger, quickCheck, agentRun } from '../api/_core.js';
+import { handle, trigger, quickCheck, agentRun, guardRun } from '../api/_core.js';
 import { aiProof } from '../src/core/datacrypt.js';
 import { safeEqual } from '../src/core/commands.js';
 
@@ -52,6 +52,11 @@ export async function scheduled(env, fetchFn = fetch, cron = BOT_CRON, now = new
     }
     const q = await quickCheck(env, fetchFn);
     if (q.status !== 200) console.log('Controllo rapido non avviato:', JSON.stringify(q.body));
+    if (cron === BOT_CRON) {
+        // guardiano Hyperliquid: un giro da 14 minuti ogni 15 (se è spento o non configurato si ferma subito)
+        const gr = await guardRun(env, fetchFn);
+        if (gr.status !== 200) console.log('Guardiano non avviato:', JSON.stringify(gr.body));
+    }
     return r || q;
 }
 

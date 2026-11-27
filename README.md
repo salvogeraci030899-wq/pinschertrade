@@ -19,6 +19,31 @@ Moduli principali del bot: `run_bot.py` (giro completo), `quick.py` (controllo r
 `executor.py` (ordini reali e storico del conto), `agent.py` (agente giornaliero), `automation.py` / `position_cmd.py`
 (comandi dall'app), `strategy_lab.py` + `lab_strategies.py` (laboratorio), `events.py` (registro), `watchdog.py` (salute).
 
+## Guardiano Hyperliquid (posizioni aperte da Phantom Perps)
+
+`hl_guard.py` (workflow `hl_guard.yml`, avviato dal server ogni 15 minuti, controlla una volta al minuto) gestisce le
+posizioni che apri tu su Hyperliquid, anche da Phantom: **non apre mai posizioni nuove e non le aumenta**.
+
+| Regola | Quando | Cosa fa |
+| --- | --- | --- |
+| Pareggio | il trade è andato a favore di almeno +2% | stop all'ingresso + 0,15% (commissioni) |
+| Trailing | oltre +3,5% | stop a 1,5 ATR (1 ora) dal miglior prezzo |
+| Tempo | dopo 48 ore entro ±2% dall'ingresso | chiude |
+| Liquidazione | prezzo a meno del 2% dalla liquidazione | chiude |
+| Stop mancante | la posizione non ha stop | stop al 4% (mai oltre la liquidazione) |
+| Avvisi | +/−3% in 5 minuti, funding alto contro | solo messaggio |
+
+Lo stop si sposta solo per proteggere di più; il nuovo stop si mette prima di togliere il vecchio; i take profit non si toccano.
+Ogni azione arriva su Telegram. Soglie in `CFG` in cima a `hl_guard.py`.
+
+**Configurazione** (GitHub → Settings → Secrets and variables → Actions):
+- segreto `HL_ACCOUNT_ADDRESS`: indirizzo del conto Hyperliquid (in Phantom, l'indirizzo Ethereum);
+- segreto `HL_API_PRIVATE_KEY`: chiave di un **API wallet** creato su app.hyperliquid.xyz → API collegando Phantom
+  (può fare ordini, **non può prelevare**). Mai la frase segreta di Phantom;
+- variabile `HL_GUARD_MODE`: `off` spento, `osserva` (predefinito) solo messaggi "farei…", `attivo` esegue.
+
+Il repository è pubblico: il log mostra solo conteggi; lo stato (`hl_guard_state.json`) è cifrato.
+
 ## La carta si comporta come il reale
 
 Con gli ordini simulati (stato di partenza) l'esecutore segue **anche le strategie su carta** (`risk.shadow_paper`, acceso di
