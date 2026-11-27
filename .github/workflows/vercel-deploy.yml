@@ -1,0 +1,30 @@
+name: Deploy Vercel
+
+# I commit automatici dei bot (GITHUB_TOKEN) non avviano questo workflow:
+# Vercel si aggiorna solo quando cambia davvero il codice del sito.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "style.css"
+      - "tokens.css"
+      - "manifest.json"
+      - "vercel.json"
+      - "package.json"
+      - ".vercelignore"
+      - "src/**"
+      - "api/**"
+      - "icons/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Avvia deploy Vercel
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "Manca il secret VERCEL_DEPLOY_HOOK"; exit 1; fi
+          curl -fsS -X POST "$HOOK"
